@@ -2,8 +2,6 @@
 
 A public learning journal and working codebase for building a privacy-first, locally-hosted AI assistant on consumer hardware.
 
-**Hardware used:** NVIDIA RTX 4090 (24GB VRAM), Windows 11, Alienware Aurora R15
-
 **Goal:** Run a capable LLM locally at zero recurring cost, with Claude API as a fallback for complex reasoning only.
 
 **Required Vibe Check:** https://www.youtube.com/watch?v=vWGQBQU8Vr0
@@ -12,12 +10,48 @@ This is not a polished product. It is a documented journey — including the mis
 
 ---
 
+## What You Need
+
+### Hardware
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| GPU | NVIDIA GPU, 8GB VRAM | NVIDIA GPU, 20GB+ VRAM |
+| RAM | 16GB | 32GB+ |
+| Storage | 50GB free | 100GB+ free (models are large) |
+| OS | Windows 10/11 or Linux | Windows 11 or Ubuntu |
+
+> **VRAM is the main constraint.** The model you can run depends entirely on how much VRAM your GPU has. See the [Phase 1 model table](./phase1-local-inference/README.md) to pick the right size for your hardware. This build uses an RTX 4090 (24GB), which runs the full Gemma 4 26B model. A GPU with 8GB VRAM can still run the smaller Gemma 4 e4b variant.
+
+> **AMD GPU note:** AMD GPU support via ROCm is possible but not covered in this guide. NVIDIA is strongly recommended for CUDA compatibility.
+
+### Software
+
+Everything below is free and open source.
+
+| Software | Purpose | How to get it |
+|----------|---------|---------------|
+| Python 3.11+ | Running scripts and orchestration logic | [python.org](https://www.python.org) or [Anaconda](https://www.anaconda.com) |
+| Git | Version control | [git-scm.com](https://git-scm.com) |
+| Docker Desktop | Runs Ollama and Open WebUI in isolated containers | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
+| WSL2 *(Windows only)* | Linux kernel backend that Docker requires on Windows | Built into Windows 10/11 — run `wsl --install` in PowerShell as admin |
+| NVIDIA GPU drivers | Enables CUDA so the GPU can run inference | [nvidia.com/drivers](https://www.nvidia.com/Download/index.aspx) — update to latest |
+
+### Accounts
+
+| Account | Purpose | Required? |
+|---------|---------|-----------|
+| [Anthropic Console](https://console.anthropic.com) | Claude API key for fallback reasoning | Optional — only needed for the Claude fallback |
+| [GitHub](https://github.com) | Fork this repo and track your own journey | Optional but recommended |
+
+---
+
 ## Who This Is For
 
 - You want to run an LLM locally and actually understand what's happening under the hood
 - You care about privacy (no sending queries to third-party inference APIs)
 - You want to learn CUDA, Docker, agentic frameworks, and RAG from a practical project
-- You have a modern GPU (RTX 3080+ recommended, 20GB+ VRAM for Gemma 4 26B; 8GB works for smaller models)
+- You have a modern NVIDIA GPU (8GB VRAM minimum; 20GB+ recommended for the full 26B model)
 
 ---
 
@@ -27,7 +61,7 @@ This is not a polished product. It is a documented journey — including the mis
 User query
     ↓
 Routing logic (Python)
-    ├── Simple / local → Gemma 4 26B via Ollama (RTX 4090, CUDA)
+    ├── Simple / local → Gemma 4 26B via Ollama (CUDA, local GPU)
     └── Complex / fallback → Claude API (Anthropic)
                 ↓
         Tool pipeline (optional)
@@ -59,10 +93,10 @@ Routing logic (Python)
 | Layer | Technology | Why |
 |-------|-----------|-----|
 | Local inference | [Ollama](https://ollama.com) + Gemma 4 26B (MoE) | 256K context, only 3.8B params active per inference, 18GB VRAM |
-| GPU | NVIDIA RTX 4090, CUDA 12.x | 24GB VRAM, fits Gemma 4 26B with 6GB headroom |
-| Container runtime | Docker Desktop + WSL2 | Reproducible, GPU passthrough works well |
+| GPU | NVIDIA CUDA 12.x | Required for local inference — AMD ROCm not covered here |
+| Container runtime | Docker Desktop + WSL2 | Reproducible setup, GPU passthrough works well on Windows |
 | Chat UI | [Open WebUI](https://github.com/open-webui/open-webui) | Browser-based, connects to Ollama out of the box |
-| Cloud fallback | Anthropic Claude API | Best reasoning quality, selective use only |
+| Cloud fallback | Anthropic Claude API | Best reasoning quality, used selectively |
 | Vector memory | ChromaDB + nomic-embed-text | Local embeddings, no cloud required |
 | Conversation history | SQLite | Simple, zero infrastructure |
 | Orchestration | TBD (Phase 3) | Evaluating options |
@@ -72,25 +106,39 @@ Routing logic (Python)
 
 ## Getting Started
 
-### Prerequisites
-- Python 3.11+ (Anaconda recommended)
-- Docker Desktop with WSL2 backend
-- NVIDIA GPU with 20GB+ VRAM for Gemma 4 26B (18GB model + overhead); 8GB works for the e4b variant
-- NVIDIA drivers updated (CUDA 12.x)
-- An [Anthropic API key](https://console.anthropic.com) (for Claude fallback only)
+### 1. Install prerequisites
 
-### Setup
+Make sure you have Python, Git, Docker Desktop, and WSL2 (Windows) installed from the table above before continuing.
+
+### 2. Clone the repo
 
 ```bash
 git clone https://github.com/bpachter/enkidu.git
 cd enkidu
+```
+
+### 3. Install Python dependencies
+
+```bash
 pip install -r requirements.txt
+```
+
+### 4. Configure your API key
+
+```bash
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Open .env and add your ANTHROPIC_API_KEY
+```
+
+### 5. Verify Claude API works (optional)
+
+```bash
 python test_claude.py  # Should print: Enkidu lives
 ```
 
-Then follow the [Phase 1 guide](./phase1-local-inference/README.md) to get Ollama running.
+### 6. Set up local inference
+
+Follow the **[Phase 1 guide](./phase1-local-inference/README.md)** to get Ollama and Gemma running on your GPU.
 
 ---
 
