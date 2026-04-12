@@ -61,14 +61,52 @@ def get_cache_path() -> Optional[Path]:
 # --- Data loading ---
 
 def load_portfolio() -> Optional[pd.DataFrame]:
-    """Load the screened portfolio (1,295 stocks with all metrics)."""
+    """
+    Load the screened portfolio CSV if it exists, otherwise derive a
+    'portfolio' from metrics.csv (most recent annual period per ticker,
+    sorted by ev_ebit). The pipeline no longer generates the portfolio CSV
+    directly — this fallback keeps everything working with fresh data.
+    """
     p = get_processed_path()
     if not p:
         return None
+
+    # Prefer pre-screened portfolio CSV if present
     path = p / "quantitative_value_portfolio.csv"
-    if not path.exists():
+    if path.exists():
+        return pd.read_csv(path, low_memory=False)
+
+    # Derive from metrics.csv: join with companies to get tickers,
+    # then take the most recent annual period per company.
+    metrics   = load_metrics()
+    companies = load_companies()
+    if metrics is None:
         return None
-    return pd.read_csv(path, low_memory=False)
+
+    df = metrics.copy()
+
+    # Attach ticker via CIK join
+    if companies is not None and "cik" in df.columns and "cik" in companies.columns:
+        df = df.merge(companies[["cik", "ticker"]], on="cik", how="left")
+
+    # Annual periods only
+    if "frequency" in df.columns:
+        annual = df[df["frequency"] == "annual"]
+        if not annual.empty:
+            df = annual
+
+    # Most recent period per ticker
+    if "period_end" in df.columns:
+        df = df.sort_values("period_end", ascending=False)
+
+    if "ticker" in df.columns:
+        df = df.drop_duplicates(subset=["ticker"], keep="first")
+
+    # Drop rows with no valuation data
+    if "ev_ebit" in df.columns:
+        df = df[df["ev_ebit"].notna() & (df["ev_ebit"] > 0)]
+
+    return df.reset_index(drop=True)
 
 
 def load_metrics() -> Optional[pd.DataFrame]:
@@ -97,18 +135,35 @@ def load_companies() -> Optional[pd.DataFrame]:
 
 def get_top_stocks(n: int = 10) -> Optional[pd.DataFrame]:
     """
-    Return the top N stocks by value composite score.
-    value_composite is an average of EV/EBIT, EV/Revenue, EV/FCF percentile ranks
-    where lower = cheaper/better value.
+    Return the top N stocks ranked by fundamental quality.
+    Uses ROA as primary sort (best proxy for quality without market prices).
+    Falls back gracefully to whatever valuation columns exist.
     """
     df = load_portfolio()
     if df is None:
         return None
-    sort_col = "value_composite" if "value_composite" in df.columns else "ev_ebit"
-    cols = [c for c in ["ticker", "value_composite", "quality_score", "f_score",
-                         "ev_ebit", "debt_to_equity", "roa", "p_franchise_power"]
+
+    # Pick best available sort column
+    for sort_col in ["value_composite", "ev_ebit", "roa"]:
+        if sort_col in df.columns:
+            break
+
+    cols = [c for c in ["ticker", "period_end", "roa", "roe", "ebit",
+                         "fcf", "gross_margin", "operating_margin",
+                         "debt_to_equity", "accrual_ratio",
+                         "value_composite", "ev_ebit"]
             if c in df.columns]
-    return df.nsmallest(n, sort_col)[cols].reset_index(drop=True)
+
+    # Require positive EBIT and meaningful revenue to filter out junk
+    if "ebit" in df.columns:
+        df = df[df["ebit"] > 0]
+    if "revenue" in df.columns:
+        df = df[df["revenue"] > 1_000_000]
+
+    if sort_col == "roa":
+        return df.nlargest(n, sort_col)[cols].reset_index(drop=True)
+    else:
+        return df.nsmallest(n, sort_col)[cols].reset_index(drop=True)
 
 
 def get_ticker_summary(ticker: str) -> Optional[dict]:
@@ -142,29 +197,29 @@ def get_ticker_summary(ticker: str) -> Optional[dict]:
 
     # Pull the most relevant columns — gracefully skip missing ones
     fields = {
-        "ticker": "ticker",
-        "period_end": "period_end",
-        "piotroski_f_score": "f_score",
-        "value_composite": "value_composite",
-        "quality_score": "quality_score",
-        "franchise_power_pct": "p_franchise_power",
-        "financial_strength_pct": "p_financial_strength",
-        "ev_ebit": "ev_ebit",
-        "ev_revenue": "ev_revenue",
-        "debt_to_equity": "debt_to_equity",
-        "roa": "roa",
-        "roe": "roe",
-        "gross_margin": "gross_margin",
+        "ticker":           "ticker",
+        "period_end":       "period_end",
+        "revenue":          "revenue",
+        "ebit":             "ebit",
+        "net_income":       "net_income",
+        "cfo":              "cfo",
+        "fcf":              "fcf",
+        "total_assets":     "total_assets",
+        "total_equity":     "total_equity",
+        "roa":              "roa",
+        "roe":              "roe",
+        "gross_margin":     "gross_margin",
         "operating_margin": "operating_margin",
-        "revenue": "revenue",
-        "ebit": "ebit",
-        "net_income": "net_income",
-        "total_assets": "total_assets",
-        "total_debt": "total_debt",
-        "cfo": "cfo",
-        "fcf": "fcf",
-        "8yr_roa": "8yr_roa",
-        "8yr_roc": "8yr_roc",
+        "net_margin":       "net_margin",
+        "fcf_margin":       "fcf_margin",
+        "debt_to_equity":   "debt_to_equity",
+        "debt_to_assets":   "debt_to_assets",
+        "current_ratio":    "current_ratio",
+        "accrual_ratio":    "accrual_ratio",
+        # kept for backwards compat if old portfolio CSV is present
+        "value_composite":  "value_composite",
+        "ev_ebit":          "ev_ebit",
+        "f_score":          "f_score",
     }
 
     result = {}
@@ -193,11 +248,20 @@ def filter_by_criteria(
     if max_debt_to_equity is not None and "debt_to_equity" in df.columns:
         df = df[df["debt_to_equity"] <= max_debt_to_equity]
 
-    sort_col = "value_composite" if "value_composite" in df.columns else "ev_ebit"
-    cols = [c for c in ["ticker", "value_composite", "f_score", "ev_ebit",
-                         "debt_to_equity", "roa", "quality_score", "p_franchise_power"]
+    # Sort by best available quality metric
+    for sort_col in ["value_composite", "ev_ebit", "roa"]:
+        if sort_col in df.columns:
+            break
+
+    cols = [c for c in ["ticker", "period_end", "roa", "roe", "ebit",
+                         "fcf", "debt_to_equity", "gross_margin",
+                         "value_composite", "ev_ebit", "f_score"]
             if c in df.columns]
-    return df.nsmallest(n, sort_col)[cols].reset_index(drop=True)
+
+    if sort_col == "roa":
+        return df.nlargest(n, sort_col)[cols].reset_index(drop=True)
+    else:
+        return df.nsmallest(n, sort_col)[cols].reset_index(drop=True)
 
 
 # --- Context formatting ---
@@ -300,12 +364,16 @@ def get_context(query: str) -> str:
 
 
 def _get_data_age() -> str:
-    """Return how old the portfolio data is."""
+    """Return how old the underlying metrics data is."""
     p = get_processed_path()
     if not p:
         return "unknown"
-    path = p / "quantitative_value_portfolio.csv"
-    if not path.exists():
+    # Check portfolio CSV first, fall back to metrics.csv
+    for filename in ("quantitative_value_portfolio.csv", "metrics.csv"):
+        path = p / filename
+        if path.exists():
+            break
+    else:
         return "file not found"
     mtime = path.stat().st_mtime
     age_days = (time.time() - mtime) / 86400
