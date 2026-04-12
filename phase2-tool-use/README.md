@@ -1,44 +1,8 @@
 # Phase 2 — Tool Use and Routing Logic
 
-**Status: 🔄 In Progress**
+**Status: Complete**
 
-Build a Python orchestrator that routes queries intelligently between local Gemma and Claude API, and integrates real tools that make the assistant actually useful for work.
-
-**Goal:** By the end of this phase, Enkidu will answer real questions — pulling live SEC filings, screening stocks, routing complex reasoning to Claude — not just chatting.
-
----
-
-## What Gets Built
-
-### 1. Routing Logic (`router.py`) ✅ Scaffolded
-Decides whether a query goes to local Gemma or Claude API based on:
-- **Token count** — long prompts suggest complex tasks
-- **Complexity keywords** — "analyze", "compare", "explain in depth", etc.
-- **Tool requirements** — tool use routes to Claude (better function calling)
-- **Explicit override** — caller can force a tier
-
-Thresholds are informed by Phase 1 benchmark results: Gemma at 144 tok/s makes local inference fast enough for nearly all everyday queries.
-
-Run the router standalone to see routing decisions:
-```bash
-python phase2-tool-use/router.py
-```
-
-### 2. SEC Edgar Screener (`tools/edgar_screener.py`) ⬜ Not started
-Pull 10-K filings from the SEC's public EDGAR API and extract financial data for analysis.
-
-Target queries:
-- "What is Duke Energy's debt-to-equity ratio from their latest 10-K?"
-- "Find the top 10 energy companies by Piotroski F-Score"
-- "Compare capex trends for NEE, DUK, and SO over the last 3 years"
-
-### 3. Unified Entry Point (`enkidu.py`) ⬜ Not started
-A single script that:
-1. Takes a user query
-2. Runs it through the router
-3. Calls tools if needed
-4. Sends to Gemma or Claude
-5. Returns the answer
+A Python orchestrator that routes queries between local Gemma and Claude API, and runs tools that inject real context — financial data, system stats, RGB lighting — before sending to the model.
 
 ---
 
@@ -47,49 +11,119 @@ A single script that:
 ```
 User query
     ↓
-router.py — decides LOCAL or CLOUD
-    ├── LOCAL → Ollama HTTP API → gemma4:26b
-    └── CLOUD → Anthropic SDK → claude-opus-4-6
-                    ↓
-            Tool pipeline (if needed)
-            └── edgar_screener.py → SEC EDGAR API
-                    ↓
-            Final response
+enkidu.py REPL
+    ↓
+router.py — LOCAL or CLOUD?
+    ↓
+Tool pipeline (triggered by query keywords)
+    ├── system_info.py    → GPU/CPU/RAM stats via nvidia-smi + psutil
+    ├── edgar_screener.py → EDGAR financial data + QV portfolio context
+    └── lighting.py       → RGB keyboard animation while GPU runs
+    ↓
+LOCAL: Gemma 4 26B via Ollama (~144 tok/s, RTX 4090)
+  or
+CLOUD: Claude claude-opus-4-6 via Anthropic API
+    ↓
+Response streamed to terminal
 ```
+
+---
+
+## Components
+
+### `router.py` — Routing Logic
+
+Classifies each query as LOCAL (Gemma) or CLOUD (Claude) based on:
+
+| Signal | → Local | → Cloud |
+|--------|---------|---------|
+| Token count | < 500 tokens | > 500 tokens |
+| Keywords | "what is", "list", "define" | "analyze", "compare", "explain in depth" |
+| Tools needed | No | Yes |
+| Explicit override | `/local` command | `/cloud` command |
+| Default | Yes | — |
+
+Bias is intentionally toward local — free, private, and fast enough for most queries at 144 tok/s.
+
+Run standalone to inspect routing decisions:
+```bash
+python phase2-tool-use/router.py
+```
+
+---
+
+### `tools/system_info.py` — Hardware Context
+
+Injects real-time hardware stats into the prompt when you ask about performance, memory, or GPU state.
+
+**Triggers:** queries containing "gpu", "vram", "cpu", "ram", "memory", "temperature", "utilization"
+
+**Injects:** nvidia-smi output (GPU name, VRAM used/total, utilization, temperature) + psutil RAM stats
+
+---
+
+### `tools/edgar_screener.py` — Financial Data Tool
+
+Injects EDGAR financial context when you ask about stocks or companies. Backed by the bundled QV pipeline at `quant-value/`.
+
+**Triggers:** financial keywords ("stock", "earnings", "ebitda", "portfolio", etc.) or uppercase tickers (e.g. `AAPL`, `NUE`)
+
+**Injects:**
+- For screened stocks: QV portfolio rank, EV multiples, quality score, value composite
+- For non-screened tickers: raw EDGAR metrics (revenue, assets, liabilities, EBIT)
+- For portfolio queries: top 10 screened stocks with full metrics
+
+**Data sources:**
+- EDGAR fundamentals: 181K+ rows, 9,867 companies, from SEC filings via `edgartools`
+- Market data: DefeatBeta (primary, via WSL) + yfinance (fallback)
+- Screened portfolio: 360 stocks passing the QV filter (positive EBIT, quality ≥ 50th pct, value ≤ 30th pct)
+
+See [quant-value/README.md](./quant-value/README.md) for full pipeline details.
+
+---
+
+### `tools/lighting.py` — RGB Keyboard Animation
+
+Runs a rainbow sweep across the keyboard (OpenRGB) while local GPU inference is active. Visual indicator that Gemma is working.
+
+**Requirements:** OpenRGB installed with SDK server enabled on port 6742. Must be opened manually each session.
+
+**Pattern:** Spawns a subprocess running `lighting_worker.py` at query start; sends SIGTERM when the response completes.
+
+**Note:** Only the keyboard zone is reliably supported — other Dell/Alienware lighting zones require ACPI-level control outside OpenRGB's scope. RGB tuning is deprioritized; this is a nice-to-have.
+
+---
+
+### `quant-value/` — Quantitative Value Pipeline
+
+A full quant value stock screening pipeline bundled with Enkidu. Fetches EDGAR filings for ~9,867 companies, computes financial metrics, and scores them on quality + value.
+
+See [quant-value/README.md](./quant-value/README.md) for the full guide.
 
 ---
 
 ## Files
 
-| File | Status | Purpose |
-|------|--------|---------|
-| `router.py` | ✅ Scaffolded | Heuristic routing: local vs cloud |
-| `tools/edgar_screener.py` | ⬜ Not started | Pull SEC 10-K filings |
-| `enkidu.py` | ⬜ Not started | Unified entry point |
+```
+phase2-tool-use/
+├── README.md              # This file
+├── router.py              # LOCAL vs CLOUD routing logic
+├── tools/
+│   ├── __init__.py
+│   ├── system_info.py     # GPU/CPU/RAM context injection
+│   ├── edgar_screener.py  # EDGAR financial data tool
+│   └── lighting.py        # RGB keyboard animation
+└── quant-value/           # Quantitative Value pipeline (see its own README)
+    ├── README.md
+    ├── requirements.txt
+    ├── src/               # Python pipeline source (17 modules)
+    ├── config/            # settings.json + tickers.txt
+    ├── docs/              # QV methodology documentation
+    └── data/              # NOT in git — GB-scale EDGAR + market data
+```
 
 ---
 
-## Routing Thresholds (from Phase 1 benchmarks)
+## Phase 2 Learnings
 
-| Signal | → Local | → Cloud |
-|--------|---------|---------|
-| Token count | < 500 tokens | > 500 tokens |
-| Keyword | "what is", "list", "define" | "analyze", "compare", "explain in depth" |
-| Tools needed | No | Yes |
-| Default | ✅ Local | — |
-
-Bias is intentionally toward local — free, private, and at 144 tok/s it's fast enough for most queries.
-
----
-
-## Real Use Cases Being Built For
-
-- **Stock screening:** Piotroski F-Score, Altman Z-Score, debt ratios from 10-K filings
-- **Energy sector analysis:** Capex trends, regulatory filings, utility comparisons
-- **General research:** Anything where privacy matters or Claude costs add up
-
----
-
-## Phase 2 Learnings (updated as work progresses)
-
-*See [JOURNEY.md](../JOURNEY.md) for detailed notes.*
+See [JOURNEY.md](../JOURNEY.md) for the full unfiltered log — including the path resolution bugs, em-dash encoding error in WSL, DefeatBeta market cap extraction fix, and negative EV/EBIT ranking problem.

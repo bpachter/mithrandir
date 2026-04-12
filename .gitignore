@@ -5,3 +5,9 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+
+# QV pipeline — data is large (GB-scale) and machine-specific; not in repo
+phase2-tool-use/quant-value/data/
+phase2-tool-use/quant-value/.venv/
+phase2-tool-use/quant-value/logs/
+phase2-tool-use/quant-value/src/data/

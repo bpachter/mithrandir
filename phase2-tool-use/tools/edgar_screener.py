@@ -5,14 +5,17 @@ Queries the QuantitativeValue processed datasets to answer financial and
 investment questions about public companies.
 
 This tool does NOT re-implement the EDGAR pipeline — it queries the data
-that already exists in the QuantitativeValue project. Refreshing that data
-is a separate operation handled by refresh_data().
+that the QV pipeline already processed. Refreshing that data is a separate
+operation handled by refresh_data() (Enkidu's /refresh command).
 
-Data sources (all from QuantitativeValue/data/processed/):
-    quantitative_value_portfolio.csv — 1,295 screened stocks with full metrics
-    metrics.csv                      — 186K rows of computed financial ratios
-    companies.csv                    — 9,689 companies universe (ticker/CIK mapping)
-    franchise_power_metrics.csv      — 8-year quality scores
+Data sources (all from quant-value/data/processed/ or QV_PATH/data/processed/):
+    quantitative_value_portfolio.csv — screened stocks with full QV metrics
+    metrics.csv                      — 181K+ rows of computed financial ratios
+    companies.csv                    — 9,867 companies universe (ticker/CIK mapping)
+
+Path resolution (in priority order):
+    1. QV_PATH env var in .env  → useful when data lives in a separate project
+    2. phase2-tool-use/quant-value/  → bundled copy inside the Enkidu repo (default)
 
 Pattern (same as all Enkidu tools):
     1. Python fetches/filters real data
@@ -20,8 +23,8 @@ Pattern (same as all Enkidu tools):
     3. LLM interprets and explains — it never touches the data directly
 
 Requires:
-    - QV_PATH set in .env pointing to your QuantitativeValue project root
     - pandas (pip install pandas)
+    - scipy (for QV screening pipeline)
 """
 
 import os
@@ -39,13 +42,36 @@ load_dotenv()
 
 # --- Path resolution ---
 
+# Bundled QV source tree lives alongside this file in the Enkidu repo:
+#   phase2-tool-use/quant-value/   ← src/, config/, docs/ are in git
+#   phase2-tool-use/quant-value/data/  ← data is NOT in git (gitignored)
+#
+# QV_PATH in .env overrides this — useful when data lives elsewhere
+# (e.g. Ben's existing QuantitativeValue project at C:\Users\benpa\QuantitativeValue)
+
+_BUNDLED_QV = Path(__file__).parent.parent / "quant-value"
+
+
 def get_qv_path() -> Optional[Path]:
-    """Get the QuantitativeValue project path from environment."""
+    """
+    Resolve the QuantitativeValue project root.
+    Priority: QV_PATH env var → bundled quant-value/ directory.
+    """
     raw = os.getenv("QV_PATH")
-    if not raw:
-        return None
-    p = Path(raw)
-    return p if p.exists() else None
+    if raw:
+        p = Path(raw)
+        if p.exists():
+            return p
+    # Fall back to the bundled copy inside the Enkidu repo
+    if _BUNDLED_QV.exists():
+        return _BUNDLED_QV
+    return None
+
+
+def get_src_path() -> Optional[Path]:
+    """Return the QV Python source directory (where run_all.py lives)."""
+    qv = get_qv_path()
+    return qv / "src" if qv else None
 
 
 def get_processed_path() -> Optional[Path]:
@@ -183,6 +209,12 @@ def get_ticker_summary(ticker: str) -> Optional[dict]:
         df = load_metrics()
         if df is None:
             return None
+        # metrics.csv has cik but no ticker — join with companies to enable ticker lookup
+        if "ticker" not in df.columns:
+            companies = load_companies()
+            if companies is not None:
+                comp_dedup = companies.drop_duplicates(subset="cik", keep="first")[["cik", "ticker"]]
+                df = df.merge(comp_dedup, on="cik", how="left")
         # metrics has many rows per company — take the most recent annual period
         company_rows = df[df["ticker"].str.upper() == ticker]
         if company_rows.empty:
@@ -455,7 +487,7 @@ def refresh_data(force_redownload: bool = False, dry_run: bool = False) -> dict:
     """
     qv = get_qv_path()
     if not qv:
-        return {"status": "error", "message": "QV_PATH not set in .env"}
+        return {"status": "error", "message": "QV path not found — set QV_PATH in .env or ensure phase2-tool-use/quant-value/ exists"}
 
     estimate = estimate_refresh_time(force_redownload)
 
@@ -483,16 +515,21 @@ def refresh_data(force_redownload: bool = False, dry_run: bool = False) -> dict:
             for csv in processed.glob("*.csv"):
                 csv.unlink()
 
-    # Run the pipeline
-    run_all = qv / "src" / "run_all.py"
+    # Resolve script locations — prefer get_src_path() which handles bundled vs external
+    src = get_src_path()
+    if src is None:
+        return {"status": "error", "message": "QV source directory not found"}
+
+    run_all = src / "run_all.py"
     if not run_all.exists():
         return {"status": "error", "message": f"run_all.py not found at {run_all}"}
 
-    # Use the QuantitativeValue project's own venv if it exists — it has edgartools and its deps
+    # Use the QV project's own venv if present (has edgartools + heavy deps)
+    # Check both the external project root and the bundled location
     qv_venv_python = qv / ".venv" / "Scripts" / "python.exe"
     python_exe = str(qv_venv_python) if qv_venv_python.exists() else sys.executable
 
-    src_dir = str(qv / "src")
+    src_dir = str(src)
     env = os.environ.copy()
     env["PYTHONPATH"] = src_dir + os.pathsep + env.get("PYTHONPATH", "")
     start = time.time()
@@ -516,7 +553,7 @@ def refresh_data(force_redownload: bool = False, dry_run: bool = False) -> dict:
         return result
 
     # Step 2: QV screening + market data (quantitative_value.py → saves portfolio CSV)
-    qv_script = qv / "src" / "quantitative_value.py"
+    qv_script = src / "quantitative_value.py"
     if qv_script.exists():
         try:
             proc2 = subprocess.run(

@@ -1,0 +1,19 @@
+# QV pipeline dependencies
+# Install into a dedicated venv inside this directory:
+#   python -m venv .venv
+#   .venv/Scripts/pip install -r requirements.txt
+
+# Core data pipeline
+edgartools>=2.20.0
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Excel export
+openpyxl>=3.1.0
+
+# Market data (fallback only — DefeatBeta is primary via WSL)
+yfinance>=0.2.0
+
+# HTTP + utilities
+requests>=2.31.0

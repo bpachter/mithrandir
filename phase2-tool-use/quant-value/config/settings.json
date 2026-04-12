@@ -1,0 +1,47 @@
+{
+  "data_sources": {
+    "edgar": {
+      "user_agent": "Benjamin Pachter ben.pachter@bellsouth.net",
+      "cache_enabled": true,
+      "cache_dir": "data/raw/companyfacts"
+    }
+  },
+  "universe": {
+    "mode": "filtered_sec",
+    "filters": {
+      "exclude_otc": false,
+      "min_ticker_length": 1,
+      "max_ticker_length": 10
+    },
+    "batch_size": 50,
+    "test_mode": false,
+    "test_batch_size": 20
+  },
+  "rate_limiting": {
+    "requests_per_second": 8,
+    "batch_delay_seconds": 5,
+    "retry_attempts": 3,
+    "retry_delay_seconds": 10
+  },
+  "data_extraction": {
+    "annual_periods": {
+      "forms": ["10-K", "20-F"],
+      "fiscal_period": "FY",
+      "years_history": 2
+    },
+    "quarterly_periods": {
+      "forms": ["10-Q"],
+      "fiscal_periods": ["Q1", "Q2", "Q3"],
+      "quarters_history": 32
+    }
+  },
+  "output": {
+    "fundamentals_file": "data/processed/fundamentals.csv",
+    "metrics_file": "data/processed/metrics.csv",
+    "companies_file": "data/processed/companies.csv"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}

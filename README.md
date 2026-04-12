@@ -46,12 +46,10 @@ An LLM (Large Language Model) is a trained neural network — billions of mathem
 |-----------|---------|-------------|
 | GPU | NVIDIA GPU, 8GB VRAM | NVIDIA GPU, 20GB+ VRAM |
 | RAM | 16GB | 32GB+ |
-| Storage | 50GB free | 100GB+ free (models are large) |
+| Storage | 50GB free | 100GB+ free (models + EDGAR data are large) |
 | OS | Windows 10/11 or Linux | Windows 11 or Ubuntu |
 
 > **VRAM is the main constraint.** The model you can run depends entirely on how much VRAM your GPU has. See the [Phase 1 model table](./phase1-local-inference/README.md) to pick the right size for your hardware. This build uses an RTX 4090 (24GB), which runs the full Gemma 4 26B model. A GPU with 8GB VRAM can still run the smaller Gemma 4 e4b variant.
-
-> **AMD GPU note:** AMD GPU support via ROCm is possible but not covered in this guide. NVIDIA is strongly recommended for CUDA compatibility.
 
 ### Software
 
@@ -62,8 +60,9 @@ Everything below is free and open source.
 | Python 3.11+ | Running scripts and orchestration logic | [python.org](https://www.python.org) or [Anaconda](https://www.anaconda.com) |
 | Git | Version control | [git-scm.com](https://git-scm.com) |
 | Docker Desktop | Runs Ollama and Open WebUI in isolated containers | [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) |
-| WSL2 *(Windows only)* | Linux kernel backend that Docker requires on Windows | Built into Windows 10/11 — run `wsl --install` in PowerShell as admin |
+| WSL2 *(Windows only)* | Linux kernel backend that Docker and DefeatBeta require on Windows | Built into Windows 10/11 — run `wsl --install` in PowerShell as admin |
 | NVIDIA GPU drivers | Enables CUDA so the GPU can run inference | [nvidia.com/drivers](https://www.nvidia.com/Download/index.aspx) — update to latest |
+| OpenRGB *(optional)* | RGB lighting effects during inference | [openrgb.org](https://openrgb.org) — enable SDK Server on port 6742 |
 
 ### Accounts
 
@@ -83,23 +82,27 @@ Everything below is free and open source.
 
 ---
 
-## Architecture (Target State)
+## Architecture (Current State)
 
 ```
 User query
     ↓
-Routing logic (Python)
-    ├── Simple / local → Gemma 4 26B via Ollama (CUDA, local GPU)
-    └── Complex / fallback → Claude API (Anthropic)
-                ↓
-        Tool pipeline (optional)
-        ├── SEC Edgar screener
-        ├── Web search
-        └── Custom tools
-                ↓
-        Response + memory storage
-        ├── ChromaDB (vector, semantic search)
-        └── SQLite (structured history)
+enkidu.py REPL
+    ↓
+Routing logic — LOCAL (Gemma) or CLOUD (Claude)?
+    ↓
+Tool pipeline (query-triggered, optional)
+    ├── system_info    → GPU/CPU/RAM stats via nvidia-smi + psutil
+    ├── edgar_screener → SEC EDGAR financials + QV screened portfolio
+    └── (more tools in future phases)
+    ↓
+Local: Gemma 4 26B via Ollama (CUDA, RTX 4090, ~144 tok/s)
+   or
+Cloud: Claude claude-opus-4-6 via Anthropic API
+    ↓
+Response streamed to terminal
+    ↓
+RGB keyboard animation while local GPU is running (OpenRGB)
 ```
 
 ---
@@ -109,7 +112,7 @@ Routing logic (Python)
 | Phase | Goal | Status |
 |-------|------|--------|
 | [Phase 1](./phase1-local-inference/) | Local inference — Gemma 4 26B via Ollama + Open WebUI | ✅ Complete |
-| [Phase 2](./phase2-tool-use/) | Tool use + routing logic (local vs Claude) | 🔄 In Progress |
+| [Phase 2](./phase2-tool-use/) | Tool use + routing + EDGAR financial screener | ✅ Complete |
 | [Phase 3](./phase3-agents/) | Agentic orchestration via Discord/CLI | ⬜ Not Started |
 | [Phase 4](./phase4-memory/) | Persistent memory via ChromaDB + SQLite | ⬜ Not Started |
 | Phase 5 | Voice interface (wake word → STT → TTS) | ⬜ Not Started |
@@ -125,10 +128,11 @@ Routing logic (Python)
 | Container runtime | Docker Desktop + WSL2 | Reproducible setup, GPU passthrough works well on Windows |
 | Chat UI | [Open WebUI](https://github.com/open-webui/open-webui) | Browser-based, connects to Ollama out of the box |
 | Cloud fallback | Anthropic Claude API | Best reasoning quality, used selectively |
-| Vector memory | ChromaDB + nomic-embed-text | Local embeddings, no cloud required |
-| Conversation history | SQLite | Simple, zero infrastructure |
-| Orchestration | TBD (Phase 3) | Evaluating options |
-| Voice (optional) | openwakeword + faster-whisper + Kokoro TTS | All local, all free |
+| Financial data | SEC EDGAR + DefeatBeta (via WSL) | Free, comprehensive, no API key required |
+| RGB lighting | OpenRGB SDK | Visual indicator when local GPU is running |
+| Vector memory | ChromaDB + nomic-embed-text *(Phase 4)* | Local embeddings, no cloud required |
+| Conversation history | SQLite *(Phase 4)* | Simple, zero infrastructure |
+| Voice *(Phase 5)* | openwakeword + faster-whisper + Kokoro TTS | All local, all free |
 
 ---
 
@@ -151,11 +155,11 @@ cd enkidu
 pip install -r requirements.txt
 ```
 
-### 4. Configure your API key
+### 4. Configure your environment
 
 ```bash
 cp .env.example .env
-# Open .env and add your ANTHROPIC_API_KEY
+# Open .env and fill in your values (see .env.example for all options)
 ```
 
 ### 5. Verify Claude API works (optional)
@@ -168,21 +172,91 @@ python test_claude.py  # Should print: Enkidu lives
 
 Follow the **[Phase 1 guide](./phase1-local-inference/README.md)** to get Ollama and Gemma running on your GPU.
 
+### 7. Run Enkidu
+
+```bash
+python enkidu.py
+```
+
+Commands during the session:
+- `/local` — force next query to local Gemma
+- `/cloud` — force next query to Claude API
+- `/stats` — show session token usage
+- `/refresh` — re-download EDGAR data and regenerate the QV screened portfolio
+- `/exit` — quit
+
+---
+
+## EDGAR Financial Screener (Phase 2 Tool)
+
+Enkidu includes a quantitative value investment screener built directly into the tool pipeline. When you ask about stocks or financial data, it automatically:
+
+1. Detects the query is financial (keyword match or uppercase ticker like `AAPL`)
+2. Fetches the relevant data from the local EDGAR dataset
+3. Injects it as `[EDGAR CONTEXT]` into the prompt
+4. Routes to Gemma or Claude to interpret and explain
+
+**What it knows:**
+- 360 stocks passing the full QV screen (positive EBIT, quality ≥ 50th percentile, value composite ≤ 30th percentile)
+- 181K+ rows of financial metrics for 9,867 companies (full fallback universe)
+- All data sourced from SEC EDGAR filings — free, no API key required
+
+**Example queries:**
+```
+> what are the top 10 most undervalued stocks right now?
+> how is NUE performing?
+> compare AMPY and XYF on value metrics
+> what is DUK's free cash flow?
+```
+
+**Refreshing the data** (quarterly):
+```
+> /refresh
+```
+This re-downloads EDGAR filings for ~9,867 companies and regenerates the screened portfolio. Takes ~2 hours for the EDGAR fetch + ~20 minutes for the QV screen with fresh market prices.
+
+**Setup:** The QV pipeline lives at `phase2-tool-use/quant-value/`. It needs its own Python environment with heavier dependencies (edgartools, scipy):
+```bash
+cd phase2-tool-use/quant-value
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt
+```
+Data is stored outside the repo (GB-scale). Set `QV_PATH` in `.env` to point to an existing data directory, or let the pipeline create `phase2-tool-use/quant-value/data/` on first run.
+
 ---
 
 ## Repo Structure
 
 ```
 enkidu/
-├── README.md                    # You are here
-├── JOURNEY.md                   # Running log of what was built, learned, and broken
-├── .env.example                 # Secret template — copy to .env and fill in
-├── requirements.txt             # Python dependencies
-├── test_claude.py               # Phase 0: Claude API proof of concept
-├── phase1-local-inference/      # Docker + Ollama + Open WebUI
-├── phase2-tool-use/             # Routing logic + tool integrations
-├── phase3-agents/               # Agentic orchestration
-└── phase4-memory/               # ChromaDB + SQLite memory layer
+├── README.md                         # You are here
+├── JOURNEY.md                        # Running log of what was built and broken
+├── .env.example                      # Secret template — copy to .env and fill in
+├── requirements.txt                  # Core Python dependencies
+├── enkidu.py                         # Main entry point — run this
+├── test_claude.py                    # Phase 0: Claude API proof of concept
+│
+├── phase1-local-inference/           # Docker + Ollama + Open WebUI setup
+│   ├── README.md
+│   └── docker-compose.yml
+│
+├── phase2-tool-use/                  # Routing + tool integrations
+│   ├── README.md
+│   ├── router.py                     # LOCAL vs CLOUD routing logic
+│   ├── tools/
+│   │   ├── system_info.py            # GPU/CPU/RAM context tool
+│   │   ├── edgar_screener.py         # EDGAR financial data tool
+│   │   └── lighting.py               # RGB keyboard animation (OpenRGB)
+│   └── quant-value/                  # Quantitative Value pipeline (bundled)
+│       ├── README.md
+│       ├── requirements.txt          # QV-specific heavy deps (edgartools, scipy)
+│       ├── src/                      # Python pipeline source
+│       ├── config/                   # Pipeline settings + ticker universe
+│       ├── docs/                     # QV methodology documentation
+│       └── data/                     # NOT in git — GB-scale EDGAR + market data
+│
+├── phase3-agents/                    # Agentic orchestration (not started)
+└── phase4-memory/                    # ChromaDB + SQLite memory (not started)
 ```
 
 ---
