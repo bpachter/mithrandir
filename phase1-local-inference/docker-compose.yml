@@ -1,0 +1,43 @@
+services:
+
+  # Ollama — local LLM inference server
+  # Exposes an HTTP API on port 11434 that Open WebUI and Python scripts talk to
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      # Named volume persists downloaded models across container restarts
+      # Without this, every restart would require re-downloading ~18GB
+      - ollama:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  # Open WebUI — browser-based chat interface
+  # Access at http://localhost:3000 after startup
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    environment:
+      # In docker-compose, services reach each other by service name
+      # "ollama" here resolves to the ollama container above — no need for host.docker.internal
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - open-webui:/app/backend/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+# Named volumes — managed by Docker, persist on disk outside the containers
+volumes:
+  ollama:
+  open-webui:

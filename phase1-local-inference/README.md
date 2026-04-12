@@ -31,29 +31,29 @@ Get Gemma 4 26B running locally on your GPU. By the end of this phase you will b
 
 ---
 
-## Step 1 — Start Ollama
+## Step 1 — Start Ollama + Open WebUI
 
-Ollama manages local LLM downloads and serves them via a local HTTP API.
+This repo includes a `docker-compose.yml` that starts both Ollama and Open WebUI in one command. From this directory:
 
 ```bash
-docker run -d \
-  --gpus all \
-  -v ollama:/root/.ollama \
-  -p 11434:11434 \
-  --name ollama \
-  ollama/ollama
+docker compose up -d
 ```
 
-**What each flag does:**
-- `--gpus all` — passes your GPU through to the container (CUDA access)
-- `-v ollama:/root/.ollama` — persistent volume so downloaded models survive container restarts
-- `-p 11434:11434` — exposes Ollama's API on localhost:11434
-- `--name ollama` — names the container so you can reference it easily
+That's it. Docker will pull both images and start the containers.
 
-Verify it's running:
+> **Already have Ollama running from a manual `docker run`?**
+> You can keep using it — the compose file is just a cleaner way to manage both containers together for fresh setups. If Ollama is already up, skip to Step 2.
+
+**What docker-compose gives you over raw `docker run`:**
+- One command starts the entire stack
+- Services communicate by name (`open-webui` reaches `ollama` automatically — no `host.docker.internal` needed)
+- `docker compose down` cleanly stops everything
+- Easier to version control and share
+
+Verify both containers are running:
 ```bash
 docker ps
-# Should show the ollama container with status "Up"
+# Should show both "ollama" and "open-webui" with status "Up"
 ```
 
 ---
@@ -106,19 +106,35 @@ On first launch it will ask you to create an admin account — this is local onl
 
 ## Step 5 — Benchmark
 
-Once you can chat with Gemma locally, measure performance:
+Once you can chat with Gemma locally, run the benchmark script to measure performance and compare it against Claude API:
 
 ```bash
-python inference_bench.py
+# From the project root
+python phase1-local-inference/inference_bench.py
 ```
 
-*(See `inference_bench.py` in this folder — to be built once Ollama is running)*
+This sends the same prompt to both Gemma (local) and Claude (cloud) and prints a side-by-side table:
 
-Record:
-- Time to first token (latency)
-- Tokens per second (throughput)
-- GPU VRAM usage (`nvidia-smi` in a separate terminal)
-- Compare the same question to Claude API response time
+```
+Metric                   Local                    Cloud
+------------------------------------------------------------------------
+Model                    gemma4:26b               claude-opus-4-6
+Provider                 local (Ollama)           cloud (Anthropic API)
+Time to first token      2.341s                   0.823s
+Total time               18.204s                  12.451s
+Tokens generated         312                      287
+Tokens / second          42.1 tok/s               23.0 tok/s
+```
+
+> **First run will be slower** — Ollama needs to load the model weights into VRAM. Subsequent runs are faster.
+
+Also monitor VRAM usage while the benchmark runs (open a second terminal):
+```bash
+# In a separate terminal — watch GPU memory usage live
+watch -n 1 nvidia-smi
+# On Windows PowerShell:
+nvidia-smi
+```
 
 ---
 
