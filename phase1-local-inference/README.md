@@ -1,10 +1,25 @@
 # Phase 1 — Local Inference
 
-Get a 27B parameter LLM running locally on your GPU. By the end of this phase you will be able to chat with Gemma 3 27B in a browser, with no internet connection required and no API costs.
+Get Gemma 4 26B running locally on your GPU. By the end of this phase you will be able to chat with a state-of-the-art LLM in a browser with no internet connection required and no API costs.
 
 **Time to complete:** 1-2 hours (mostly waiting for downloads)
-**Disk space needed:** ~20GB free
-**VRAM needed:** 16GB+ (Gemma 3 27B Q4 uses ~16GB)
+**Disk space needed:** ~25GB free
+**VRAM needed:** 20GB+ (Gemma 4 26B uses ~18GB)
+
+> **Note on Gemma 4 26B architecture:** This is a Mixture of Experts (MoE) model. It has 25.2B total parameters but only activates 3.8B per inference — meaning it runs at roughly the speed of a 4B model while delivering the quality of a much larger one. 256K token context window.
+
+---
+
+## Gemma 4 Model Options
+
+| Tag | VRAM | Parameters | Notes |
+|-----|------|------------|-------|
+| `gemma4:e2b` | ~5GB | 2.3B active | Edge variant, audio support |
+| `gemma4:e4b` | ~7GB | 4.5B active | Edge variant, audio support |
+| `gemma4:26b` | ~18GB | 3.8B active (MoE) | **Recommended for 20GB+ GPUs** |
+| `gemma4:31b` | ~20GB | 30.7B dense | Most capable, needs 22GB+ VRAM |
+
+> **Warning:** `ollama pull gemma4` (no tag) pulls the `latest` tag which maps to `e4b` — the small 4.5B edge model. Always specify the tag explicitly.
 
 ---
 
@@ -43,12 +58,12 @@ docker ps
 
 ---
 
-## Step 2 — Pull Gemma 3 27B
+## Step 2 — Pull Gemma 4 26B
 
-This downloads the model weights (~16GB). Go make coffee.
+This downloads the model weights (~18GB). Go make coffee.
 
 ```bash
-docker exec ollama ollama pull gemma3:27b
+docker exec ollama ollama pull gemma4:26b
 ```
 
 To see what models are downloaded:
@@ -56,23 +71,12 @@ To see what models are downloaded:
 docker exec ollama ollama list
 ```
 
-**Why Gemma 3 27B?**
-- Strong reasoning for its size
-- Quantized to Q4 (~16GB), fits in a 24GB GPU with room to spare
-- Free and open source, good Ollama support
-
-**Smaller option if you have less VRAM:**
-```bash
-docker exec ollama ollama pull gemma3:12b   # ~8GB VRAM
-docker exec ollama ollama pull gemma3:4b    # ~4GB VRAM
-```
-
 ---
 
 ## Step 3 — Test Inference via CLI
 
 ```bash
-docker exec -it ollama ollama run gemma3:27b "What is CUDA and why does it matter for AI?"
+docker exec -it ollama ollama run gemma4:26b "What is CUDA and why does it matter for AI?"
 ```
 
 You should see a streamed response. Note the time — this is your baseline latency.
@@ -131,7 +135,7 @@ Record:
 
 **Model download stalls:**
 - Normal for large files to pause briefly — wait a few minutes
-- If stuck: `docker exec ollama ollama pull gemma3:27b` (it will resume)
+- If stuck: `docker exec ollama ollama pull gemma4:26b` (it will resume)
 
 ---
 
@@ -140,5 +144,6 @@ Record:
 - How Docker containers work (images, containers, volumes, port mapping)
 - How WSL2 enables Linux containers on Windows with GPU passthrough
 - How Ollama abstracts model loading and CUDA inference
+- What Mixture of Experts (MoE) architecture is and why it matters for inference speed
 - What model quantization is (Q4 = 4-bit, trades some quality for ~4x smaller size)
 - Practical VRAM constraints for running large models

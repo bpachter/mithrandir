@@ -17,7 +17,7 @@ This is not a polished product. It is a documented journey — including the mis
 - You want to run an LLM locally and actually understand what's happening under the hood
 - You care about privacy (no sending queries to third-party inference APIs)
 - You want to learn CUDA, Docker, agentic frameworks, and RAG from a practical project
-- You have a modern GPU (RTX 3080+ recommended, 16GB+ VRAM for 27B models)
+- You have a modern GPU (RTX 3080+ recommended, 20GB+ VRAM for Gemma 4 26B; 8GB works for smaller models)
 
 ---
 
@@ -27,7 +27,7 @@ This is not a polished product. It is a documented journey — including the mis
 User query
     ↓
 Routing logic (Python)
-    ├── Simple / local → Gemma 3 27B via Ollama (RTX 4090, CUDA)
+    ├── Simple / local → Gemma 4 26B via Ollama (RTX 4090, CUDA)
     └── Complex / fallback → Claude API (Anthropic)
                 ↓
         Tool pipeline (optional)
@@ -46,7 +46,7 @@ Routing logic (Python)
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| [Phase 1](./phase1-local-inference/) | Local inference — Gemma 3 27B via Ollama + Open WebUI | 🔄 In Progress |
+| [Phase 1](./phase1-local-inference/) | Local inference — Gemma 4 26B via Ollama + Open WebUI | 🔄 In Progress |
 | [Phase 2](./phase2-tool-use/) | Tool use + routing logic (local vs Claude) | ⬜ Not Started |
 | [Phase 3](./phase3-agents/) | Agentic orchestration via Discord/CLI | ⬜ Not Started |
 | [Phase 4](./phase4-memory/) | Persistent memory via ChromaDB + SQLite | ⬜ Not Started |
@@ -58,8 +58,8 @@ Routing logic (Python)
 
 | Layer | Technology | Why |
 |-------|-----------|-----|
-| Local inference | [Ollama](https://ollama.com) + Gemma 3 27B | Best perf/size ratio, runs in 16GB VRAM |
-| GPU | NVIDIA RTX 4090, CUDA 12.x | 24GB VRAM, fast enough for 27B Q4 |
+| Local inference | [Ollama](https://ollama.com) + Gemma 4 26B (MoE) | 256K context, only 3.8B params active per inference, 18GB VRAM |
+| GPU | NVIDIA RTX 4090, CUDA 12.x | 24GB VRAM, fits Gemma 4 26B with 6GB headroom |
 | Container runtime | Docker Desktop + WSL2 | Reproducible, GPU passthrough works well |
 | Chat UI | [Open WebUI](https://github.com/open-webui/open-webui) | Browser-based, connects to Ollama out of the box |
 | Cloud fallback | Anthropic Claude API | Best reasoning quality, selective use only |
@@ -75,7 +75,7 @@ Routing logic (Python)
 ### Prerequisites
 - Python 3.11+ (Anaconda recommended)
 - Docker Desktop with WSL2 backend
-- NVIDIA GPU with 16GB+ VRAM (for 27B models; 8GB works for smaller models)
+- NVIDIA GPU with 20GB+ VRAM for Gemma 4 26B (18GB model + overhead); 8GB works for the e4b variant
 - NVIDIA drivers updated (CUDA 12.x)
 - An [Anthropic API key](https://console.anthropic.com) (for Claude fallback only)
 
