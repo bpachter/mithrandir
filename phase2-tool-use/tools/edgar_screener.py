@@ -225,19 +225,47 @@ def get_context(query: str) -> str:
              f"Data last modified: {_get_data_age()}",
              f"Universe: {len(portfolio)} screened stocks\n"]
 
-    # Specific ticker lookup
-    for word in query.upper().split():
-        word = word.strip("?.,!").upper()
-        if 2 <= len(word) <= 5 and word.isalpha():
-            summary = get_ticker_summary(word)
-            if summary:
-                lines.append(f"Ticker: {word}")
-                for k, v in summary.items():
-                    if isinstance(v, float):
-                        lines.append(f"  {k}: {v:.4f}")
-                    else:
-                        lines.append(f"  {k}: {v}")
-                return "\n".join(lines)
+    # Specific ticker lookup — only treat a word as a ticker if it is:
+    #   (a) already uppercase in the original query (user deliberately wrote DUK), OR
+    #   (b) followed by 's (possessive: "DUK's earnings")
+    # This prevents common words like "cash", "top", "are" from being mis-detected.
+    import re
+
+    # English words that happen to match the ticker pattern (2-5 uppercase alpha chars)
+    # but are almost never intentional ticker references when someone types in ALL CAPS
+    _NOT_TICKERS = {
+        "ARE", "IS", "THE", "AND", "BUT", "FOR", "NOT", "CAN", "DID", "HAS",
+        "HAD", "HER", "HIM", "HIS", "HOW", "ITS", "LET", "MAY", "OUR", "OUT",
+        "OWN", "PUT", "SAY", "SHE", "TOO", "USE", "WAS", "WHO", "WHY", "YET",
+        "YOU", "ALL", "ANY", "FEW", "HIM", "ONE", "OWN", "TOP", "TWO", "YES",
+        "ALSO", "BEEN", "FROM", "HAVE", "JUST", "LIKE", "MORE", "MOST", "ONLY",
+        "OVER", "SAME", "SOME", "SUCH", "THAN", "THAT", "THEM", "THEN", "THEY",
+        "THIS", "VERY", "WELL", "WERE", "WHAT", "WHEN", "WITH", "WILL", "YOUR",
+    }
+
+    ticker_candidates = set()
+
+    # Pattern (a): uppercase-only words 2-5 chars, not at sentence start after punctuation
+    for word in query.split():
+        clean = word.strip("?.,!'\"()").rstrip("'s").rstrip("'s")
+        if 2 <= len(clean) <= 5 and clean.isupper() and clean.isalpha() and clean not in _NOT_TICKERS:
+            ticker_candidates.add(clean)
+
+    # Pattern (b): word immediately followed by 's or 's (possessive signals deliberate ticker)
+    possessives = re.findall(r"\b([A-Za-z]{2,5})['\u2019]s\b", query)
+    for p in possessives:
+        ticker_candidates.add(p.upper())
+
+    for candidate in ticker_candidates:
+        summary = get_ticker_summary(candidate)
+        if summary:
+            lines.append(f"Ticker: {candidate}")
+            for k, v in summary.items():
+                if isinstance(v, float):
+                    lines.append(f"  {k}: {v:.4f}")
+                else:
+                    lines.append(f"  {k}: {v}")
+            return "\n".join(lines)
 
     # Top stocks request
     if any(kw in query_lower for kw in ["top", "best", "rank", "highest", "screen"]):
@@ -255,7 +283,7 @@ def get_context(query: str) -> str:
     elif any(kw in query_lower for kw in ["cheap", "value", "low debt", "quality", "strong"]):
         filtered = filter_by_criteria(min_f_score=7, max_debt_to_equity=1.0, n=10)
         if filtered is not None:
-            lines.append("Stocks with F-Score ≥ 7 and Debt/Equity ≤ 1.0:")
+            lines.append("Stocks with F-Score >= 7 and Debt/Equity <= 1.0:")
             lines.append(format_dataframe(filtered))
 
     # General portfolio stats
@@ -426,8 +454,19 @@ TRIGGER_KEYWORDS = [
 
 def should_fetch(query: str) -> bool:
     """Returns True if the query is likely asking about financial/stock data."""
+    import re
     q = query.lower()
-    return any(kw in q for kw in TRIGGER_KEYWORDS)
+    if any(kw in q for kw in TRIGGER_KEYWORDS):
+        return True
+    # Also trigger if the query contains an uppercase ticker-like word (2-5 alpha chars)
+    # or a possessive like DUK's — so "how does DUK compare to peers" routes here
+    for word in query.split():
+        clean = word.strip("?.,!'\"()")
+        if 2 <= len(clean) <= 5 and clean.isupper() and clean.isalpha():
+            return True
+    if re.search(r"\b[A-Za-z]{2,5}['\u2019]s\b", query):
+        return True
+    return False
 
 
 # --- CLI test ---
