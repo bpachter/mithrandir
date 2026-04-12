@@ -73,6 +73,12 @@ The goal of this log is to give future builders an honest picture of the process
 - `--gpus all` passes the RTX 4090 through to the container via the NVIDIA Container Toolkit (bundled with Docker Desktop)
 - Gemma 4 26B is a **Mixture of Experts (MoE)** model: 25.2B total parameters, only 3.8B active per inference. Runs fast like a 4B model, quality of a much larger one. 256K token context window.
 - Gemma 4 26B uses ~18GB VRAM — more than the ~16GB originally estimated for Gemma 3 27B Q4. Still fits in the 4090's 24GB with ~6GB headroom.
+- Docker Compose is cleaner than raw `docker run` for multi-container setups — services communicate by name, one command starts the whole stack. The `docker-compose.yml` in `phase1-local-inference/` replaces two separate `docker run` commands.
+- Ollama's streaming API returns NDJSON — each line is a JSON object. The final chunk (`done: true`) contains built-in timing stats (nanoseconds) including `eval_count` (tokens generated) and `eval_duration`, making it easy to calculate tokens/sec without manual measurement.
+
+### Files created
+- `phase1-local-inference/docker-compose.yml` — starts Ollama + Open WebUI together
+- `phase1-local-inference/inference_bench.py` — benchmarks local vs Claude API on the same prompt
 
 ---
 
