@@ -2,11 +2,39 @@
 
 A public learning journal and working codebase for building a privacy-first, locally-hosted AI assistant on consumer hardware.
 
-**Goal:** Run a capable LLM locally at zero recurring cost, with Claude API as a fallback for complex reasoning only.
+**Goal:** Run open-source LLM inference locally on your own GPU for private, zero-cost queries — with Claude API as a fallback for tasks requiring more powerful reasoning.
 
 **Required Vibe Check:** https://www.youtube.com/watch?v=vWGQBQU8Vr0
 
 This is not a polished product. It is a documented journey — including the mistakes. If you want to build something similar, start here.
+
+---
+
+## Gemma vs Claude — What's the Difference?
+
+This is the most important concept to understand before diving in.
+
+**You are not building an LLM. You are building a system that runs one.**
+
+An LLM (Large Language Model) is a trained neural network — billions of mathematical parameters that encode language knowledge. Someone else trains it. You run it.
+
+| | Gemma 4 | Claude (Anthropic) |
+|---|---|---|
+| **Made by** | Google DeepMind | Anthropic |
+| **Type** | Open-weight model — Google releases the weights publicly | Proprietary model — weights are never released |
+| **Where it runs** | On your machine, on your GPU | On Anthropic's servers |
+| **How you access it** | Download the weights, run locally via Ollama | HTTP API call to api.anthropic.com |
+| **Cost** | Free — you pay only for electricity | Pay per token (input + output) |
+| **Privacy** | Your queries never leave your machine | Queries are sent to Anthropic's servers |
+| **Quality** | Very capable, especially for its size | State-of-the-art reasoning and instruction following |
+| **Speed** | Depends on your GPU (this build: ~40-80 tok/s) | Depends on Anthropic's infrastructure + your network |
+| **Control** | Full — you choose the model, version, and parameters | Limited — you call their API as-is |
+
+**The analogy:** Gemma is like a recipe book you own — you cook the food yourself in your kitchen. Claude is like calling a restaurant — they do the cooking, you pay per meal, and you don't see the kitchen.
+
+**Why use both?** Gemma handles the everyday queries cheaply and privately. Claude steps in when you need higher reasoning quality — complex analysis, nuanced writing, tasks where getting it right matters more than cost.
+
+**What Enkidu adds on top:** routing logic, tool use, memory, and an interface. The LLMs are the engines. Enkidu is the car.
 
 ---
 
