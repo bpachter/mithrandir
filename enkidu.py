@@ -30,6 +30,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "phase2-tool-use"))
 from router import route, RoutingTier, RoutingDecision
 from tools.system_info import get_context as get_system_context, should_fetch as is_system_query
+from tools.edgar_screener import get_context as get_edgar_context, should_fetch as is_edgar_query
 
 load_dotenv()
 
@@ -187,7 +188,7 @@ def main():
     print(f"\n{CYAN}Enkidu{RESET} — local AI assistant")
     print(f"{GREY}Local model:  {OLLAMA_MODEL} via Ollama")
     print(f"Cloud model:  {CLAUDE_MODEL} via Anthropic API")
-    print(f"Commands:     /local  /cloud  /stats  /exit{RESET}\n")
+    print(f"Commands:     /local  /cloud  /stats  /refresh  /refresh --force  /exit{RESET}\n")
 
     while True:
         try:
@@ -215,6 +216,26 @@ def main():
         elif query == "/stats":
             session.display()
             continue
+        elif query.startswith("/refresh"):
+            from tools.edgar_screener import estimate_refresh_time, refresh_data
+            force = "--force" in query
+            est = estimate_refresh_time(force_redownload=force)
+            mode = "full re-download" if force else "reprocess cached data"
+            print(f"\n{GREY}Refresh mode: {mode}")
+            print(f"Cached JSON files: {est['cached_json_files']}")
+            print(f"Companies to fetch: {est['companies_to_fetch']}")
+            print("Stage estimates:")
+            for stage, t in est["stages"].items():
+                print(f"  {stage:<25} {t}")
+            print(f"  {'TOTAL':<25} {est['total']}{RESET}")
+            confirm = input(f"\n{CYAN}Start refresh? (y/n):{RESET} ").strip().lower()
+            if confirm == "y":
+                print(f"{GREY}Running pipeline — this will take a while...{RESET}\n")
+                result = refresh_data(force_redownload=force)
+                print(f"\n{GREY}Status: {result.get('status')} | Time: {result.get('elapsed', 'N/A')}{RESET}")
+            else:
+                print(f"{GREY}Refresh cancelled{RESET}")
+            continue
 
         # Route the query
         decision = route(query, force=force_tier)
@@ -229,6 +250,12 @@ def main():
             context = get_system_context()
             prompt = f"{context}\n\nUser question: {query}"
             print(f"{GREY}[TOOL] system_info fetched{RESET}\n")
+
+        # Tool: inject financial data if the query is about stocks or filings
+        elif is_edgar_query(query):
+            context = get_edgar_context(query)
+            prompt = f"{context}\n\nUser question: {query}"
+            print(f"{GREY}[TOOL] edgar_screener fetched{RESET}\n")
 
         # Run inference
         if decision.tier == RoutingTier.LOCAL:
