@@ -3,6 +3,7 @@
 A public learning journal and working codebase for building a privacy-first, locally-hosted AI assistant on consumer hardware.
 
 **Hardware used:** NVIDIA RTX 4090 (24GB VRAM), Windows 11, Alienware Aurora R15
+
 **Goal:** Run a capable LLM locally at zero recurring cost, with Claude API as a fallback for complex reasoning only.
 
 This is not a polished product. It is a documented journey — including the mistakes. If you want to build something similar, start here.
