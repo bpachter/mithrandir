@@ -425,11 +425,10 @@ def estimate_refresh_time(force_redownload: bool = False) -> dict:
             "edgar_fetch":        _fmt_time(fetch_seconds),
             "parse_fundamentals": _fmt_time(600),
             "compute_metrics":    _fmt_time(300),
-            "risk_screening":     _fmt_time(300),
-            "franchise_power":    _fmt_time(300),
+            "market_data_fetch":  "~40m (DefeatBeta ~3k tickers)",
             "qv_screening":       _fmt_time(300),
         },
-        "total": _fmt_time(fetch_seconds + 1800),
+        "total": _fmt_time(fetch_seconds + 1800 + 2700),  # +45min for market data
     }
     return estimates
 
@@ -493,24 +492,44 @@ def refresh_data(force_redownload: bool = False, dry_run: bool = False) -> dict:
     qv_venv_python = qv / ".venv" / "Scripts" / "python.exe"
     python_exe = str(qv_venv_python) if qv_venv_python.exists() else sys.executable
 
-    cmd = [python_exe, str(run_all)]
-    if force_redownload:
-        cmd.append("--refresh")
-
     src_dir = str(qv / "src")
     env = os.environ.copy()
     env["PYTHONPATH"] = src_dir + os.pathsep + env.get("PYTHONPATH", "")
     start = time.time()
+
+    # Step 1: EDGAR fetch + fundamentals + metrics (run_all.py)
+    cmd = [python_exe, str(run_all)]
+    if force_redownload:
+        cmd.append("--refresh")
+
     try:
         proc = subprocess.run(cmd, cwd=src_dir, env=env, capture_output=False, text=True)
-        elapsed = time.time() - start
-        result["status"] = "success" if proc.returncode == 0 else "failed"
-        result["elapsed"] = _fmt_time(int(elapsed))
-        result["returncode"] = proc.returncode
+        if proc.returncode != 0:
+            result["status"] = "failed"
+            result["elapsed"] = _fmt_time(int(time.time() - start))
+            result["returncode"] = proc.returncode
+            result["stage"] = "run_all"
+            return result
     except Exception as e:
         result["status"] = "error"
         result["message"] = str(e)
+        return result
 
+    # Step 2: QV screening + market data (quantitative_value.py → saves portfolio CSV)
+    qv_script = qv / "src" / "quantitative_value.py"
+    if qv_script.exists():
+        try:
+            proc2 = subprocess.run(
+                [python_exe, str(qv_script)],
+                cwd=src_dir, env=env, capture_output=False, text=True,
+            )
+            result["qv_returncode"] = proc2.returncode
+        except Exception as e:
+            result["qv_error"] = str(e)
+
+    elapsed = time.time() - start
+    result["status"] = "success"
+    result["elapsed"] = _fmt_time(int(elapsed))
     return result
 
 
