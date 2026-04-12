@@ -188,7 +188,7 @@ def main():
     print(f"\n{CYAN}Enkidu{RESET} — local AI assistant")
     print(f"{GREY}Local model:  {OLLAMA_MODEL} via Ollama")
     print(f"Cloud model:  {CLAUDE_MODEL} via Anthropic API")
-    print(f"Commands:     /local  /cloud  /stats  /refresh  /refresh --force  /exit{RESET}\n")
+    print(f"Commands:     /local  /cloud  /stats  /refresh  /exit{RESET}\n")
 
     while True:
         try:
@@ -216,13 +216,11 @@ def main():
         elif query == "/stats":
             session.display()
             continue
-        elif query.startswith("/refresh"):
+        elif query == "/refresh":
             from tools.edgar_screener import estimate_refresh_time, refresh_data
-            force = "--force" in query
-            est = estimate_refresh_time(force_redownload=force)
-            mode = "full re-download" if force else "reprocess cached data"
-            print(f"\n{GREY}Refresh mode: {mode}")
-            print(f"Cached JSON files: {est['cached_json_files']}")
+            est = estimate_refresh_time(force_redownload=True)
+            print(f"\n{GREY}Refresh: full re-download from SEC EDGAR")
+            print(f"Cached JSON files: {est['cached_json_files']} (will be wiped)")
             print(f"Companies to fetch: {est['companies_to_fetch']}")
             print("Stage estimates:")
             for stage, t in est["stages"].items():
@@ -231,7 +229,7 @@ def main():
             confirm = input(f"\n{CYAN}Start refresh? (y/n):{RESET} ").strip().lower()
             if confirm == "y":
                 print(f"{GREY}Running pipeline — this will take a while...{RESET}\n")
-                result = refresh_data(force_redownload=force)
+                result = refresh_data(force_redownload=True)
                 print(f"\n{GREY}Status: {result.get('status')} | Time: {result.get('elapsed', 'N/A')}{RESET}")
             else:
                 print(f"{GREY}Refresh cancelled{RESET}")
