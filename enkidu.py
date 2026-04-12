@@ -26,9 +26,10 @@ import time
 import requests
 from dotenv import load_dotenv
 
-# Pull router from phase2-tool-use/ — sys.path trick handles the hyphen in the folder name
+# Pull modules from phase2-tool-use/ — sys.path trick handles the hyphen in the folder name
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "phase2-tool-use"))
 from router import route, RoutingTier, RoutingDecision
+from tools.system_info import get_context as get_system_context, should_fetch as is_system_query
 
 load_dotenv()
 
@@ -222,11 +223,18 @@ def main():
         tier_label = f"{GREEN}LOCAL{RESET}" if decision.tier == RoutingTier.LOCAL else f"{YELLOW}CLOUD{RESET}"
         print(f"{GREY}[{tier_label}{GREY}] {decision.reason} (~{decision.estimated_tokens} tokens){RESET}\n")
 
+        # Tool: inject real-time system context if the query is hardware-related
+        prompt = query
+        if is_system_query(query):
+            context = get_system_context()
+            prompt = f"{context}\n\nUser question: {query}"
+            print(f"{GREY}[TOOL] system_info fetched{RESET}\n")
+
         # Run inference
         if decision.tier == RoutingTier.LOCAL:
-            stats = stream_ollama(query)
+            stats = stream_ollama(prompt)
         else:
-            stats = stream_claude(query)
+            stats = stream_claude(prompt)
 
         # Print stats footer
         if stats:
