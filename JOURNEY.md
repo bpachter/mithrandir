@@ -237,13 +237,13 @@ The market data fetch (DefeatBeta for 3,000 tickers, ~20 min) ran every single s
 
 ## Phase 3 — Agentic Orchestration
 
-**Date:** April 12, 2026 | **Status:** 🔄 Planned
+**Date:** April 12–13, 2026 | **Status:** ✅ Complete
 
 ### Architecture Decision: Telegram over iMessage
 
 The original Phase 3 plan referenced Discord. The updated direction is a **Telegram bot** accessible from iPhone.
 
-iMessage was considered — it would be ideal for native iPhone integration. The problem: iMessage has no official API. The only working solutions (BlueBubbles, AirMessage) require a Mac running as a relay server 24/7. No Mac available. Telegram is the correct call: first-class iPhone app, official Bot API, Python SDK (`python-telegram-bot`), and the de facto standard for self-hosted personal bots.
+iMessage was considered — it would be ideal for native iPhone integration. The problem: iMessage has no official API. The only working solutions (BlueBubbles, AirMessage) require a Mac running as a relay server 24/7. No Mac available. Telegram is the correct call: first-class iPhone app, official Bot API, Python SDK (`pyTelegramBotAPI`), and the de facto standard for self-hosted personal bots.
 
 ### Phase 3 Vision (co-authored with Gemma 4)
 
@@ -251,29 +251,124 @@ At the end of Phase 2, Gemma 4 was asked to help design Phase 3 with guidance on
 
 1. **Agentic Infrastructure** — ReAct pattern (Reason → Act → Observe loop), Pydantic-driven output validation, self-correction on `ValidationError`
 2. **Quantitative Engine** — Python sandbox tool for arithmetic (pandas/numpy/scipy inside a subprocess), structured EDGAR query interface
-3. **Self-Evolving Layer** — HMM regime detection (identify hidden market states from observable signals), RL strategy optimization (discover optimal screening parameters via reward-based policy learning)
-4. **Grand Synthesis** — closed-loop system where LLM provides reasoning, HMM provides market context, Python sandbox provides mathematical truth, and RL evolves the strategy
+3. **Self-Evolving Layer** — HMM regime detection (identify hidden market states from observable signals), RL strategy optimization (deferred to Phase 4/5 — needs backtesting infrastructure first)
+4. **Grand Synthesis** — closed-loop system where LLM provides reasoning, HMM provides market context, Python sandbox provides mathematical truth
 
-The document was notable for being coherent and technically grounded, not just impressive-sounding. The ReAct, Pydantic, and Python sandbox components map directly to real, implementable patterns. HMM and RL are more ambitious but also real (hmmlearn, stable-baselines3).
+### What Was Built
 
-### What Changes From Phase 2
+**ReAct agent loop (`phase3-agents/enkidu_agent.py`)**
+- Full Reason → Act → Observe loop replacing single-shot prompt injection
+- Pydantic `AgentStep` schema validates every LLM output — unknown tool names, malformed JSON, and missing fields are caught and fed back for self-correction
+- JSON fence stripping + regex extraction handles LLMs that wrap output in markdown blocks
+- `max_tokens` set to 2048 — critical: 1024 was too low and caused truncated JSON that burned iterations on self-correction instead of actual reasoning
+- Best-effort fallback on iteration limit: rather than hard-failing, the agent makes one final call to summarize what it already observed
+- CapEx derivation hint in edgar_screener description: `CapEx = cfo - fcf` (no direct CapEx field in EDGAR data)
 
-Phase 2 is a **pipeline**: keyword detection → inject context → single LLM call → response.
+**Tool registry (`phase3-agents/tools/registry.py`)**
+- Registers tools by name with description + parameter schema injected into the system prompt
+- Phase 2 tools loaded by absolute file path to avoid naming collision between `phase3-agents/tools/` and `phase2-tool-use/tools/`
 
-Phase 3 is an **agent loop**: the LLM decides what to do next, calls a tool, observes the result, reasons again, and either calls another tool or returns the final answer. Multi-step. Self-correcting. The difference is whether the LLM is a language engine or a reasoning agent.
+**Python sandbox (`phase3-agents/tools/python_sandbox.py`)**
+- Subprocess-based Python execution with 10-second timeout
+- Gives the agent exact arithmetic: CAGR, blended metrics, ratio comparisons
 
-### Planned Build Order
+**Telegram bot (`phase3-agents/telegram_interface.py`)**
+- Long-polling via pyTelegramBotAPI (avoids anyio/Windows TLS incompatibility in python-telegram-bot v21+)
+- Single authorized user (TELEGRAM_ALLOWED_USER_ID in .env)
+- Live step updates: placeholder message edited in-place as agent calls tools
+- Commands: `/start`, `/help`, `/stats`, `/refresh`
+- `interval=3` on infinity_polling prevents tight reconnect loops that trigger Telegram rate-limiting
+- Custom `_TLS12Adapter` forces TLS 1.2 to work around Windows TLS 1.3 handshake resets (WinError 10054)
 
-| Step | Component | Description |
-|------|-----------|-------------|
-| 3.1 | Telegram bot skeleton | Messages reach Enkidu; responses come back to iPhone |
-| 3.2 | ReAct loop (basic) | Agent calls one tool per query |
-| 3.3 | Pydantic validation | Schema-validated tool calls; self-correction on malformed output |
-| 3.4 | Python sandbox | Agent executes pandas/numpy code for arithmetic |
-| 3.5 | Multi-step chains | Agent calls 2+ tools in sequence |
-| 3.6 | Session memory | Agent remembers prior messages in the conversation |
-| 3.7 | HMM regime detection | Market-regime-aware screening |
-| 3.8 | RL optimization | Self-optimizing screening parameter discovery |
+**HMM regime detector (`phase3-agents/tools/regime_detector.py`)**
+- GaussianHMM (hmmlearn) trained on 10 years of SPY daily data via yfinance
+- 3 features: weekly log return, 30-day rolling volatility, price / 200-day MA ratio
+- Features StandardScaler-normalized before fitting (required for numerical stability with `diag` covariance)
+- 4 hidden states labeled by mean return ranking: Expansion, Recovery, Contraction, Crisis
+- Model cached to `regime_model.pkl` — reloads in milliseconds; auto-retrains after 7 days
+- `get_regime_context()` injected into every system prompt — Enkidu is always regime-aware
+- Screening guidance per regime: Crisis → "favor cash-rich, low-debt names"; Contraction → "tighten value filters, prioritize high F-Score"
+
+**Windows startup automation**
+- OpenRGB scheduled task: launches with `--server --startminimized` at logon — no more manual launch
+- Enkidu Telegram bot scheduled task: launches `telegram_interface.py` at logon with 3 auto-restarts
+
+**RGB lighting fix**
+- `inference_stop()` now restores soft blue `RGBColor(0, 60, 180)` instead of black — lights stay on as idle indicator
+
+### What Broke
+
+**`anthropic` and `pyTelegramBotAPI` not installed in system Python.**
+Both packages were missing from the Python environment running `telegram_interface.py`. Added both to `phase3-agents/requirements.txt`.
+
+**WinError 10054 — TLS handshake reset on startup.**
+pyTelegramBotAPI's initial `get_me()` call got reset with `ConnectionResetError: [WinError 10054]`. This is a Windows Schannel TLS 1.3 issue. `session.verify = False` fixes certificate errors but not TCP resets. Fix: custom `_TLS12Adapter(HTTPAdapter)` that forces TLS 1.2 via `create_urllib3_context(ssl_minimum_version=TLSv1_2)`.
+
+**409 Conflict — multiple bot instances.**
+Force-killing the Python process left Telegram in a `getUpdates` long-polling state. The next instance hit 409: "Conflict: terminated by other getUpdates request." Fix: kill cleanly and wait ~30 seconds before restarting.
+
+**HMM convergence failure with `covariance_type="full"`.**
+Training failed with `LinAlgError: 3-th leading minor not positive definite`. Full covariance matrices are numerically unstable when features have different scales. Fix: switch to `covariance_type="diag"` + `StandardScaler` normalization. Also: delete stale `.pkl` from failed runs before retrying.
+
+**Agent iteration limit hit on multi-tool queries.**
+First live query hit MAX_ITERATIONS=8 without completing. Causes: (1) `max_tokens=1024` too low — truncated JSON burned iterations, (2) no `CapEx = cfo - fcf` hint. Fix: raise to 2048, add derivation hint.
+
+### What Was Learned
+
+- **`max_tokens` matters for agentic loops.** Each iteration needs enough tokens to complete a full JSON object with reasoning + tool call. Use 2048+.
+- **Tool descriptions are prompt engineering.** The registry description is injected into the system prompt. Specific beats vague — "CapEx = cfo - fcf" produces correct tool use; "look up stocks" does not.
+- **Windows TLS is fragile.** Force TLS 1.2 via a custom `HTTPAdapter` for any service that resets TLS 1.3 connections. `verify=False` is not enough.
+- **HMM numerical stability requires scaling.** Always normalize before fitting, and use `diag` covariance unless you have a specific reason for `full`.
+- **Scheduled tasks beat manual startup.** Windows Task Scheduler with `RestartCount=3` means the bot is always running.
+- **Don't hammer Telegram with reconnects.** `infinity_polling` with no interval retries instantly; after ~5 rapid reconnects Telegram starts rate-limiting. `interval=3` fixes this.
+
+### Build Order (Actual)
+
+| Step | Component | Status |
+|------|-----------|--------|
+| 3.1 | Telegram bot skeleton | ✅ Done |
+| 3.2 | ReAct loop | ✅ Done |
+| 3.3 | Pydantic validation + self-correction | ✅ Done |
+| 3.4 | Python sandbox | ✅ Done |
+| 3.5 | Multi-step tool chains | ✅ Done — tested live |
+| 3.6 | Session memory (in-session) | ✅ Done — message history grows through session |
+| 3.7 | HMM regime detection | ✅ Done — injected into every system prompt |
+| 3.8 | RL optimization | ⏭ Deferred — needs backtesting infrastructure (Phase 4/5) |
+
+### Files Created
+
+- `phase3-agents/enkidu_agent.py` — ReAct loop core
+- `phase3-agents/telegram_interface.py` — Telegram bot + TLS fix
+- `phase3-agents/tools/registry.py` — tool registration + dispatch
+- `phase3-agents/tools/python_sandbox.py` — subprocess code execution
+- `phase3-agents/tools/regime_detector.py` — HMM market regime inference
+- `phase3-agents/requirements.txt` — pyTelegramBotAPI, pydantic, anthropic
+
+### Files Modified
+
+- `phase2-tool-use/tools/lighting.py` — `inference_stop()` restores soft blue instead of black
+
+---
+
+## Phase 4 — Persistent Memory + RAG
+
+**Date:** April 13, 2026 | **Status:** 🔄 In Progress
+
+### Vision
+
+Two complementary memory systems:
+
+1. **Conversation memory** — ChromaDB + SQLite so Enkidu remembers past conversations across sessions. Past context retrieved via semantic similarity and prepended to the system prompt.
+2. **Document + codebase RAG** — Index local documents (JOURNEY.md, research notes, financial model outputs, the Enkidu codebase itself) into ChromaDB so Enkidu can cite your own prior work. Inspired by Matthew Busel's approach of indexing 1.2M lines of code across 15 projects into a local vector DB using the same Gemma 4 + ChromaDB stack.
+
+### Stack
+
+| Component | Technology | Why |
+|-----------|-----------|-----|
+| Vector store | ChromaDB | Local, no server required, good Python SDK |
+| Embeddings | nomic-embed-text via Ollama | Local, free, 768-dim, strong retrieval quality |
+| Conversation history | SQLite | Zero infrastructure, fast, already on every machine |
+| RAG pipeline | Custom retriever + prompt injection | Same pattern as Phase 2 tool injection |
 
 ---
 

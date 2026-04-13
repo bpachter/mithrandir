@@ -51,7 +51,7 @@ _tools_path = os.path.join(os.path.dirname(__file__), "tools")
 if _tools_path not in sys.path:
     sys.path.insert(0, _tools_path)
 
-from registry import TOOLS, dispatch, tool_descriptions  # noqa: E402
+from registry import TOOLS, dispatch, tool_descriptions, get_regime  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Config
@@ -109,6 +109,9 @@ When you have enough information to answer the user:
 Available tools:
 {tools}
 
+Market context (injected automatically — do not call market_regime unless user asks for detail):
+{regime}
+
 Rules:
 - Output ONLY valid JSON. No markdown. No commentary outside the JSON.
 - Call tools when you need data you don't have. Do not guess numbers.
@@ -116,14 +119,28 @@ Rules:
 - Be specific — cite actual figures from tool results in your final answer.
 - If asked to compare two stocks, call edgar_screener for each one separately.
 - Use python_sandbox for any arithmetic (CAGR, blended metrics, ratios, etc.).
+- Let the market regime inform your screening commentary (e.g. tighten filters in Contraction/Crisis).
 - Maximum {max_iter} iterations. If you hit the limit, give your best answer with what you have.
 """
 
 
 def _build_system_prompt() -> str:
+    try:
+        regime_info = get_regime()
+        regime_block = (
+            f"Current market regime: {regime_info['regime']} "
+            f"(confidence: {regime_info['confidence']:.0%}, as of {regime_info['as_of']}). "
+            f"SPY weekly return: {regime_info['weekly_return']:+.2%}, "
+            f"30d volatility: {regime_info['volatility_30d']:.2%}, "
+            f"price vs 200MA: {regime_info['price_vs_200ma']:.3f}x."
+        )
+    except Exception:
+        regime_block = "Market regime: unavailable."
+
     return _SYSTEM_TEMPLATE.format(
         tools=tool_descriptions(),
         max_iter=MAX_ITERATIONS,
+        regime=regime_block,
     )
 
 
@@ -212,7 +229,7 @@ def run_agent(
         try:
             response = client.messages.create(
                 model=CLAUDE_MODEL,
-                max_tokens=1024,
+                max_tokens=2048,
                 system=system_prompt,
                 messages=messages,
             )
@@ -276,7 +293,28 @@ def run_agent(
                 ),
             })
 
-    # Reached MAX_ITERATIONS without a final answer
+    # Reached MAX_ITERATIONS — ask Claude to summarize what it has rather than hard-failing
+    try:
+        messages.append({
+            "role": "user",
+            "content": (
+                "You've reached the iteration limit. Based on everything you've observed so far, "
+                "give your best answer to the user's original question. "
+                "Output JSON with only 'thought' and 'final_answer' fields."
+            ),
+        })
+        response = client.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            messages=messages,
+        )
+        step, _ = _parse_step(response.content[0].text)
+        if step and step.final_answer:
+            return step.final_answer
+    except Exception:
+        pass
+
     return (
         "I reached my reasoning limit without completing an answer. "
         "Try rephrasing or breaking this into a simpler question."

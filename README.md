@@ -85,24 +85,24 @@ Everything below is free and open source.
 ## Architecture (Current State)
 
 ```
-User query
+iPhone (Telegram app)
     ↓
-enkidu.py REPL
+Telegram Bot API (long-polling)
     ↓
-Routing logic — LOCAL (Gemma) or CLOUD (Claude)?
+enkidu_agent.py — ReAct loop (Reason → Act → Observe)
     ↓
-Tool pipeline (query-triggered, optional)
-    ├── system_info    → GPU/CPU/RAM stats via nvidia-smi + psutil
-    ├── edgar_screener → SEC EDGAR financials + QV screened portfolio
-    └── (more tools in future phases)
+Tool dispatch
+    ├── edgar_screener  → SEC EDGAR financials + QV screened portfolio (360 stocks)
+    ├── python_sandbox  → subprocess code execution (pandas/numpy/scipy)
+    ├── system_info     → GPU/CPU/RAM stats via nvidia-smi + psutil
+    └── market_regime   → HMM regime detection (Expansion/Recovery/Contraction/Crisis)
     ↓
-Local: Gemma 4 26B via Ollama (CUDA, RTX 4090, ~144 tok/s)
-   or
-Cloud: Claude claude-opus-4-6 via Anthropic API
+Claude claude-sonnet-4-6 via Anthropic API (agentic loop)
     ↓
-Response streamed to terminal
+Response streamed back to Telegram
     ↓
-RGB keyboard animation while local GPU is running (OpenRGB)
+[System prompt always includes current HMM market regime]
+[RGB keyboard soft blue at idle; rainbow animation during local inference]
 ```
 
 ---
@@ -113,8 +113,8 @@ RGB keyboard animation while local GPU is running (OpenRGB)
 |-------|------|--------|
 | [Phase 1](./phase1-local-inference/) | Local inference — Gemma 4 26B via Ollama + Open WebUI | ✅ Complete |
 | [Phase 2](./phase2-tool-use/) | Tool use + routing + EDGAR financial screener | ✅ Complete |
-| [Phase 3](./phase3-agents/) | ReAct agent loop + Telegram interface + Python sandbox | 🔄 Planned |
-| [Phase 4](./phase4-memory/) | Persistent memory via ChromaDB + SQLite | ⬜ Not Started |
+| [Phase 3](./phase3-agents/) | ReAct agent loop + Telegram interface + HMM regime detection | ✅ Complete |
+| [Phase 4](./phase4-memory/) | Persistent memory via ChromaDB + SQLite + codebase RAG | 🔄 In Progress |
 | Phase 5 | Voice interface (wake word → STT → TTS) | ⬜ Not Started |
 
 ---
@@ -130,6 +130,8 @@ RGB keyboard animation while local GPU is running (OpenRGB)
 | Cloud fallback | Anthropic Claude API | Best reasoning quality, used selectively |
 | Financial data | SEC EDGAR + DefeatBeta (via WSL) | Free, comprehensive, no API key required |
 | RGB lighting | OpenRGB SDK | Visual indicator when local GPU is running |
+| Agentic interface | Telegram Bot (pyTelegramBotAPI) | iPhone access, no server needed, first-class Bot API |
+| Regime detection | hmmlearn GaussianHMM + yfinance SPY data | Local, 4-state market regime injected into every prompt |
 | Vector memory | ChromaDB + nomic-embed-text *(Phase 4)* | Local embeddings, no cloud required |
 | Conversation history | SQLite *(Phase 4)* | Simple, zero infrastructure |
 | Voice *(Phase 5)* | openwakeword + faster-whisper + Kokoro TTS | All local, all free |
@@ -255,8 +257,15 @@ enkidu/
 │       ├── docs/                     # QV methodology documentation
 │       └── data/                     # NOT in git — GB-scale EDGAR + market data
 │
-├── phase3-agents/                    # Agentic orchestration (not started)
-└── phase4-memory/                    # ChromaDB + SQLite memory (not started)
+├── phase3-agents/                    # Agentic orchestration ✅ Complete
+│   ├── enkidu_agent.py               # ReAct loop — Reason → Act → Observe
+│   ├── telegram_interface.py         # Telegram bot + TLS fix + startup
+│   ├── requirements.txt              # pyTelegramBotAPI, pydantic, anthropic
+│   └── tools/
+│       ├── registry.py               # Tool registration + dispatch
+│       ├── python_sandbox.py         # Subprocess code execution
+│       └── regime_detector.py        # HMM market regime inference
+└── phase4-memory/                    # ChromaDB + SQLite memory (in progress)
 ```
 
 ---

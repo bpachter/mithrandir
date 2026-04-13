@@ -112,14 +112,15 @@ def inference_stop():
             _proc.kill()
         _proc = None
 
-    # Restore lights via a fresh connection
+    # Restore lights to idle color via a fresh connection
     if not _OPENRGB_AVAILABLE:
         return
     try:
         client = OpenRGBClient(name="Enkidu-restore")
+        idle = RGBColor(0, 60, 180)  # soft blue — Enkidu idle state
         for device in client.devices:
             try:
-                device.set_color(RGBColor(0, 0, 0))
+                device.set_color(idle)
             except Exception:
                 pass
     except Exception:

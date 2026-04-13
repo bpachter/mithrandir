@@ -28,11 +28,14 @@ import threading
 import logging
 from typing import Optional
 
+import ssl
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from dotenv import load_dotenv
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.ssl_ import create_urllib3_context
 import threading
 import telebot
 import telebot.apihelper as _apihelper
@@ -40,15 +43,27 @@ from telebot.types import Message
 
 load_dotenv()
 
-# Monkey-patch telebot's internal session factory to disable SSL verification.
-# Workaround for WinError 10054 (TLS handshake reset on Windows).
+# Monkey-patch telebot's session factory to fix WinError 10054 (TLS 1.3 reset on Windows).
+# Forces TLS 1.2, disables cert verification and hostname checking.
 # Safe on a personal home network connecting to api.telegram.org.
+
+class _TLS12Adapter(HTTPAdapter):
+    """Forces TLS 1.2 to avoid Windows TLS 1.3 handshake resets (WinError 10054)."""
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = create_urllib3_context(ssl_minimum_version=ssl.TLSVersion.TLSv1_2,
+                                     ssl_maximum_version=ssl.TLSVersion.TLSv1_2)
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        kwargs["ssl_context"] = ctx
+        super().init_poolmanager(*args, **kwargs)
+
 _tls = threading.local()
 
 def _patched_session(reset=False):
     if reset or not hasattr(_tls, 's'):
         s = requests.Session()
         s.verify = False
+        s.mount("https://", _TLS12Adapter())
         _tls.s = s
     return _tls.s
 
@@ -287,7 +302,7 @@ def main():
     print("Long-polling active — Ctrl+C to stop\n")
 
     # none_stop=True: keep retrying on transient network errors
-    bot.infinity_polling(timeout=20, long_polling_timeout=15, none_stop=True)
+    bot.infinity_polling(timeout=20, long_polling_timeout=15, none_stop=True, interval=3)
 
 
 if __name__ == "__main__":

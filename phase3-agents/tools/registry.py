@@ -113,7 +113,9 @@ register(
         "Look up financial data for stocks from SEC EDGAR and the QV screened portfolio. "
         "Use for: specific ticker lookups (e.g. 'NUE', 'CLF'), top undervalued stocks, "
         "QV portfolio rankings, EV/EBIT ratios, FCF yield, Piotroski F-Score, debt ratios, "
-        "and general questions about screened companies."
+        "and general questions about screened companies. "
+        "NOTE: CapEx is not a direct field — derive it as CapEx = cfo - fcf (both fields are available). "
+        "To compare a stock to sector peers, call this tool once per ticker."
     ),
     parameters={
         "query": "str — a question or ticker symbol, e.g. 'NUE' or 'top 10 undervalued stocks'"
@@ -131,6 +133,28 @@ register(
         "query": "str — optional context string, e.g. 'gpu temperature'"
     },
     fn=_system_tool,
+)
+
+# regime_detector lives in the same directory as this file
+_regime_path = os.path.join(os.path.dirname(__file__), "regime_detector.py")
+_regime_spec = importlib.util.spec_from_file_location("regime_detector", _regime_path)
+_regime_mod = importlib.util.module_from_spec(_regime_spec)
+_regime_spec.loader.exec_module(_regime_mod)
+_get_regime_context = _regime_mod.get_regime_context
+get_regime = _regime_mod.get_regime
+
+register(
+    name="market_regime",
+    description=(
+        "Get the current market regime detected by a Hidden Markov Model trained on SPY. "
+        "Returns one of: Expansion, Recovery, Contraction, Crisis — plus confidence, "
+        "weekly return, 30-day volatility, and price vs 200MA. "
+        "Use when the user asks about market conditions, regime, or how to adjust screening."
+    ),
+    parameters={
+        "query": "str — optional, e.g. 'current regime' or 'market conditions'"
+    },
+    fn=lambda query="": _get_regime_context(),
 )
 
 # python_sandbox lives in the same directory as this file
