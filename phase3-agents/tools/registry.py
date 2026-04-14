@@ -33,6 +33,7 @@ def _call_memory_bridge(*args, timeout: int = 15) -> str:
         result = subprocess.run(
             [_PHASE4_PYTHON, _MEMORY_BRIDGE] + list(args),
             capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace",
         )
         return result.stdout.strip() or result.stderr.strip()
     except subprocess.TimeoutExpired:
@@ -322,4 +323,27 @@ register(
         "query": "str — what to search for, e.g. 'why did DUK fail the QV screen'"
     },
     fn=lambda query: _call_memory_bridge("search_docs", query),
+)
+
+# ---------------------------------------------------------------------------
+# Web search (DuckDuckGo — no API key required)
+# ---------------------------------------------------------------------------
+
+_web_search_path = os.path.join(os.path.dirname(__file__), "web_search.py")
+_web_spec = importlib.util.spec_from_file_location("web_search", _web_search_path)
+_web_mod = importlib.util.module_from_spec(_web_spec)
+_web_spec.loader.exec_module(_web_mod)
+
+register(
+    name="web_search",
+    description=(
+        "Search the live web via DuckDuckGo and return the top results. "
+        "Use for: current events, real-time news, factual questions about people/places/things, "
+        "anything that requires up-to-date information not available in financial tools. "
+        "Do NOT use for stock data (use edgar_screener) or local system info (use system_info)."
+    ),
+    parameters={
+        "query": "str — the search query, e.g. 'latest Fed interest rate decision 2025'"
+    },
+    fn=lambda query: _web_mod.search(query),
 )

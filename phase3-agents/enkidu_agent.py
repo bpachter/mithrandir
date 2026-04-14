@@ -53,6 +53,17 @@ if _tools_path not in sys.path:
 
 from registry import TOOLS, dispatch, tool_descriptions, get_regime, _call_memory_bridge  # noqa: E402
 
+# Optional RGB lighting — phase2-tool-use/tools/lighting.py
+# Silent no-op if cuesdk / LightFX.dll are unavailable.
+_lighting_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "phase2-tool-use", "tools"))
+if _lighting_path not in sys.path:
+    sys.path.insert(0, _lighting_path)
+try:
+    from lighting import inference_start as _lighting_start, inference_stop as _lighting_stop
+except Exception:
+    def _lighting_start(): pass
+    def _lighting_stop(): pass
+
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
@@ -206,6 +217,26 @@ def _parse_step(raw: str) -> tuple[Optional[AgentStep], Optional[str]]:
 # Routing — local GPU vs Claude
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Web search augmentation for Gemma (local path)
+# ---------------------------------------------------------------------------
+
+def _web_augment(query: str, on_step=None) -> str | None:
+    """
+    Run a DuckDuckGo search and return a compact context string for Gemma.
+    Returns None if search fails or is unnecessary.
+    """
+    try:
+        _web_path = os.path.join(os.path.dirname(__file__), "tools", "web_search.py")
+        import importlib.util as _ilu
+        spec = _ilu.spec_from_file_location("web_search_tool", _web_path)
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.search_context(query, max_results=4)
+    except Exception:
+        return None
+
+
 # Keywords that signal the agent needs a tool call.
 # Anything matching → Claude ReAct loop.
 # No match → Ollama direct call (faster, free, private).
@@ -233,6 +264,9 @@ _TOOL_KEYWORDS = [
     # Memory / docs
     "remember", "last time", "previous conversation",
     "past conversation", "search docs", "history",
+    # Explicit web search request → Claude handles it with the web_search tool
+    "search the web", "search online", "search internet", "look up online",
+    "browse", "find online",
 ]
 
 # All-caps words that look like tickers but aren't (common English, tech terms)
@@ -270,10 +304,10 @@ def _needs_tools(query: str) -> bool:
     return False
 
 
-def _build_local_system_prompt(user_message: str = "") -> str:
+def _build_local_system_prompt(user_message: str = "", web_context: str | None = None) -> str:
     """
     Simpler system prompt for direct Gemma calls — no JSON schema, no tool list.
-    Still includes regime context and memory so answers are grounded.
+    Includes regime context, memory, and optional live web search results.
     """
     try:
         regime_info = get_regime()
@@ -306,6 +340,16 @@ def _build_local_system_prompt(user_message: str = "") -> str:
         "Never pad with filler phrases like 'Great question!' or 'Certainly!'. "
         "If you don't know something, say so directly."
     ]
+    if web_context:
+        parts.append(
+            f"\n{web_context}\n"
+            "IMPORTANT: The web search results above were fetched live from the internet "
+            "right now, before this conversation turn. You DO have access to current web "
+            "information via this pre-search mechanism. Use these results to give an accurate, "
+            "up-to-date answer. Synthesize the information — do not copy snippets verbatim. "
+            "Cite sources naturally only if it adds value (e.g. 'according to their website...'). "
+            "If the results don't contain what's needed, say so and suggest where to look."
+        )
     if regime_block:
         parts.append(f"\nMarket context (for reference only — do not mention unless relevant): {regime_block}")
     if memory_block:
@@ -314,7 +358,7 @@ def _build_local_system_prompt(user_message: str = "") -> str:
     return "\n".join(parts)
 
 
-def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None) -> Optional[str]:
+def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True) -> Optional[str]:
     """
     Send a query directly to Ollama with streaming enabled.
 
@@ -334,7 +378,14 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None) -> O
     if on_step:
         on_step(f"Running on local GPU ({OLLAMA_MODEL})...")
 
-    system = _build_local_system_prompt(query)
+    # Always fetch live web results to ground Gemma's answer in current info.
+    # DDG is ~0.5s and free; if the search fails or returns nothing, web_context
+    # is None and Gemma falls back to its parametric knowledge gracefully.
+    if on_step:
+        on_step("Searching the web...")
+    web_context = _web_augment(query)
+
+    system = _build_local_system_prompt(query, web_context=web_context)
 
     try:
         resp = _req.post(
@@ -382,16 +433,17 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None) -> O
         if not answer:
             return None
 
-        # Save to memory asynchronously
-        try:
-            import threading
-            threading.Thread(
-                target=_call_memory_bridge,
-                args=("save", query, answer),
-                daemon=True,
-            ).start()
-        except Exception:
-            pass
+        # Save to memory asynchronously (skip when caller owns the save)
+        if save_memory:
+            try:
+                import threading
+                threading.Thread(
+                    target=_call_memory_bridge,
+                    args=("save", query, answer),
+                    daemon=True,
+                ).start()
+            except Exception:
+                pass
 
         return answer
 
@@ -408,6 +460,7 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None) -> O
 def run_agent(
     user_message: str,
     on_step: Optional[Callable[[str], None]] = None,
+    save_memory: bool = True,
 ) -> str:
     """
     Run the ReAct loop for a single user message.
@@ -416,14 +469,29 @@ def run_agent(
         user_message: The user's query text
         on_step:      Optional callback — called with a short status string
                       at each loop iteration (for live Telegram progress updates)
+        save_memory:  If False, skip saving to memory (caller handles it).
+                      Use False from Telegram so the interface can capture the
+                      exchange ID for rating buttons.
 
     Returns:
         The agent's final answer as a plain string.
         Never raises — errors are returned as readable strings.
     """
+    _lighting_start()
+    try:
+        return _run_agent_inner(user_message, on_step=on_step, save_memory=save_memory)
+    finally:
+        _lighting_stop()
+
+
+def _run_agent_inner(
+    user_message: str,
+    on_step: Optional[Callable[[str], None]] = None,
+    save_memory: bool = True,
+) -> str:
     # --- Routing decision ---
     if not _needs_tools(user_message):
-        result = _run_local(user_message, on_step=on_step)
+        result = _run_local(user_message, on_step=on_step, save_memory=save_memory)
         if result is not None:
             return result
         # Ollama unreachable — fall through to Claude
@@ -473,16 +541,17 @@ def run_agent(
 
         # --- Final answer ---
         if step.final_answer:
-            # Persist to memory asynchronously (non-blocking)
-            try:
-                import threading
-                threading.Thread(
-                    target=_call_memory_bridge,
-                    args=("save", user_message, step.final_answer),
-                    daemon=True,
-                ).start()
-            except Exception:
-                pass
+            # Persist to memory asynchronously (skip when caller owns the save)
+            if save_memory:
+                try:
+                    import threading
+                    threading.Thread(
+                        target=_call_memory_bridge,
+                        args=("save", user_message, step.final_answer),
+                        daemon=True,
+                    ).start()
+                except Exception:
+                    pass
             return step.final_answer
 
         # --- Tool call ---
