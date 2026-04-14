@@ -63,6 +63,10 @@ MAX_ITERATIONS = 8
 # It produces reliable structured JSON and handles multi-step reasoning well.
 CLAUDE_MODEL = "claude-sonnet-4-6"
 
+# Local Ollama inference — used for general queries that don't need tools.
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:26b")
+
 
 # ---------------------------------------------------------------------------
 # Pydantic schema — every LLM output is validated against this
@@ -199,6 +203,156 @@ def _parse_step(raw: str) -> tuple[Optional[AgentStep], Optional[str]]:
 
 
 # ---------------------------------------------------------------------------
+# Routing — local GPU vs Claude
+# ---------------------------------------------------------------------------
+
+# Keywords that signal the agent needs a tool call.
+# Anything matching → Claude ReAct loop.
+# No match → Ollama direct call (faster, free, private).
+_TOOL_KEYWORDS = [
+    # Financial data (edgar_screener)
+    "stock", "stocks", "ticker", "portfolio", "screener",
+    "undervalued", "overvalued", "valuation",
+    "ev/ebit", "p/e", "p/b", "fcf", "free cash flow", "ebit", "revenue", "earnings",
+    "market cap", "piotroski", "f-score", "dividend",
+    "debt", "qv", "quantitative value", "balance sheet",
+    "top 5", "top 10", "top 15", "top 20", "top 25",
+    "best stocks", "cheap stocks", "buy", "sector",
+    # System info
+    "gpu", "cpu", "ram", "vram", "temperature", "system stats",
+    "memory usage", "load average",
+    # Market regime
+    "regime", "market condition", "bull market", "bear market",
+    "expansion", "contraction", "crisis", "recovery", "spy",
+    # Computation
+    "calculate", "compute", "cagr", "compound", "annualized",
+    # QV signal / performance
+    "performance", "alpha", "backtesting", "track record",
+    "signal return", "how has the model", "watchlist", "picks",
+    "snapshot", "ranking",
+    # Memory / docs
+    "remember", "last time", "previous conversation",
+    "past conversation", "search docs", "history",
+]
+
+# All-caps words that look like tickers but aren't (common English, tech terms)
+_TICKER_BLOCKLIST = {
+    "I", "A", "OK", "TV", "AI", "API", "URL", "PC", "USB", "ID",
+    "NO", "SO", "GO", "DO", "BE", "IS", "IT", "AM", "PM",
+    "US", "UK", "EU", "UN",
+    "THE", "AND", "OR", "FOR", "IN", "ON", "AT", "TO", "OF",
+    "GPU", "CPU", "RAM",  # handled by keyword list above
+}
+
+_TICKER_RE = re.compile(r'\b[A-Z]{2,5}\b')
+
+
+def _needs_tools(query: str) -> bool:
+    """
+    Return True if this query should go through the Claude ReAct loop.
+    False means the query can be answered by Gemma directly.
+
+    Conservative: when in doubt, returns True (routes to Claude).
+    The cost of an unnecessary Claude call is low; the cost of answering
+    a financial query with Gemma's parametric knowledge is high (stale data).
+    """
+    lower = query.lower()
+
+    for kw in _TOOL_KEYWORDS:
+        if kw in lower:
+            return True
+
+    # Uppercase words that look like stock tickers (2–5 letters, not in blocklist)
+    for match in _TICKER_RE.findall(query):
+        if match not in _TICKER_BLOCKLIST:
+            return True
+
+    return False
+
+
+def _build_local_system_prompt(user_message: str = "") -> str:
+    """
+    Simpler system prompt for direct Gemma calls — no JSON schema, no tool list.
+    Still includes regime context and memory so answers are grounded.
+    """
+    try:
+        regime_info = get_regime()
+        regime_block = (
+            f"Current market regime: {regime_info['regime']} "
+            f"(confidence: {regime_info['confidence']:.0%}). "
+            f"SPY weekly return: {regime_info['weekly_return']:+.2%}, "
+            f"30d volatility: {regime_info['volatility_30d']:.2%}."
+        )
+    except Exception:
+        regime_block = ""
+
+    memory_block = ""
+    if user_message:
+        retrieved = _call_memory_bridge("retrieve", user_message, timeout=10)
+        if retrieved and not retrieved.startswith("["):
+            memory_block = f"\nRelevant past context:\n{retrieved}"
+
+    parts = [
+        "You are Enkidu, a sharp and direct AI assistant. "
+        "You give clear, specific answers without padding. "
+        "Do not use markdown unless the user asks for it."
+    ]
+    if regime_block:
+        parts.append(f"\nMarket context (for reference): {regime_block}")
+    if memory_block:
+        parts.append(memory_block)
+
+    return "\n".join(parts)
+
+
+def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None) -> Optional[str]:
+    """
+    Send a query directly to Ollama (no ReAct loop). Returns the response
+    string, or None if Ollama is unreachable (caller should fall back to Claude).
+    """
+    import requests as _req
+
+    if on_step:
+        on_step(f"Running on local GPU ({OLLAMA_MODEL})...")
+
+    system = _build_local_system_prompt(query)
+
+    try:
+        resp = _req.post(
+            f"{OLLAMA_URL}/api/chat",
+            json={
+                "model": OLLAMA_MODEL,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": query},
+                ],
+                "stream": False,
+            },
+            timeout=120,
+        )
+        resp.raise_for_status()
+        answer = resp.json()["message"]["content"]
+
+        # Save to memory asynchronously
+        try:
+            import threading
+            threading.Thread(
+                target=_call_memory_bridge,
+                args=("save", query, answer),
+                daemon=True,
+            ).start()
+        except Exception:
+            pass
+
+        return answer
+
+    except Exception as e:
+        import logging
+        logging.getLogger("enkidu.agent").warning(f"Ollama unavailable: {e}")
+        return None
+
+
+# ---------------------------------------------------------------------------
 # Main agent loop
 # ---------------------------------------------------------------------------
 
@@ -218,6 +372,15 @@ def run_agent(
         The agent's final answer as a plain string.
         Never raises — errors are returned as readable strings.
     """
+    # --- Routing decision ---
+    if not _needs_tools(user_message):
+        result = _run_local(user_message, on_step=on_step)
+        if result is not None:
+            return result
+        # Ollama unreachable — fall through to Claude
+        if on_step:
+            on_step("Local GPU unavailable, falling back to cloud...")
+
     try:
         from anthropic import Anthropic
     except ImportError:
