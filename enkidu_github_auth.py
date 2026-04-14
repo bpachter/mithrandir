@@ -40,17 +40,18 @@ APP_ID             = os.environ.get("ENKIDU_GITHUB_APP_ID")
 INSTALLATION_ID    = os.environ.get("ENKIDU_GITHUB_INSTALLATION_ID")
 PRIVATE_KEY_PATH   = os.environ.get("ENKIDU_GITHUB_PRIVATE_KEY_PATH")
 
-# Commit identity — GitHub renders this as "enkidu[bot]"
-# Format: <app_id>+<app_slug>[bot]@users.noreply.github.com
-BOT_NAME  = "Enkidu"
-BOT_EMAIL = None  # Set after APP_ID is known; see _bot_email() below
+# Commit identity — GitHub renders this as "enkidu-4090[bot]"
+# Format: <bot_user_id>+<app_slug>[bot]@users.noreply.github.com
+# Note: bot_user_id (276127226) is NOT the App ID — it's the user ID GitHub
+# assigns to the bot account. Retrieve with: GET /users/enkidu-4090[bot]
+BOT_NAME     = "enkidu-4090[bot]"
+BOT_USER_ID  = "276127226"
+BOT_SLUG     = "enkidu-4090"
 
 
 def _bot_email() -> str:
-    """Return the noreply email GitHub assigns to this app installation."""
-    if not APP_ID:
-        raise ValueError("ENKIDU_GITHUB_APP_ID not set in .env")
-    return f"{APP_ID}+enkidu[bot]@users.noreply.github.com"
+    """Return the noreply email GitHub assigns to this app's bot account."""
+    return f"{BOT_USER_ID}+{BOT_SLUG}[bot]@users.noreply.github.com"
 
 
 def _generate_jwt() -> str:
