@@ -561,4 +561,115 @@ The TLS fix from Phase 3 (create_urllib3_context forcing TLS 1.2) stopped workin
 
 ---
 
+---
+
+## Phase 6 — RGB Lighting, Web Search, and Bot Stability
+
+**Date:** April 14, 2026 | **Status:** ✅ Complete
+
+### What Was Built
+
+#### RGB Lighting (`phase2-tool-use/tools/lighting.py`)
+
+Two independent lighting backends that react to Enkidu's inference state:
+
+**Corsair iCUE SDK (`cuesdk`):**
+- `initialize()` — takes exclusive SDK control at bot startup, sets all keys to soft blue (0, 60, 180)
+- `inference_start()` — sets keyboard deep purple (120, 0, 200) while Enkidu is thinking
+- `inference_stop()` — returns to idle blue
+- Control release → iCUE Rain preset approach was abandoned (keyboard went white); static color during inference is more reliable
+
+**Alienware Aurora R15 (LightFX):**
+- AWCC SDK DLL loaded from `C:\Program Files\Alienware\...\AlienFX SDK\DLLs\x64\LightFX.dll` (not the System32 stub — that does nothing on AWCC 5+)
+- Idle: solid blue via `LFX_Light(LFX_ALL, packed_dword)`
+- Inference: galaxy swirl animation thread — all 75 Aurora R15 lights individually via `LFX_SetLightColor`, with counter-rotating rainbow hue bands, traveling brightness sine wave, and sparkle shimmer. Falls back to zone sweep if `LFX_SetLightColor` is unsupported.
+
+**Key animation parameters (tuned interactively):**
+- `ROTATE_HZ=1.1`, `CONTRA_HZ=2.5`, `HUE_WRAPS=4` — hue motion
+- `PULSE_HZ=3.5`, `B_MID=180`, `B_AMP=75`, `WAVE_LIGHTS=5` — brightness pulse
+- `SHIMMER_HZ=1.4` — sparkle flashes at shimmer > 0.92
+
+**Wired into the agent:**
+- `inference_start()` / `inference_stop()` called in `run_agent()` try/finally — every query lights up both devices
+- `initialize()` called at Telegram bot startup
+
+#### Web Search (`phase3-agents/tools/web_search.py`)
+
+Two public functions fed by a Tavily primary / DuckDuckGo fallback chain:
+
+**`search(query, max_results=6)`** — formatted observation for the Claude ReAct tool loop. Returns Tavily's extracted page content + synthesized `answer` field, or DDG snippets if Tavily is unavailable.
+
+**`search_context(query, max_results=5)`** — compact context block injected into Gemma's system prompt before every query. Returns `None` on failure so Gemma degrades gracefully.
+
+Tavily (`search_depth="advanced"`) extracts full page text — not just 150-char snippets. The `answer` field gives Gemma a one-sentence synthesis before the raw results, matching how a human would brief an analyst.
+
+**Routing:**
+- All Gemma (local GPU) queries now pre-fetch web context before calling Ollama
+- `web_search` registered as a Claude ReAct tool (financial queries that need live prices can call it explicitly)
+- Routing keywords `"search the web"`, `"search online"`, `"search internet"` push to the Claude loop
+
+**Setup:** add `TAVILY_API_KEY=tvly-...` to `.env`. DDG is the automatic fallback with no config needed.
+
+#### Bot Stability (`phase3-agents/telegram_interface.py`)
+
+Multiple fixes applied over the course of the session:
+
+| Fix | Problem | Solution |
+|-----|---------|----------|
+| `_safe_send()` helper | Bare `bot.send_message()` in handler threw `ConnectionError`, killed the worker pool | Wrapped in try/except; swallows failures silently |
+| `_handle_message_inner()` | Any uncaught exception in the handler crashed `infinity_polling` | Moved body to inner function, outer handler catches all exceptions |
+| TLS session caching | New TCP + TLS handshake on every poll → frequent WinError 10054 resets | `_patched_session` now caches session; only creates new one on `reset=True` |
+| `none_stop` → `non_stop` | Deprecated kwarg warning from telebot | Renamed |
+| Duplicate `non_stop` kwarg | `infinity_polling` passes `non_stop=True` internally; passing it again → TypeError crash loop | Removed from our `infinity_polling()` call |
+| TeleBot log noise | ConnectionReset errors logged at ERROR level every ~30 min despite auto-recovery | `logging.getLogger("TeleBot").setLevel(logging.WARNING)` |
+| UTF-8 subprocess | Memory bridge subprocess output with emoji/Unicode caused `cp1252` decode crash in reader thread | `encoding="utf-8", errors="replace"` added to `subprocess.run()` in `registry.py` |
+
+### What Broke
+
+**Keyboard went white during inference.** Releasing iCUE SDK control so "Rain" would play caused the keyboard to go white — no background layer active without SDK control. Fix: keep exclusive control and set a static color (deep purple) during inference instead.
+
+**AlienFX calls succeeded (return 0) but did nothing.** Was using `LFX_SetLightColor` with a struct pointer — the correct zone-sweep API is `LFX_Light(LFX_ALL, packed_dword)`. The AWCC SDK sample was the source of truth.
+
+**AlienFX still silent even with correct API.** Was loading `System32\LightFX.dll` — that's a stub that does nothing on AWCC 5+. Fix: load the full SDK DLL from the AWCC installation directory.
+
+**AlienFX still silent.** "Go Dark" mode in AWCC suppresses all LightFX output. Fix: turn off Go Dark in AWCC settings.
+
+**iCUE: 0 devices detected.** K70 had "Device Memory Mode" enabled — when DMM is on, the keyboard runs from onboard memory and is invisible to the SDK. Fix: disable DMM in iCUE device settings.
+
+**`duckduckgo_search` package renamed.** The package was renamed to `ddgs` mid-session. Updated imports to `from ddgs import DDGS`.
+
+**Gemma denied having web access** even after web search was wired in. Two causes: (1) `_needs_web()` heuristic was too narrow — queries like "what programs are available at AB Tech" matched no keywords; (2) system prompt didn't tell Gemma the results were live. Fix: removed the keyword gate entirely (always search for Gemma queries); added explicit IMPORTANT note in system prompt that results were fetched live.
+
+**`TAVILY_API_KEY` not in `.env`** — key appeared saved in IDE but wasn't persisted. Confirmed missing with `grep`. User re-saved and confirmed.
+
+**409 Conflict on bot restart.** Two Python processes polling Telegram simultaneously. Fix: `taskkill //F //IM python.exe //T` before every restart.
+
+### What Was Learned
+
+**`LFX_Light(LFX_ALL, packed_dword)` is the correct zone API.** The LightFX SDK uses a packed 32-bit DWORD: `(brightness << 24) | (r << 16) | (g << 8) | b`. Individual light control uses `LFX_SetLightColor(device, light_index, &LFX_COLOR_struct)`.
+
+**AWCC "Go Dark" is a global override.** It completely suppresses all LightFX output — even correct API calls with the right DLL return success but produce no visible output. Not documented.
+
+**Always search, don't try to predict.** Keyword-gating web search misses too many valid queries. A 0.5s DuckDuckGo call costs nothing and never hurts. The heuristic approach was abandoned in favor of always augmenting Gemma's context.
+
+**Telebot's `infinity_polling` forwards `non_stop=True` to `polling()` internally.** Passing it again as a kwarg causes a `TypeError: multiple values for keyword argument` crash loop — telebot retries every 3 seconds, flooding the log.
+
+**Session caching matters for TLS.** Creating a new `requests.Session()` on every poll meant a fresh TLS handshake every second. WinError 10054 was happening because the handshake itself was failing, not the long-poll. Caching the session reduced resets from every few seconds to every ~30 minutes (ISP keepalive timeout).
+
+### Build Order
+
+| Step | Component | Notes |
+|------|-----------|-------|
+| 6.1 | `lighting.py` — Corsair iCUE SDK backend | idle blue, deep purple during inference |
+| 6.2 | `lighting.py` — AlienFX LightFX backend | DLL search order, zone API, idle blue |
+| 6.3 | `lighting.py` — galaxy swirl animation thread | 75 per-light, sine waves, shimmer |
+| 6.4 | Wire lighting into `enkidu_agent.py` + `telegram_interface.py` | every Telegram query lights up |
+| 6.5 | `web_search.py` — DDG search_context + search | initial implementation |
+| 6.6 | Register `web_search` tool in `registry.py` | Claude can call it in ReAct loop |
+| 6.7 | Wire `search_context` into `_run_local()` Gemma path | all Gemma queries web-augmented |
+| 6.8 | Upgrade to Tavily primary / DDG fallback | full page extraction + direct answer |
+| 6.9 | Add `TAVILY_API_KEY` to `.env` | confirmed with `python -c "import os; print(os.environ.get('TAVILY_API_KEY'))"` |
+| 6.10 | Bot stability — `_safe_send`, handler isolation, session caching | no more crash loops |
+| 6.11 | Suppress TeleBot log noise, fix `non_stop` kwarg, fix UTF-8 subprocess | clean logs |
+
 *This log will be updated as each phase progresses.*

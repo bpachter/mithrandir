@@ -4,6 +4,8 @@
 
 Move Enkidu from a prompt-injection tool pipeline to a true agentic system: one that can reason, plan, call tools, observe results, and self-correct — all triggered from an iPhone via Telegram.
 
+Enkidu can also be exposed inside Open WebUI through a local bridge and native Open WebUI function. See `OPEN_WEBUI_SETUP.md` in this folder.
+
 This phase was architected in collaboration with Gemma 4 (Enkidu itself), producing the strategic vision document that drives the build plan below.
 
 ---
@@ -33,7 +35,7 @@ Action: choose a tool
     ├── edgar_screener   → EDGAR financials + QV portfolio
     ├── python_sandbox   → execute pandas/numpy/scipy code
     ├── system_info      → GPU/CPU/RAM stats
-    ├── web_search       → (future) real-time data
+    ├── web_search       → live web search via Tavily API (DDG fallback)
     └── file_read        → local file access
     ↓
 Observation: structured tool result (Pydantic-validated)
@@ -204,16 +206,14 @@ Implementation: `stable-baselines3` + custom gym environment wrapping the QV pip
 ```
 phase3-agents/
 ├── README.md                    # This file
-├── requirements.txt             # python-telegram-bot, pydantic, stable-baselines3, hmmlearn
-├── enkidu_agent.py              # ReAct loop — replaces enkidu.py
-├── telegram_interface.py        # Bot polling + message routing
+├── requirements.txt             # pyTelegramBotAPI, pydantic, anthropic, tavily-python, ddgs
+├── enkidu_agent.py              # ReAct loop + Gemma routing + web augmentation
+├── telegram_interface.py        # Bot polling, TLS patch, lighting hooks, rate-limit safe handlers
 ├── tools/
-│   ├── registry.py              # Tool registration + dispatch
+│   ├── registry.py              # Tool registration + dispatch (UTF-8 subprocess)
 │   ├── python_sandbox.py        # Secure subprocess code execution
-│   └── regime_detector.py       # HMM market regime inference
-└── rl/
-    ├── screening_env.py         # Gym environment wrapping QV pipeline
-    └── train_agent.py           # PPO/DQN training loop
+│   ├── regime_detector.py       # HMM market regime inference
+│   └── web_search.py            # Tavily primary / DuckDuckGo fallback search tool
 ```
 
 ---

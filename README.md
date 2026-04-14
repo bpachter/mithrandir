@@ -69,6 +69,7 @@ Everything below is free and open source.
 | Account | Purpose | Required? |
 |---------|---------|-----------|
 | [Anthropic Console](https://console.anthropic.com) | Claude API key for fallback reasoning | Optional — only needed for the Claude fallback |
+| [Tavily](https://app.tavily.com) | Web search API key (`TAVILY_API_KEY`) — 1,000 free searches/month | Optional — DuckDuckGo is the free fallback |
 | [GitHub](https://github.com) | Fork this repo and track your own journey | Optional but recommended |
 
 ---
@@ -99,7 +100,8 @@ Tool dispatch
     ├── qv_performance   → signal track record vs SPY (30/90/180/365-day horizons)
     ├── qv_snapshot      → current QV watchlist with quality flags + sector labels
     ├── recall_memory    → semantic search over past conversations (ChromaDB)
-    └── search_docs      → semantic search over codebase + JOURNEY.md (ChromaDB)
+    ├── search_docs      → semantic search over codebase + JOURNEY.md (ChromaDB)
+    └── web_search       → live web search via Tavily API (DDG fallback, no API key needed)
     ↓
 Claude claude-sonnet-4-6 via Anthropic API (agentic loop)
     ↓
@@ -134,7 +136,8 @@ Response streamed back to Telegram
 | Chat UI | [Open WebUI](https://github.com/open-webui/open-webui) | Browser-based, connects to Ollama out of the box |
 | Cloud fallback | Anthropic Claude API | Best reasoning quality, used selectively |
 | Financial data | SEC EDGAR + DefeatBeta (via WSL) | Free, comprehensive, no API key required |
-| RGB lighting | OpenRGB SDK | Visual indicator when local GPU is running |
+| RGB lighting | Corsair iCUE SDK + Alienware LightFX | Keyboard idle blue / deep purple during inference; tower galaxy swirl rainbow |
+| Web search | Tavily API + DuckDuckGo fallback | Live internet results injected into every Gemma query; full page extraction via Tavily |
 | Agentic interface | Telegram Bot (pyTelegramBotAPI) | iPhone access, no server needed, first-class Bot API |
 | Regime detection | hmmlearn GaussianHMM + yfinance SPY data | Local, 4-state market regime injected into every prompt |
 | Vector memory | ChromaDB + nomic-embed-text | Local embeddings, no cloud required |
@@ -185,6 +188,9 @@ Follow the **[Phase 1 guide](./phase1-local-inference/README.md)** to get Ollama
 ```bash
 python enkidu.py
 ```
+
+For the Phase 3 agent in Telegram, run `start_enkidu_bot.bat`.
+For the Phase 3 agent inside Open WebUI without OpenAI, see `phase3-agents/OPEN_WEBUI_SETUP.md`.
 
 Commands during the session:
 - `/local` — force next query to local Gemma
@@ -265,12 +271,13 @@ enkidu/
 │
 ├── phase3-agents/                    # Agentic orchestration ✅ Complete
 │   ├── enkidu_agent.py               # ReAct loop — Reason → Act → Observe
-│   ├── telegram_interface.py         # Telegram bot + TLS fix + startup
-│   ├── requirements.txt              # pyTelegramBotAPI, pydantic, anthropic
+│   ├── telegram_interface.py         # Telegram bot + TLS fix + lighting hooks + crash isolation
+│   ├── requirements.txt              # pyTelegramBotAPI, pydantic, anthropic, tavily-python, ddgs
 │   └── tools/
-│       ├── registry.py               # Tool registration + dispatch
+│       ├── registry.py               # Tool registration + dispatch (UTF-8 subprocess)
 │       ├── python_sandbox.py         # Subprocess code execution
-│       └── regime_detector.py        # HMM market regime inference
+│       ├── regime_detector.py        # HMM market regime inference
+│       └── web_search.py             # Tavily primary / DuckDuckGo fallback web search
 ├── phase4-memory/                    # ChromaDB + SQLite memory ✅ Complete
 │   ├── memory_store.py               # Dual-write conversation store (SQLite + ChromaDB)
 │   ├── document_indexer.py           # Codebase + docs RAG indexer
