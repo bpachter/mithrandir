@@ -165,6 +165,7 @@ def _mem(timeout: int = 15, *args) -> str:
         r = subprocess.run(
             [_PHASE4_PYTHON, _MEMORY_BRIDGE] + list(args),
             capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace",
         )
         return r.stdout.strip() or r.stderr.strip()
     except Exception as e:

@@ -65,12 +65,24 @@ def _get_db() -> sqlite3.Connection:
     conn = sqlite3.connect(_DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS exchanges (
-            id        TEXT PRIMARY KEY,
-            timestamp TEXT NOT NULL,
-            user_msg  TEXT NOT NULL,
-            asst_msg  TEXT NOT NULL
+            id            TEXT PRIMARY KEY,
+            timestamp     TEXT NOT NULL,
+            user_msg      TEXT NOT NULL,
+            asst_msg      TEXT NOT NULL,
+            rating        INTEGER,
+            user_feedback TEXT,
+            auto_score    TEXT
         )
     """)
+    # Migrate tables created before rating columns existed
+    existing = {r[1] for r in conn.execute("PRAGMA table_info(exchanges)").fetchall()}
+    for col, defn in [
+        ("rating", "INTEGER"),
+        ("user_feedback", "TEXT"),
+        ("auto_score", "TEXT"),
+    ]:
+        if col not in existing:
+            conn.execute(f"ALTER TABLE exchanges ADD COLUMN {col} {defn}")
     conn.commit()
     return conn
 
@@ -184,6 +196,36 @@ def get_recent_exchanges(n: int = 5) -> list[dict]:
             (n,),
         ).fetchall()
     return [{"timestamp": r[0], "user": r[1], "assistant": r[2]} for r in rows]
+
+
+def rate_exchange(exchange_id: str, rating: int) -> bool:
+    """Set thumbs-up (1) or thumbs-down (-1) on an exchange. Returns True if found."""
+    with _get_db() as conn:
+        cur = conn.execute(
+            "UPDATE exchanges SET rating = ? WHERE id = ?",
+            (rating, exchange_id),
+        )
+        return cur.rowcount > 0
+
+
+def add_user_feedback(exchange_id: str, feedback: str) -> bool:
+    """Store free-text feedback from a /rate command. Returns True if found."""
+    with _get_db() as conn:
+        cur = conn.execute(
+            "UPDATE exchanges SET user_feedback = ? WHERE id = ?",
+            (feedback.strip(), exchange_id),
+        )
+        return cur.rowcount > 0
+
+
+def add_auto_score(exchange_id: str, score_json: str) -> bool:
+    """Store a JSON blob of Claude-as-judge scores for an exchange."""
+    with _get_db() as conn:
+        cur = conn.execute(
+            "UPDATE exchanges SET auto_score = ? WHERE id = ?",
+            (score_json, exchange_id),
+        )
+        return cur.rowcount > 0
 
 
 def memory_stats() -> dict:

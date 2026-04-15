@@ -57,6 +57,27 @@ def main():
         print(f"Conversation memory: {ms['sqlite_exchanges']} exchanges, {ms['chroma_vectors']} vectors")
         print(f"Document index: {ds['document_chunks']} chunks")
 
+    elif cmd == "rate":
+        from memory_store import rate_exchange
+        eid = sys.argv[2] if len(sys.argv) > 2 else ""
+        rating = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+        ok = rate_exchange(eid, rating)
+        print("ok" if ok else "not_found")
+
+    elif cmd == "feedback":
+        from memory_store import add_user_feedback
+        eid = sys.argv[2] if len(sys.argv) > 2 else ""
+        text = sys.argv[3] if len(sys.argv) > 3 else ""
+        ok = add_user_feedback(eid, text)
+        print("ok" if ok else "not_found")
+
+    elif cmd == "add_score":
+        from memory_store import add_auto_score
+        eid = sys.argv[2] if len(sys.argv) > 2 else ""
+        score_json = sys.argv[3] if len(sys.argv) > 3 else "{}"
+        ok = add_auto_score(eid, score_json)
+        print("ok" if ok else "not_found")
+
     elif cmd == "reindex":
         from document_indexer import index_path
         repo_root = os.path.normpath(os.path.join(_HERE, ".."))
