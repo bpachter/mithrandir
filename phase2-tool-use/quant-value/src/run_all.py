@@ -10,6 +10,7 @@ from universe_fixed import UniverseFixed as Universe
 from edgar_fetch import EdgarFetcher
 from parse_fundamentals import FundamentalsParser
 from compute_metrics import MetricsCalculator
+from franchise_power import FranchisePowerCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,31 @@ def run_pipeline(force_refresh: bool = False, config_path: str = None):
 
     # Save metrics
     calculator.save_metrics(config.get_metrics_path())
+
+    # Step 5: Compute Franchise Power (8-year quality metrics)
+    logger.info("\n" + "=" * 80)
+    logger.info("STEP 5: Computing Franchise Power (8-year quality metrics)")
+    logger.info("=" * 80)
+
+    fp_output_path = config.get_output_dir() / "franchise_power_metrics.csv"
+    try:
+        cache_dir = config.get_cache_dir()
+        fp_calc = FranchisePowerCalculator(cache_dir=cache_dir)
+
+        # Use the companies table so we have ticker + CIK together
+        fp_df = fp_calc.calculate_for_universe(companies_df[['ticker', 'cik']])
+
+        fp_output_path.parent.mkdir(parents=True, exist_ok=True)
+        fp_df.to_csv(fp_output_path, index=False)
+        logger.info(
+            f"Franchise Power metrics saved: {len(fp_df)} companies → {fp_output_path}"
+        )
+        n_with_data = fp_df['years_available'].gt(0).sum()
+        logger.info(
+            f"  Companies with ≥1 year of data: {n_with_data} / {len(fp_df)}"
+        )
+    except Exception as e:
+        logger.warning(f"Franchise Power step failed (non-fatal): {e}")
 
     # Print summary
     logger.info("\n" + "=" * 80)

@@ -106,6 +106,45 @@ class FundamentalsParser:
         self.annual_config = annual_config
         self.quarterly_config = quarterly_config
 
+    def get_reporting_currency(self, facts_dict: Dict) -> str:
+        """
+        Detect the primary reporting currency from EDGAR company facts.
+
+        Checks a key monetary metric (Revenue, then Assets) and returns the
+        unit currency found.  Returns 'USD' if the company reports in USD or
+        if the currency cannot be determined.
+
+        Foreign filers (e.g. MUFG → JPY, ASML → EUR) return their native
+        currency so downstream code can convert to USD before computing EV.
+        """
+        if 'facts' not in facts_dict:
+            return 'USD'
+
+        us_gaap = facts_dict['facts'].get('us-gaap', {})
+
+        # Inspect a key monetary metric to detect the reporting currency.
+        probe_tags = [
+            'Revenues',
+            'RevenueFromContractWithCustomerExcludingAssessedTax',
+            'Assets',
+            'NetIncomeLoss',
+        ]
+        for tag in probe_tags:
+            if tag not in us_gaap:
+                continue
+            units = us_gaap[tag].get('units', {})
+            if not units:
+                continue
+            # If USD is present, company reports in USD
+            if 'USD' in units or 'usd' in units:
+                return 'USD'
+            # Otherwise take the first non-shares unit
+            for unit_key in units:
+                if unit_key.upper() not in ('SHARES', 'PURE'):
+                    return unit_key.upper()
+
+        return 'USD'
+
     def extract_fact_value(self, facts_dict: Dict, metric: str) -> List[Dict]:
         """
         Extract fact values for a metric using tag fallback logic.
@@ -249,6 +288,11 @@ class FundamentalsParser:
         Returns:
             List of period records
         """
+        # Detect reporting currency once per company (used for FX conversion downstream)
+        reporting_currency = self.get_reporting_currency(facts_dict)
+        if reporting_currency != 'USD':
+            logger.info(f"{ticker} reports in {reporting_currency} — will need FX conversion for EV")
+
         # Extract all metrics
         metric_data = {}
         for metric in TAG_MAPPING.keys():
@@ -275,7 +319,8 @@ class FundamentalsParser:
                 'period_end': end_date,
                 'fp': fp,
                 'form': form,
-                'frequency': frequency
+                'frequency': frequency,
+                'reporting_currency': reporting_currency,
             }
 
             # Extract fiscal year from frame or end date

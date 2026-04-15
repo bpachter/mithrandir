@@ -383,6 +383,45 @@ class MarketDataProvider:
         annualization_factor = 252 if annualize else 1
         return downside_returns.std() * np.sqrt(annualization_factor) if annualize else downside_returns.std()
 
+    def _get_fx_rates_to_usd(self, currencies: set) -> dict:
+        """
+        Fetch current spot FX rates so that 1 unit of each currency = X USD.
+
+        Uses yfinance ticker format {CCY}USD=X (e.g. JPYUSD=X, EURUSD=X).
+        Falls back to 1.0 for any currency that cannot be fetched so that
+        foreign companies are included in the screen (with a warning) rather
+        than silently dropped.
+
+        Args:
+            currencies: Set of ISO currency codes (e.g. {'JPY', 'EUR'})
+
+        Returns:
+            dict mapping currency code -> USD equivalent (e.g. {'JPY': 0.0067})
+        """
+        rates = {}
+        try:
+            import yfinance as yf
+        except ImportError:
+            logger.warning("yfinance not installed — FX conversion skipped; foreign EV may be incorrect")
+            return {c: 1.0 for c in currencies}
+
+        for currency in currencies:
+            ticker_sym = f'{currency}USD=X'
+            try:
+                info = yf.Ticker(ticker_sym).fast_info
+                rate = getattr(info, 'last_price', None) or getattr(info, 'regularMarketPrice', None)
+                if rate and float(rate) > 0:
+                    rates[currency] = float(rate)
+                    logger.info(f"FX rate fetched: 1 {currency} = {rate:.6f} USD")
+                else:
+                    logger.warning(f"FX rate for {currency} returned zero/None — defaulting to 1.0")
+                    rates[currency] = 1.0
+            except Exception as e:
+                logger.warning(f"Could not fetch FX rate for {currency} ({ticker_sym}): {e} — defaulting to 1.0")
+                rates[currency] = 1.0
+
+        return rates
+
     def calculate_accurate_enterprise_value(self, fundamentals_df: pd.DataFrame,
                                           market_data_df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -450,8 +489,31 @@ class MarketDataProvider:
         cash_col = 'cash'
         
         merged['net_debt'] = merged[debt_col].fillna(0) - merged[cash_col].fillna(0)
-        
-        # Enterprise Value = Market Cap + Net Debt
+
+        # FX conversion: EDGAR reports fundamentals in the company's native currency
+        # (e.g. JPY for MUFG/KYOCF, EUR for ASML) while market_cap_final is always USD.
+        # Convert net_debt to USD before combining with market cap.
+        if 'reporting_currency' in merged.columns:
+            non_usd_currencies = set(
+                merged['reporting_currency'].dropna().unique()
+            ) - {'USD'}
+            if non_usd_currencies:
+                fx_rates = self._get_fx_rates_to_usd(non_usd_currencies)
+                for currency, rate in fx_rates.items():
+                    mask = merged['reporting_currency'] == currency
+                    if mask.any():
+                        n = mask.sum()
+                        logger.info(
+                            f"FX: converting net_debt for {n} {currency} companies "
+                            f"(1 {currency} = {rate:.6f} USD)"
+                        )
+                        merged.loc[mask, 'net_debt'] = merged.loc[mask, 'net_debt'] * rate
+                        # Also convert EBIT/revenue/FCF so ratios stay internally consistent
+                        for col in ['operating_income', 'revenue', 'fcf', 'ebit']:
+                            if col in merged.columns:
+                                merged.loc[mask, col] = merged.loc[mask, col] * rate
+
+        # Enterprise Value = Market Cap (USD) + Net Debt (now USD)
         merged['enterprise_value'] = merged['market_cap_final'] + merged['net_debt']
         
         # Calculate key valuation ratios using available columns

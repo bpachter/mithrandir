@@ -298,6 +298,59 @@ register(
     fn=_qv_signal_snapshot,
 )
 
+def _rl_optimize(query: str = "") -> str:
+    """Run or report the RL parameter optimizer."""
+    try:
+        if _phase5_path not in sys.path:
+            sys.path.insert(0, _phase5_path)
+        spec = importlib.util.spec_from_file_location(
+            "rl_optimizer",
+            os.path.join(_phase5_path, "rl_optimizer.py"),
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+
+        q = query.lower()
+        apply = any(kw in q for kw in ["apply", "save", "use", "update"])
+        regime = any(kw in q for kw in ["regime", "market"])
+        n_trials = 50
+
+        # Extract trial count if specified (e.g. "200 trials")
+        import re as _re
+        m = _re.search(r'(\d+)\s*trials?', q)
+        if m:
+            n_trials = min(int(m.group(1)), 500)
+
+        params = mod.run_optimizer(n_trials=n_trials, use_regime=regime, apply=apply)
+
+        lines = ["QV Screening Parameters (RL-optimized):"]
+        for k, v in params.items():
+            default_v = mod._DEFAULT_PARAMS[k]
+            tag = " ← changed" if abs(float(v) - float(default_v)) > 0.5 else ""
+            lines.append(f"  {k}: {v}  (default: {default_v}){tag}")
+        if apply:
+            lines.append(f"\nSaved to: {mod._BEST_PARAMS}")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"RL optimizer error: {e}"
+
+
+register(
+    name="rl_optimize",
+    description=(
+        "Run the RL-style parameter optimizer for the QV screener. "
+        "Searches for the optimal combination of risk thresholds, quality gates, "
+        "and value filters to maximize risk-adjusted alpha. "
+        "Use when the user asks 'optimize the screener', 'tune the QV parameters', "
+        "'what are the best screening thresholds', or 'run the RL optimizer'. "
+        "Add 'apply' to save the result. Add 'regime' to factor in current market conditions."
+    ),
+    parameters={
+        "query": "str — e.g. 'optimize with regime', 'run 200 trials and apply', 'optimize screener'"
+    },
+    fn=_rl_optimize,
+)
+
 register(
     name="recall_memory",
     description=(
