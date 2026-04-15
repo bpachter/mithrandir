@@ -378,7 +378,7 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
     return "\n".join(parts)
 
 
-def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True) -> Optional[str]:
+def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True, prior_messages: Optional[list] = None) -> Optional[str]:
     """
     Send a query directly to Ollama with streaming enabled.
 
@@ -414,6 +414,7 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
                 "model": OLLAMA_MODEL,
                 "messages": [
                     {"role": "system", "content": system},
+                    *(prior_messages or []),
                     {"role": "user", "content": query},
                 ],
                 "stream": True,
@@ -481,6 +482,7 @@ def run_agent(
     user_message: str,
     on_step: Optional[Callable[[str], None]] = None,
     save_memory: bool = True,
+    prior_messages: Optional[list] = None,
 ) -> str:
     """
     Run the ReAct loop for a single user message.
@@ -499,7 +501,7 @@ def run_agent(
     """
     _lighting_start()
     try:
-        return _run_agent_inner(user_message, on_step=on_step, save_memory=save_memory)
+        return _run_agent_inner(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages)
     finally:
         _lighting_stop()
 
@@ -508,12 +510,13 @@ def _run_agent_inner(
     user_message: str,
     on_step: Optional[Callable[[str], None]] = None,
     save_memory: bool = True,
+    prior_messages: Optional[list] = None,
 ) -> str:
     # --- Routing decision ---
     if _FORCE_LOCAL_ONLY:
         if on_step:
             on_step(f"Routing: forced local GPU ({OLLAMA_MODEL})")
-        result = _run_local(user_message, on_step=on_step, save_memory=save_memory)
+        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages)
         if result is not None:
             return result
         return (
@@ -524,7 +527,7 @@ def _run_agent_inner(
     if not _needs_tools(user_message):
         if on_step:
             on_step(f"Routing: local GPU ({OLLAMA_MODEL})")
-        result = _run_local(user_message, on_step=on_step, save_memory=save_memory)
+        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages)
         if result is not None:
             return result
         # Ollama unreachable — fall through to Claude
@@ -545,8 +548,9 @@ def _run_agent_inner(
     client = Anthropic(api_key=api_key)
     system_prompt = _build_system_prompt(user_message)
 
-    # Message history for the LLM — grows as the loop runs
-    messages = [{"role": "user", "content": user_message}]
+    # Message history for the LLM — grows as the loop runs.
+    # Prepend prior exchange if continuing a conversation.
+    messages = [*(prior_messages or []), {"role": "user", "content": user_message}]
 
     for iteration in range(MAX_ITERATIONS):
 

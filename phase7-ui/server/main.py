@@ -240,20 +240,26 @@ def get_portfolio():
         df = pd.read_csv(qv_path)
         top = df.head(25)
         cols = [c for c in ["ticker", "sector", "ev_ebit", "value_composite", "quality_score", "f_score"] if c in top.columns]
-        return {"picks": top[cols].fillna("").to_dict(orient="records")}
+        # to_json() converts NaN → null so frontend gets null (not "") for missing values
+        records = json.loads(top[cols].to_json(orient="records"))
+        return {"picks": records}
     except Exception as e:
         return {"picks": [], "error": str(e)}
+
+
+def _get_db_path():
+    candidates = [
+        _ROOT / "phase4-memory" / "enkidu_memory.db",
+        _ROOT / "phase4-memory" / "memory.db",
+    ]
+    return next((p for p in candidates if p.exists()), None)
 
 
 @app.get("/api/history")
 def get_history():
     try:
         import sqlite3
-        db_candidates = [
-            _ROOT / "phase4-memory" / "enkidu_memory.db",
-            _ROOT / "phase4-memory" / "memory.db",
-        ]
-        db_path = next((p for p in db_candidates if p.exists()), None)
+        db_path = _get_db_path()
         if db_path is None:
             return {"exchanges": []}
         conn = sqlite3.connect(db_path)
@@ -269,6 +275,27 @@ def get_history():
         }
     except Exception as e:
         return {"exchanges": [], "error": str(e)}
+
+
+@app.get("/api/history/{exchange_id}")
+def get_history_item(exchange_id: str):
+    """Return the full (untruncated) text of a single exchange."""
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if db_path is None:
+            return JSONResponse({"error": "DB not found"}, status_code=404)
+        conn = sqlite3.connect(db_path)
+        row = conn.execute(
+            "SELECT id, timestamp, user_msg, asst_msg FROM exchanges WHERE id = ?",
+            (exchange_id,)
+        ).fetchone()
+        conn.close()
+        if not row:
+            return JSONResponse({"error": "not found"}, status_code=404)
+        return {"id": row[0], "timestamp": row[1], "user": row[2], "assistant": row[3]}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/api/chat")
@@ -309,6 +336,29 @@ async def ws_gpu(ws: WebSocket):
 # WebSocket: streaming chat
 # ---------------------------------------------------------------------------
 
+def _fetch_prior_messages(exchange_id: str) -> list:
+    """Load a prior exchange from the DB as a [user, assistant] message pair."""
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if db_path is None:
+            return []
+        conn = sqlite3.connect(db_path)
+        row = conn.execute(
+            "SELECT user_msg, asst_msg FROM exchanges WHERE id = ?",
+            (exchange_id,)
+        ).fetchone()
+        conn.close()
+        if not row:
+            return []
+        return [
+            {"role": "user",      "content": row[0]},
+            {"role": "assistant", "content": row[1]},
+        ]
+    except Exception:
+        return []
+
+
 @app.websocket("/ws/chat")
 async def ws_chat(ws: WebSocket):
     await ws.accept()
@@ -319,6 +369,9 @@ async def ws_chat(ws: WebSocket):
             message = data.get("message", "").strip()
             if not message:
                 continue
+
+            conversation_id = data.get("conversation_id")
+            prior_messages  = _fetch_prior_messages(conversation_id) if conversation_id else []
 
             # Stream progress steps back to client
             loop = asyncio.get_running_loop()
@@ -338,7 +391,7 @@ async def ws_chat(ws: WebSocket):
             try:
                 response = await loop.run_in_executor(
                     None,
-                    lambda: run_agent(message, on_step=on_step),
+                    lambda: run_agent(message, on_step=on_step, prior_messages=prior_messages),
                 )
                 await ws.send_json({"type": "response", "content": response})
             except Exception as e:

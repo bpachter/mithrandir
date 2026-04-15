@@ -203,7 +203,8 @@ body::after {
   padding: 6px 12px; border-bottom: 1px solid var(--border);
   cursor: pointer; transition: var(--transition);
 }
-.history-item:hover { background: var(--amber-glow); }
+.history-item:hover  { background: var(--amber-glow); }
+.history-item.active { background: var(--cyan-glow); border-left: 2px solid var(--cyan); }
 .history-ts  { font-size: 10px; color: var(--white-dim); }
 .history-msg { font-size: 12px; color: var(--amber); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

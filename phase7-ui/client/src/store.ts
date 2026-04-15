@@ -66,6 +66,7 @@ interface AppState {
   regime: RegimeInfo | null
   rightTab: 'gpu' | 'params' | 'market'
   bottomTab: 'history'
+  activeConversationId: string | null
 
   addMessage: (m: Message) => void
   appendStep: (id: string, step: string) => void
@@ -76,6 +77,8 @@ interface AppState {
   setPortfolio: (p: PortfolioPick[]) => void
   setRegime: (r: RegimeInfo) => void
   setRightTab: (t: AppState['rightTab']) => void
+  clearMessages: () => void
+  setActiveConversationId: (id: string | null) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -91,6 +94,7 @@ export const useStore = create<AppState>((set) => ({
   regime:    null,
   rightTab:  'gpu',
   bottomTab: 'history',
+  activeConversationId: null,
 
   addMessage:  (m)    => set((s) => ({ messages: [...s.messages, m] })),
   appendStep:  (id, step) => set((s) => ({
@@ -105,4 +109,6 @@ export const useStore = create<AppState>((set) => ({
   setPortfolio:(p)    => set({ portfolio: p }),
   setRegime:   (r)    => set({ regime: r }),
   setRightTab: (t)    => set({ rightTab: t }),
+  clearMessages: ()   => set({ messages: [], busy: false, activeConversationId: null }),
+  setActiveConversationId: (id) => set({ activeConversationId: id }),
 }))

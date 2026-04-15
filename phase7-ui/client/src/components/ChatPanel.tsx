@@ -42,10 +42,12 @@ function connectSocket() {
 }
 
 export default function ChatPanel() {
-  const messages   = useStore((s) => s.messages)
-  const busy       = useStore((s) => s.busy)
-  const addMessage = useStore((s) => s.addMessage)
-  const setBusy    = useStore((s) => s.setBusy)
+  const messages              = useStore((s) => s.messages)
+  const busy                  = useStore((s) => s.busy)
+  const addMessage            = useStore((s) => s.addMessage)
+  const setBusy               = useStore((s) => s.setBusy)
+  const clearMessages         = useStore((s) => s.clearMessages)
+  const activeConversationId  = useStore((s) => s.activeConversationId)
 
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -75,12 +77,34 @@ export default function ChatPanel() {
     setBusy(true)
     setInput('')
 
-    chatSocket.send(JSON.stringify({ message: text }))
+    chatSocket.send(JSON.stringify({
+      message: text,
+      ...(activeConversationId ? { conversation_id: activeConversationId } : {}),
+    }))
   }
 
   return (
     <div className="panel panel-chat">
-      <div className="panel-title">CHAT TERMINAL</div>
+      <div className="panel-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>
+          CHAT TERMINAL
+          {activeConversationId && (
+            <span style={{ fontSize: 10, color: 'var(--cyan)', marginLeft: 8 }}>· CONTINUATION</span>
+          )}
+        </span>
+        {messages.length > 0 && (
+          <button
+            onClick={() => clearMessages()}
+            style={{
+              background: 'none', border: '1px solid var(--border)', color: 'var(--white-dim)',
+              fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 8px', cursor: 'pointer',
+              letterSpacing: '0.08em',
+            }}
+          >
+            NEW
+          </button>
+        )}
+      </div>
 
       <div className="chat-messages">
         {messages.length === 0 && (

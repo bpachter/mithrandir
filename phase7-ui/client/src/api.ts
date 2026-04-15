@@ -14,6 +14,11 @@ export async function saveParams(params: object) {
   return r.json()
 }
 
+export async function fetchHistoryItem(id: string) {
+  const r = await fetch(`${BASE}/api/history/${id}`)
+  return r.json()
+}
+
 export async function fetchHistory() {
   const r = await fetch(`${BASE}/api/history`)
   const data = await r.json()
