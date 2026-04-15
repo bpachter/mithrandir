@@ -3,6 +3,7 @@ import ChatPanel from './components/ChatPanel'
 import GpuPanel from './components/GpuPanel'
 import ModelParamsPanel from './components/ModelParamsPanel'
 import MarketPanel from './components/MarketPanel'
+import MemoryPanel from './components/MemoryPanel'
 import HistoryPanel from './components/HistoryPanel'
 import { useStore } from './store'
 
@@ -38,12 +39,19 @@ export default function App() {
           >
             MARKET
           </button>
+          <button
+            className={`tab-btn ${rightTab === 'memory' ? 'active' : ''}`}
+            onClick={() => setRightTab('memory')}
+          >
+            MEMORY
+          </button>
         </div>
 
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           {rightTab === 'gpu'    && <GpuPanel />}
           {rightTab === 'params' && <ModelParamsPanel />}
           {rightTab === 'market' && <MarketPanel />}
+          {rightTab === 'memory' && <MemoryPanel />}
         </div>
       </div>
 

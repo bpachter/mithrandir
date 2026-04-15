@@ -298,6 +298,81 @@ def get_history_item(exchange_id: str):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+@app.get("/api/memory")
+def get_memory():
+    """Return all exchanges with score/rating, sorted by auto_score desc."""
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if db_path is None:
+            return {"entries": [], "stats": {}}
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute(
+            """SELECT id, timestamp, user_msg, asst_msg, rating, auto_score
+               FROM exchanges
+               ORDER BY COALESCE(auto_score, 0) DESC, timestamp DESC
+               LIMIT 100"""
+        ).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM exchanges").fetchone()[0]
+        rated = conn.execute("SELECT COUNT(*) FROM exchanges WHERE rating IS NOT NULL").fetchone()[0]
+        avg   = conn.execute("SELECT AVG(auto_score) FROM exchanges WHERE auto_score IS NOT NULL").fetchone()[0]
+        conn.close()
+        return {
+            "entries": [
+                {
+                    "id": r[0], "timestamp": r[1],
+                    "user": r[2][:100], "assistant": r[3][:200],
+                    "rating": r[4], "score": r[5],
+                }
+                for r in rows
+            ],
+            "stats": {
+                "total": total,
+                "rated": rated,
+                "avg_score": round(avg, 2) if avg else None,
+            },
+        }
+    except Exception as e:
+        return {"entries": [], "stats": {}, "error": str(e)}
+
+
+@app.post("/api/memory/{exchange_id}/rate")
+async def rate_memory(exchange_id: str, body: dict):
+    """Set user rating on an exchange. rating: 1 (up) or -1 (down)."""
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if db_path is None:
+            return JSONResponse({"error": "DB not found"}, status_code=404)
+        rating = body.get("rating")
+        if rating not in (1, -1, None):
+            return JSONResponse({"error": "rating must be 1, -1, or null"}, status_code=400)
+        conn = sqlite3.connect(db_path)
+        conn.execute("UPDATE exchanges SET rating = ? WHERE id = ?", (rating, exchange_id))
+        conn.commit()
+        conn.close()
+        return {"ok": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.delete("/api/memory/{exchange_id}")
+async def delete_memory(exchange_id: str):
+    """Permanently delete an exchange from memory."""
+    try:
+        import sqlite3
+        db_path = _get_db_path()
+        if db_path is None:
+            return JSONResponse({"error": "DB not found"}, status_code=404)
+        conn = sqlite3.connect(db_path)
+        conn.execute("DELETE FROM exchanges WHERE id = ?", (exchange_id,))
+        conn.commit()
+        conn.close()
+        return {"ok": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.post("/api/chat")
 async def chat_rest(body: dict):
     """Non-streaming chat endpoint (fallback for clients that don't use WS)."""

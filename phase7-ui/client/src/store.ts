@@ -48,6 +48,21 @@ export interface PortfolioPick {
   f_score?: number
 }
 
+export interface MemoryEntry {
+  id: string
+  timestamp: string
+  user: string
+  assistant: string
+  rating: number | null
+  score: number | null
+}
+
+export interface MemoryStats {
+  total: number
+  rated: number
+  avg_score: number | null
+}
+
 export interface RegimeInfo {
   regime: string
   confidence: number
@@ -64,7 +79,9 @@ interface AppState {
   history: HistoryItem[]
   portfolio: PortfolioPick[]
   regime: RegimeInfo | null
-  rightTab: 'gpu' | 'params' | 'market'
+  memory: MemoryEntry[]
+  memoryStats: MemoryStats | null
+  rightTab: 'gpu' | 'params' | 'market' | 'memory'
   bottomTab: 'history'
   activeConversationId: string | null
 
@@ -79,6 +96,9 @@ interface AppState {
   setRightTab: (t: AppState['rightTab']) => void
   clearMessages: () => void
   setActiveConversationId: (id: string | null) => void
+  setMemory: (entries: MemoryEntry[], stats: MemoryStats) => void
+  updateMemoryRating: (id: string, rating: number | null) => void
+  removeMemoryEntry: (id: string) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -89,10 +109,12 @@ export const useStore = create<AppState>((set) => ({
     temperature: 0.7, top_p: 0.9, top_k: 40,
     repeat_penalty: 1.1, num_ctx: 8192, seed: -1,
   },
-  history:   [],
-  portfolio: [],
-  regime:    null,
-  rightTab:  'gpu',
+  history:     [],
+  portfolio:   [],
+  regime:      null,
+  memory:      [],
+  memoryStats: null,
+  rightTab:    'gpu',
   bottomTab: 'history',
   activeConversationId: null,
 
@@ -111,4 +133,14 @@ export const useStore = create<AppState>((set) => ({
   setRightTab: (t)    => set({ rightTab: t }),
   clearMessages: ()   => set({ messages: [], busy: false, activeConversationId: null }),
   setActiveConversationId: (id) => set({ activeConversationId: id }),
+  setMemory: (entries, stats) => set({ memory: entries, memoryStats: stats }),
+  updateMemoryRating: (id, rating) => set((s) => ({
+    memory: s.memory.map((e) => e.id === id ? { ...e, rating } : e),
+  })),
+  removeMemoryEntry: (id) => set((s) => ({
+    memory: s.memory.filter((e) => e.id !== id),
+    memoryStats: s.memoryStats
+      ? { ...s.memoryStats, total: s.memoryStats.total - 1 }
+      : null,
+  })),
 }))

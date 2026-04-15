@@ -36,6 +36,23 @@ export async function fetchRegime() {
   return r.json()
 }
 
+export async function fetchMemory() {
+  const r = await fetch(`${BASE}/api/memory`)
+  return r.json()
+}
+
+export async function rateMemory(id: string, rating: number | null) {
+  await fetch(`${BASE}/api/memory/${id}/rate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating }),
+  })
+}
+
+export async function deleteMemory(id: string) {
+  await fetch(`${BASE}/api/memory/${id}`, { method: 'DELETE' })
+}
+
 export function createChatSocket(
   onStep: (msg: string) => void,
   onToken: (token: string) => void,
