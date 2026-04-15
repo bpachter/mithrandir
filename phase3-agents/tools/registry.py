@@ -193,12 +193,15 @@ _run_python = _sandbox_mod.run_python
 register(
     name="python_sandbox",
     description=(
-        "Execute Python code and return stdout. Use for arithmetic, CAGR calculations, "
-        "ratio comparisons, portfolio statistics, or any computation where you need "
-        "exact numbers rather than estimates. Has access to math, statistics, and numpy."
+        "Execute Python code in a subprocess and return stdout/stderr. "
+        "Use for: exact arithmetic, CAGR/IRR/NPV calculations, portfolio statistics, "
+        "ratio comparisons, descriptive stats, DCF models, or any computation where "
+        "you need precise numbers rather than estimates. "
+        "numpy, pandas, scipy, and all installed packages are available. "
+        "Runs with a 10-second timeout. Print results — return values are not shown."
     ),
     parameters={
-        "code": "str — valid Python code to execute"
+        "code": "str — valid Python source code; use print() to output results"
     },
     fn=lambda code: _run_python(code),
 )
