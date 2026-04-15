@@ -81,36 +81,19 @@ def _wait_for_icue(timeout_s: int = 120) -> bool:
 
 
 def main():
-    # Tower on immediately (AlienFX doesn't need a service to be running).
-    log.info("Enkidu startup lighting — setting tower idle blue.")
-    lighting._alienfw.set_all(*lighting._IDLE_COLOR)
+    # Tower: leave entirely to AWCC — no LightFX calls at idle.
 
-    # Keyboard waits for iCUE to start (may take up to ~90 s after logon).
+    # Keyboard: wait for iCUE, then release Corsair SDK control so iCUE
+    # runs its own theme.  The Enkidu bot takes over both devices during
+    # inference and releases them again when it finishes.
     icue_ok = _wait_for_icue(timeout_s=120)
     if icue_ok:
-        lighting._corsair_take_control_and_set(*lighting._IDLE_COLOR)
-        log.info("Keyboard idle blue set.")
+        lighting._corsair_release_control()
+        log.info("Corsair control released — iCUE running its own theme.")
+    else:
+        log.warning("iCUE never came up; keyboard theme unchanged.")
 
-    # AlienFX heartbeat: every 5 s so AWCC theme overrides are recovered quickly.
-    # Corsair heartbeat: every 30 s (requesting exclusive control repeatedly is
-    # heavier, and iCUE rarely drops the color once set).
-    log.info("Heartbeat: AlienFX every 5 s, Corsair every 30 s.")
-    afx_tick    = 0
-    corsair_tick = 0
-    while _running:
-        time.sleep(1)
-        afx_tick     += 1
-        corsair_tick += 1
-
-        if afx_tick >= 5:
-            afx_tick = 0
-            lighting._alienfw.set_all(*lighting._IDLE_COLOR)
-
-        if corsair_tick >= 30:
-            corsair_tick = 0
-            lighting._corsair_take_control_and_set(*lighting._IDLE_COLOR)
-
-    log.info("Startup lighting stopped.")
+    log.info("Startup lighting done — AWCC and iCUE own idle state.")
 
 
 if __name__ == "__main__":

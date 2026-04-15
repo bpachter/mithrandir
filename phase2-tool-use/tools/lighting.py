@@ -368,7 +368,9 @@ def _tower_rainbow_loop(stop: threading.Event) -> None:
             time.sleep(_ANIM_DELAY)
 
     finally:
-        _alienfw.set_all(*_IDLE_COLOR)
+        # Don't set a color on exit — just stop calling LFX functions and
+        # AWCC naturally reclaims the tower with its own theme.
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -378,18 +380,17 @@ def _tower_rainbow_loop(stop: threading.Event) -> None:
 def initialize() -> None:
     """
     Call once at bot startup.
-    Takes Corsair exclusive control and sets idle blue on both backends
-    so the keyboard and tower show the Enkidu idle state immediately.
+    Releases Corsair SDK control so iCUE runs its own theme.
+    Tower is left entirely to AWCC — we only take over during inference.
     """
-    _corsair_take_control_and_set(*_IDLE_COLOR)
-    _alienfw.set_all(*_IDLE_COLOR)
+    _corsair_release_control()
 
 
 def inference_start() -> None:
     """
     Signal that Enkidu is thinking.
-    - Keyboard: deep purple (static, reliable)
-    - Tower:    rainbow animation via LightFX
+    - Keyboard: takes iCUE exclusive control → deep purple
+    - Tower:    galaxy swirl animation via LightFX (overrides AWCC)
     """
     global _tower_thread
 
@@ -409,20 +410,20 @@ def inference_start() -> None:
 def inference_stop() -> None:
     """
     Signal that inference is complete.
-    - Keyboard: takes iCUE SDK control back → sets idle blue
-    - Tower:    stops rainbow thread → restores idle blue
+    - Tower:    stops animation; AWCC reclaims the tower with its own theme
+    - Keyboard: releases iCUE SDK control so iCUE resumes its own theme
     """
     global _tower_thread
 
-    # Stop tower rainbow (the thread's finally block sets idle blue)
+    # Stop tower animation — AWCC takes back over naturally once we stop
+    # calling LFX functions.
     if _tower_thread and _tower_thread.is_alive():
         _tower_stop.set()
         _tower_thread.join(timeout=2.0)
         _tower_thread = None
-    elif _alienfw.ready:
-        _alienfw.set_all(*_IDLE_COLOR)
 
-    _corsair_take_control_and_set(*_IDLE_COLOR)
+    # Release Corsair control → iCUE resumes its active preset
+    _corsair_release_control()
 
 
 # ---------------------------------------------------------------------------
