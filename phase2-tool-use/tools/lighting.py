@@ -33,12 +33,20 @@ Public API:
 
 import ctypes
 import math
+import os
 import time
 import threading
 import logging
 from typing import Optional
 
 logger = logging.getLogger("enkidu.lighting")
+
+_USE_CORSAIR = os.environ.get("ENKIDU_LIGHTING_CORSAIR", "0").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+_USE_ALIENFX = os.environ.get("ENKIDU_LIGHTING_ALIENFX", "1").strip().lower() in {
+    "1", "true", "yes", "on"
+}
 
 try:
     from cuesdk import (
@@ -383,7 +391,8 @@ def initialize() -> None:
     Releases Corsair SDK control so iCUE runs its own theme.
     Tower is left entirely to AWCC — we only take over during inference.
     """
-    _corsair_release_control()
+    if _USE_CORSAIR:
+        _corsair_release_control()
 
 
 def inference_start() -> None:
@@ -394,9 +403,10 @@ def inference_start() -> None:
     """
     global _tower_thread
 
-    _corsair_take_control_and_set(*_THINKING_COLOR)
+    if _USE_CORSAIR:
+        _corsair_take_control_and_set(*_THINKING_COLOR)
 
-    if _alienfw.ready and not (_tower_thread and _tower_thread.is_alive()):
+    if _USE_ALIENFX and _alienfw.ready and not (_tower_thread and _tower_thread.is_alive()):
         _tower_stop.clear()
         _tower_thread = threading.Thread(
             target=_tower_rainbow_loop,
@@ -417,13 +427,14 @@ def inference_stop() -> None:
 
     # Stop tower animation — AWCC takes back over naturally once we stop
     # calling LFX functions.
-    if _tower_thread and _tower_thread.is_alive():
+    if _USE_ALIENFX and _tower_thread and _tower_thread.is_alive():
         _tower_stop.set()
         _tower_thread.join(timeout=2.0)
         _tower_thread = None
 
     # Release Corsair control → iCUE resumes its active preset
-    _corsair_release_control()
+    if _USE_CORSAIR:
+        _corsair_release_control()
 
 
 # ---------------------------------------------------------------------------

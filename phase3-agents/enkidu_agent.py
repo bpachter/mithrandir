@@ -46,6 +46,12 @@ from pydantic import BaseModel, field_validator, ValidationError
 
 load_dotenv()
 
+# Lighting can crash some environments due native SDK/DLL interactions.
+# Keep it opt-in so chat reliability is never blocked by RGB control.
+_ENABLE_LIGHTING = os.environ.get("ENKIDU_ENABLE_LIGHTING", "0").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+
 # Pull tool registry from phase3-agents/tools/
 _tools_path = os.path.join(os.path.dirname(__file__), "tools")
 if _tools_path not in sys.path:
@@ -54,15 +60,25 @@ if _tools_path not in sys.path:
 from registry import TOOLS, dispatch, tool_descriptions, get_regime, _call_memory_bridge  # noqa: E402
 
 # Optional RGB lighting — phase2-tool-use/tools/lighting.py
-# Silent no-op if cuesdk / LightFX.dll are unavailable.
-_lighting_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "phase2-tool-use", "tools"))
-if _lighting_path not in sys.path:
-    sys.path.insert(0, _lighting_path)
-try:
-    from lighting import inference_start as _lighting_start, inference_stop as _lighting_stop
-except Exception:
-    def _lighting_start(): pass
-    def _lighting_stop(): pass
+# Disabled by default for stability; enable with ENKIDU_ENABLE_LIGHTING=1.
+if _ENABLE_LIGHTING:
+    _lighting_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "phase2-tool-use", "tools"))
+    if _lighting_path not in sys.path:
+        sys.path.insert(0, _lighting_path)
+    try:
+        from lighting import inference_start as _lighting_start, inference_stop as _lighting_stop
+    except Exception:
+        def _lighting_start():
+            pass
+
+        def _lighting_stop():
+            pass
+else:
+    def _lighting_start():
+        pass
+
+    def _lighting_stop():
+        pass
 
 # ---------------------------------------------------------------------------
 # Config
@@ -75,8 +91,12 @@ MAX_ITERATIONS = 8
 CLAUDE_MODEL = "claude-sonnet-4-6"
 
 # Local Ollama inference — used for general queries that don't need tools.
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+# Backward compatible with older .env files that use OLLAMA_HOST.
+OLLAMA_URL = os.environ.get("OLLAMA_URL") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:26b")
+_FORCE_LOCAL_ONLY = os.environ.get("ENKIDU_FORCE_LOCAL_ONLY", "0").strip().lower() in {
+    "1", "true", "yes", "on"
+}
 
 
 # ---------------------------------------------------------------------------
@@ -399,7 +419,7 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
                 "stream": True,
             },
             stream=True,
-            timeout=(90, 300),  # (connect, read) — connect allows cold model load
+            timeout=(180, 300),  # (connect, read) — 3 min for cold 26B model load
         )
         resp.raise_for_status()
 
@@ -490,13 +510,28 @@ def _run_agent_inner(
     save_memory: bool = True,
 ) -> str:
     # --- Routing decision ---
+    if _FORCE_LOCAL_ONLY:
+        if on_step:
+            on_step(f"Routing: forced local GPU ({OLLAMA_MODEL})")
+        result = _run_local(user_message, on_step=on_step, save_memory=save_memory)
+        if result is not None:
+            return result
+        return (
+            "Error: local mode is forced but Ollama is unavailable. "
+            "Start Ollama or disable ENKIDU_FORCE_LOCAL_ONLY."
+        )
+
     if not _needs_tools(user_message):
+        if on_step:
+            on_step(f"Routing: local GPU ({OLLAMA_MODEL})")
         result = _run_local(user_message, on_step=on_step, save_memory=save_memory)
         if result is not None:
             return result
         # Ollama unreachable — fall through to Claude
         if on_step:
             on_step("Local GPU unavailable, falling back to cloud...")
+    elif on_step:
+        on_step("Routing: cloud tool mode (query requires tools/live data)")
 
     try:
         from anthropic import Anthropic

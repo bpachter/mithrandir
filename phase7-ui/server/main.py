@@ -321,13 +321,13 @@ async def ws_chat(ws: WebSocket):
                 continue
 
             # Stream progress steps back to client
+            loop = asyncio.get_running_loop()
+
             def on_step(msg: str):
                 asyncio.run_coroutine_threadsafe(
                     ws.send_json({"type": "step", "content": msg}),
                     loop,
                 )
-
-            loop = asyncio.get_event_loop()
 
             if run_agent is None:
                 await ws.send_json({"type": "error", "content": "Agent unavailable"})

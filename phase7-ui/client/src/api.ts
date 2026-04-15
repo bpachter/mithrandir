@@ -16,12 +16,14 @@ export async function saveParams(params: object) {
 
 export async function fetchHistory() {
   const r = await fetch(`${BASE}/api/history`)
-  return r.json()
+  const data = await r.json()
+  return data.exchanges ?? []
 }
 
 export async function fetchPortfolio() {
   const r = await fetch(`${BASE}/api/portfolio`)
-  return r.json()
+  const data = await r.json()
+  return data.picks ?? []
 }
 
 export async function fetchRegime() {
