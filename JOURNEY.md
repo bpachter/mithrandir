@@ -673,3 +673,109 @@ Multiple fixes applied over the course of the session:
 | 6.11 | Suppress TeleBot log noise, fix `non_stop` kwarg, fix UTF-8 subprocess | clean logs |
 
 *This log will be updated as each phase progresses.*
+
+---
+
+## Phase 7 — Custom UI (Blade Runner Terminal)
+
+**Date:** April 15, 2026 | **Status:** 🔧 In Progress
+
+### Vision
+
+Replace Open WebUI with a fully custom web application that looks and feels like a terminal from the original Blade Runner (1982) — dark, amber-on-black, CRT scanlines, phosphor glow — while exposing every meaningful Enkidu capability in one place. This is the permanent home interface for the assistant.
+
+Open WebUI served well as a scaffold. Phase 7 replaces it with something purpose-built: designed around Enkidu's actual feature set rather than generic LLM chat.
+
+### Aesthetic Reference
+
+**Blade Runner (1982) terminal aesthetic:**
+- Background: near-black (`#07080d`)
+- Primary text: amber (`#ff9500`) with phosphor glow
+- Accent: cold cyan (`#00e5ff`) for active/selected states
+- Warning/alert: neon red (`#ff1a40`)
+- Secondary: dim green (`#39d353`) for data readouts
+- Typography: monospace throughout — `Share Tech Mono` or `VT323` for headers, `Courier Prime` for body
+- Borders: 1 px solid with color-matched box-shadow glow, no border-radius
+- Effects: CSS scanline overlay (repeating-linear-gradient), subtle CRT flicker on load, typing cursor blink
+- Layout: panel-based grid — each section is a "terminal window" with a glowing title bar
+
+### Tech Stack
+
+| Layer | Choice | Reason |
+|-------|--------|--------|
+| Frontend | React 18 + Vite + TypeScript | Best dashboard/charting ecosystem; fast HMR dev loop |
+| Styling | Plain CSS + CSS variables | Full control over the retro aesthetic; no Tailwind abstractions |
+| Charts | Recharts | Composable, animatable — good for GPU gauges and sparklines |
+| State | Zustand | Minimal boilerplate for chat + settings state |
+| Real-time | WebSocket (native browser API) | GPU stats + chat streaming |
+| Backend | FastAPI (Python) | Fits existing Python stack; async WebSocket support |
+| Serving | Vite dev server (dev) / FastAPI static (prod) | One process in production |
+
+### Architecture
+
+```
+Browser (React SPA)
+    │
+    ├── WebSocket /ws/gpu       ← real-time GPU/CPU/RAM stats (10 Hz)
+    ├── WebSocket /ws/chat      ← streaming chat tokens
+    ├── POST /api/chat          ← non-streaming fallback
+    ├── GET  /api/history       ← conversation history from Phase 4 memory
+    ├── GET  /api/params        ← current Gemma4 parameter values
+    ├── POST /api/params        ← update Gemma4 parameters (temp, top_p, etc.)
+    ├── GET  /api/portfolio     ← QV screener portfolio snapshot
+    └── GET  /api/regime        ← current HMM market regime
+
+FastAPI server (phase7-ui/server/main.py)
+    │
+    ├── enkidu_agent.run_agent()     ← Phase 3 ReAct loop
+    ├── lighting.inference_start/stop ← Phase 6 RGB
+    ├── system_info.get_context()    ← Phase 2 GPU stats
+    └── memory_bridge (subprocess)  ← Phase 4 memory
+```
+
+### UI Panels
+
+| Panel | Content |
+|-------|---------|
+| **Chat** | Message thread, streaming response, model indicator (Gemma/Claude), send input |
+| **GPU Dashboard** | VRAM bar, GPU temp gauge, utilization %, power draw — live updates at 2 Hz |
+| **System** | CPU %, RAM usage, disk I/O |
+| **Model Parameters** | Sliders/inputs: temperature, top_p, top_k, repeat_penalty, context length, seed |
+| **Market** | Current HMM regime badge, QV portfolio top picks, signal performance sparkline |
+| **History** | Scrollable past conversation list, click to restore |
+| **Lighting** | Live toggle + current mode indicator (idle blue / inference swirl) |
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ENKIDU  v7.0  ░░░░░░░░░  2026.04.15  ░░░░░░░░  ONLINE         │
+├───────────────────────────┬─────────────────────────────────────┤
+│                           │  GPU  ████████░░  78%  62°C  280W  │
+│   CHAT TERMINAL           │  RAM  █████░░░░░  51%  33.1 GB     │
+│                           │  CPU  ███░░░░░░░  31%              │
+│   > ...                   ├─────────────────────────────────────┤
+│                           │  REGIME:  EXPANSION  ▲ 94%         │
+│                           │  TOP PICKS:  NUE  CLF  STLD ...    │
+│                           ├─────────────────────────────────────┤
+│                           │  MODEL PARAMS                       │
+│                           │  TEMP   ──●────  0.7               │
+│                           │  TOP_P  ────●──  0.9               │
+├───────────────────────────┴─────────────────────────────────────┤
+│  HISTORY  │  2026-04-15  Compare NUE vs CLF  │  ...            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Build Order
+
+| Step | Component | Notes |
+|------|-----------|-------|
+| 7.1  | `phase7-ui/` scaffold — FastAPI backend + React/Vite frontend | `npm create vite`, FastAPI app, dev proxy |
+| 7.2  | Blade Runner CSS design system | variables, scanline overlay, glow utilities, typography |
+| 7.3  | Chat panel — send/receive, streaming via WebSocket | wire to `run_agent()` |
+| 7.4  | GPU dashboard panel — live WebSocket at 2 Hz | `system_info.get_context()` |
+| 7.5  | Model parameters panel — sliders wired to Ollama `/api/generate` options | temp, top_p, top_k, repeat_penalty |
+| 7.6  | Market panel — regime badge + QV portfolio top picks | `regime_detector` + `edgar_screener` |
+| 7.7  | Conversation history panel — load from Phase 4 memory | `memory_bridge retrieve` |
+| 7.8  | Lighting status widget — inference state indicator | |
+| 7.9  | Production build — FastAPI serves compiled React SPA | replace Open WebUI |
