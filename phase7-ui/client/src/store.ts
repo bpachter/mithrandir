@@ -81,7 +81,7 @@ interface AppState {
   regime: RegimeInfo | null
   memory: MemoryEntry[]
   memoryStats: MemoryStats | null
-  rightTab: 'gpu' | 'params' | 'market' | 'memory'
+  rightTab: 'gpu' | 'params' | 'market' | 'memory' | 'voice'
   bottomTab: 'history'
   activeConversationId: string | null
 

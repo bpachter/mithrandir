@@ -5,6 +5,7 @@ import ModelParamsPanel from './components/ModelParamsPanel'
 import MarketPanel from './components/MarketPanel'
 import MemoryPanel from './components/MemoryPanel'
 import HistoryPanel from './components/HistoryPanel'
+import VoicePanel from './components/VoicePanel'
 import { useStore } from './store'
 
 export default function App() {
@@ -45,6 +46,12 @@ export default function App() {
           >
             MEMORY
           </button>
+          <button
+            className={`tab-btn ${rightTab === 'voice' ? 'active' : ''}`}
+            onClick={() => setRightTab('voice')}
+          >
+            VOICE
+          </button>
         </div>
 
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -52,6 +59,7 @@ export default function App() {
           {rightTab === 'params' && <ModelParamsPanel />}
           {rightTab === 'market' && <MarketPanel />}
           {rightTab === 'memory' && <MemoryPanel />}
+          {rightTab === 'voice'  && <VoicePanel />}
         </div>
       </div>
 

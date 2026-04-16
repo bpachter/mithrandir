@@ -16,6 +16,7 @@ Serves compiled React SPA from ../client/dist in production.
 """
 
 import asyncio
+import base64
 import json
 import logging
 import os
@@ -35,6 +36,24 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
+# Voice module (STT + TTS) — imported lazily so missing deps don't crash startup
+_voice = None
+
+def _get_voice():
+    global _voice
+    if _voice is not None:
+        return _voice
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("voice", Path(__file__).parent / "voice.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _voice = mod
+        logger.info("Voice module loaded.")
+    except Exception as e:
+        logger.warning(f"Voice module unavailable: {e}")
+    return _voice
 
 # ---------------------------------------------------------------------------
 # Paths — reach back into the Enkidu monorepo
@@ -486,6 +505,110 @@ async def ws_chat(ws: WebSocket):
 
     except (WebSocketDisconnect, Exception):
         pass
+
+# ---------------------------------------------------------------------------
+# WebSocket: voice (STT → agent → TTS)
+# ---------------------------------------------------------------------------
+
+@app.websocket("/ws/voice")
+async def ws_voice(ws: WebSocket):
+    """
+    Voice conversation loop.
+
+    Client sends:  {"type": "audio", "data": "<base64 float32 PCM>", "rate": 16000}
+    Server sends:  {"type": "status",     "content": "..."}     — progress label
+                   {"type": "transcript", "text": "..."}         — Whisper result
+                   {"type": "step",       "content": "..."}      — ReAct loop step
+                   {"type": "token",      "content": "..."}      — streaming token
+                   {"type": "response",   "content": "..."}      — full response (Claude path)
+                   {"type": "tts_audio",  "data": "<base64 mp3>"} — TTS output
+                   {"type": "done"}
+                   {"type": "error",      "content": "..."}
+    """
+    await ws.accept()
+    run_agent = _import_agent()
+    voice     = _get_voice()
+    loop      = asyncio.get_running_loop()
+
+    try:
+        while True:
+            data = await ws.receive_json()
+            if data.get("type") != "audio":
+                continue
+
+            raw_bytes   = base64.b64decode(data["data"])
+            sample_rate = int(data.get("rate", 16000))
+
+            # ── 1. Transcribe ──────────────────────────────────────────────
+            await ws.send_json({"type": "status", "content": "Transcribing…"})
+
+            if voice is None:
+                await ws.send_json({"type": "error", "content": "Voice module not available"})
+                await ws.send_json({"type": "done"})
+                continue
+
+            text = await loop.run_in_executor(
+                None, lambda: voice.transcribe(raw_bytes, sample_rate)
+            )
+
+            if not text:
+                await ws.send_json({"type": "error", "content": "Could not understand audio"})
+                await ws.send_json({"type": "done"})
+                continue
+
+            await ws.send_json({"type": "transcript", "text": text})
+            await ws.send_json({"type": "status", "content": "Thinking…"})
+
+            # ── 2. Run agent ───────────────────────────────────────────────
+            collected_tokens: list[str] = []
+
+            def on_step(msg: str):
+                asyncio.run_coroutine_threadsafe(
+                    ws.send_json({"type": "step", "content": msg}), loop
+                )
+
+            def on_token(tok: str):
+                collected_tokens.append(tok)
+                asyncio.run_coroutine_threadsafe(
+                    ws.send_json({"type": "token", "content": tok}), loop
+                )
+
+            if run_agent is None:
+                final_text = "Agent is unavailable right now."
+                await ws.send_json({"type": "response", "content": final_text})
+            else:
+                try:
+                    response = await loop.run_in_executor(
+                        None,
+                        lambda: run_agent(text, on_step=on_step, on_token=on_token),
+                    )
+                    if collected_tokens:
+                        final_text = "".join(collected_tokens)
+                    else:
+                        # Claude tool-use path — full response, no tokens
+                        final_text = response or ""
+                        await ws.send_json({"type": "response", "content": final_text})
+                except Exception as e:
+                    await ws.send_json({"type": "error", "content": str(e)})
+                    await ws.send_json({"type": "done"})
+                    continue
+
+            # ── 3. TTS ─────────────────────────────────────────────────────
+            await ws.send_json({"type": "status", "content": "Speaking…"})
+
+            mp3_bytes = await voice.synthesize(final_text)
+            if mp3_bytes:
+                await ws.send_json({
+                    "type": "tts_audio",
+                    "data": base64.b64encode(mp3_bytes).decode(),
+                    "format": "mp3",
+                })
+
+            await ws.send_json({"type": "done"})
+
+    except (WebSocketDisconnect, Exception):
+        pass
+
 
 # ---------------------------------------------------------------------------
 # Serve compiled React SPA (production)
