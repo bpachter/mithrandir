@@ -117,7 +117,7 @@ export default function ChatPanel() {
   }
 
   return (
-    <div className="panel panel-chat">
+    <div className="panel panel-chat" style={{ flex: 1, minHeight: 0 }}>
       <div className="panel-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span>
           CHAT TERMINAL

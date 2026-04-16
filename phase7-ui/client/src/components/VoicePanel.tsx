@@ -288,7 +288,7 @@ export default function VoicePanel() {
   const isBusy      = voiceState === 'thinking' || voiceState === 'speaking'
 
   return (
-    <div className="panel" style={{ padding: 0, userSelect: 'none' }}>
+    <div className="panel" style={{ padding: 0, userSelect: 'none', flex: 1, minHeight: 0 }}>
       <div className="panel-title">VOICE TERMINAL</div>
 
       <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center' }}>

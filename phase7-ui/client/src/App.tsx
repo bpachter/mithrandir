@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import Header          from './components/Header'
 import ChatPanel       from './components/ChatPanel'
-import GpuPanel        from './components/GpuPanel'
-import SystemMiniPanel from './components/SystemMiniPanel'
+import SystemMiniPanel   from './components/SystemMiniPanel'
+import GpuHistoryPanel  from './components/GpuHistoryPanel'
 import ModelParamsPanel from './components/ModelParamsPanel'
 import MarketPanel     from './components/MarketPanel'
 import MemoryPanel     from './components/MemoryPanel'
@@ -14,12 +14,24 @@ import { createGpuSocket } from './api'
 type RightBottomTab = 'params' | 'memory'
 
 export default function App() {
-  const setGpuStats          = useStore((s) => s.setGpuStats)
-  const [rbTab, setRbTab]    = useState<RightBottomTab>('params')
+  const setGpuStats    = useStore((s) => s.setGpuStats)
+  const pushGpuHistory = useStore((s) => s.pushGpuHistory)
+  const [rbTab, setRbTab] = useState<RightBottomTab>('params')
 
   // GPU WebSocket lives here — always connected regardless of which panel is visible
   useEffect(() => {
-    const ws = createGpuSocket((s) => setGpuStats(s as any))
+    const ws = createGpuSocket((raw) => {
+      const s = raw as any
+      setGpuStats(s)
+      pushGpuHistory({
+        ts:          Date.now(),
+        gpu_util:    s.gpu_util,
+        vram_pct:    (s.vram_used / s.vram_total) * 100,
+        temp:        s.temp,
+        power:       s.power_draw,
+        cpu_percent: s.cpu_percent,
+      })
+    })
     return () => ws.close()
   }, [])
 
@@ -30,18 +42,14 @@ export default function App() {
 
       {/* ── Left column: Voice + compact system stats ── */}
       <div className="col-left">
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <VoicePanel />
-        </div>
+        <VoicePanel />
         <SystemMiniPanel />
       </div>
 
       {/* ── Center column: Chat + History ── */}
       <div className="col-center">
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <ChatPanel />
-        </div>
-        <div style={{ flexShrink: 0, height: 180, borderTop: '1px solid var(--border)', overflow: 'hidden' }}>
+        <ChatPanel />
+        <div style={{ flexShrink: 0, height: 180, borderTop: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <HistoryPanel />
         </div>
       </div>
@@ -68,17 +76,6 @@ export default function App() {
             >
               MEMORY
             </button>
-            <button
-              className="tab-btn"
-              onClick={() => {
-                const ws = createGpuSocket((s) => setGpuStats(s as any))
-                setTimeout(() => ws.close(), 100)
-              }}
-              title="Full GPU breakdown (SYSTEM tab removed — stats always visible)"
-              style={{ display: 'none' }}
-            >
-              SYSTEM
-            </button>
           </div>
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
             {rbTab === 'params' && <ModelParamsPanel />}
@@ -95,8 +92,8 @@ export default function App() {
           }}>
             ▸ GPU DETAIL
           </summary>
-          <div style={{ maxHeight: 220, overflow: 'auto' }}>
-            <GpuPanel />
+          <div style={{ maxHeight: 320, overflow: 'auto' }}>
+            <GpuHistoryPanel />
           </div>
         </details>
       </div>

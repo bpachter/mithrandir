@@ -63,6 +63,17 @@ export interface MemoryStats {
   avg_score: number | null
 }
 
+export interface GpuHistoryPoint {
+  ts:          number
+  gpu_util:    number
+  vram_pct:    number
+  temp:        number
+  power:       number
+  cpu_percent: number
+}
+
+const GPU_HISTORY_MAX = 120   // 60 seconds at 2 Hz
+
 export interface RegimeInfo {
   regime: string
   confidence: number
@@ -75,6 +86,7 @@ interface AppState {
   messages: Message[]
   busy: boolean
   gpuStats: GpuStats | null
+  gpuHistory: GpuHistoryPoint[]
   params: GemmaParams
   history: HistoryItem[]
   portfolio: PortfolioPick[]
@@ -89,6 +101,7 @@ interface AppState {
   appendStep: (id: string, step: string) => void
   setBusy: (b: boolean) => void
   setGpuStats: (s: GpuStats) => void
+  pushGpuHistory: (p: GpuHistoryPoint) => void
   setParams: (p: Partial<GemmaParams>) => void
   setHistory: (h: HistoryItem[]) => void
   setPortfolio: (p: PortfolioPick[]) => void
@@ -102,9 +115,10 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set) => ({
-  messages:  [],
-  busy:      false,
-  gpuStats:  null,
+  messages:   [],
+  busy:       false,
+  gpuStats:   null,
+  gpuHistory: [],
   params: {
     temperature: 0.7, top_p: 0.9, top_k: 40,
     repeat_penalty: 1.1, num_ctx: 8192, seed: -1,
@@ -126,6 +140,11 @@ export const useStore = create<AppState>((set) => ({
   })),
   setBusy:     (b)    => set({ busy: b }),
   setGpuStats: (stats)=> set({ gpuStats: stats }),
+  pushGpuHistory: (p) => set((s) => ({
+    gpuHistory: s.gpuHistory.length >= GPU_HISTORY_MAX
+      ? [...s.gpuHistory.slice(1), p]
+      : [...s.gpuHistory, p],
+  })),
   setParams:   (p)    => set((s) => ({ params: { ...s.params, ...p } })),
   setHistory:  (h)    => set({ history: h }),
   setPortfolio:(p)    => set({ portfolio: p }),
