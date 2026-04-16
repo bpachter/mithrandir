@@ -779,3 +779,101 @@ FastAPI server (phase7-ui/server/main.py)
 | 7.7  | Conversation history panel — load from Phase 4 memory | `memory_bridge retrieve` |
 | 7.8  | Lighting status widget — inference state indicator | |
 | 7.9  | Production build — FastAPI serves compiled React SPA | replace Open WebUI |
+| 7.10 | 3-column layout redesign | VoicePanel left, Chat center, Market/GPU right |
+| 7.11 | GPU history sparklines (GpuHistoryPanel) | iCUE-style Recharts AreaChart, 120-pt ring buffer |
+| 7.12 | SystemMiniPanel — compact 112px strip | VRAM, GPU temp, CPU, RAM with color thresholds |
+| 7.13 | ChatPanel height fix | flex: 1 + minHeight: 0 to fill center column |
+| 7.14 | Header live GPU stats | VRAM%, temp, power inline in the header bar |
+
+### What Broke (Phase 7)
+
+**GPU WebSocket ownership conflict.** GpuPanel and App.tsx both tried to open `/ws/gpu`. Only one WebSocket owner is correct — moved to App.tsx so GPU stats flow to both SystemMiniPanel and GpuHistoryPanel regardless of which is visible.
+
+**TypeScript `'voice'` not in `rightTab` union.** Adding VoicePanel caused a TS error because `'voice'` wasn't in the store's `rightTab` type. Fixed by adding it to the union.
+
+**Header.tsx syntax error — stray quote.** An em-dash comment inside a `fontSize` style string stored as `fontSize: 14'` (extra quote). Rewrote Header.tsx cleanly.
+
+**GpuHistoryPanel import error.** `import { GpuHistoryPoint }` failed with `verbatimModuleSyntax` enabled. Fixed: `import type { GpuHistoryPoint }`.
+
+**Recharts bundle size warning.** Recharts adds ~400 KB to the bundle. This is expected and acceptable — code-splitting could address it later but is not worth the complexity now.
+
+### What Was Learned
+
+- **CSS Grid with internal flex columns** is the right pattern for a multi-panel dashboard. The grid handles column widths; flex handles vertical distribution within each column.
+- **Ring buffers in Zustand** (`gpuHistory.slice(1)`) give you a constant-memory 60-second history with no cleanup needed.
+- **`isAnimationActive={false}` on Recharts AreaChart** is critical for high-frequency data — without it, the chart re-animates every 500ms update and flickers visibly.
+- **Always own WebSockets at the top level.** If two components need the same stream, one parent owns the WS and pushes state down. Never open the same WS from two siblings.
+
+---
+
+## Phase 8 — Voice Interaction
+
+**Date:** April 16, 2026 | **Status:** ✅ Complete
+
+### Vision
+
+Give Enkidu a conversational voice: speak naturally, it listens, responds aloud. No buttons during normal use — just talk. The feel should be closer to science fiction AI (JARVIS, HAL 9000) than a smart speaker.
+
+Three sub-goals:
+1. **Accurate STT** — fast-whisper small.en on CUDA; near-realtime transcription, strong English accuracy
+2. **Natural TTS** — Microsoft edge-tts neural voice; no API key, no cloud dependency beyond the TTS call itself
+3. **Hands-free conversation loop** — VAD auto-stop + auto-restart so no button is ever required
+
+### What Was Built
+
+**`phase7-ui/server/voice.py`**
+- `transcribe(raw_bytes, sample_rate)` — `np.frombuffer` float32 → resample if needed → `WhisperModel.transcribe` with `vad_filter=True`
+- `synthesize(text)` — `edge_tts.Communicate(text, voice)` async stream → MP3 bytes
+- Lazy Whisper model load: CUDA float16 on first call, CPU int8 fallback
+- `_resample()`: scipy `resample_poly` with numpy `interp` fallback
+- Model: `small.en` (244 MB, English-only) — better accuracy than `base.en` at negligible VRAM cost on the 4090
+- Voice: `en-US-BrianNeural` — deep, natural Microsoft neural voice
+
+**`phase7-ui/server/main.py` — `/ws/voice` endpoint**
+- Receives `{type: "audio", data: <base64 float32>, rate: <sample_rate>}`
+- Pipeline: Whisper transcribe → `run_agent()` (streaming tokens) → edge-tts synthesize → send MP3 back
+- All three steps are threadsafe: blocking calls wrapped in `loop.run_in_executor`
+- Sends progress messages (`status`, `transcript`, `step`, `token`, `tts_audio`, `done`) so the UI can show each stage
+
+**`phase7-ui/client/src/components/VoicePanel.tsx`** — full conversational UI:
+- **VAD (Voice Activity Detection)** — `AnalyserNode` polled every 80ms; RMS compared against thresholds. Recording auto-stops after 900ms of silence following ≥400ms of detected speech. No click required.
+- **Frequency waveform** — canvas `requestAnimationFrame` renders FFT frequency bars (lower half = voice range). Red while recording, green while speaking, cyan otherwise.
+- **Level bar** — 3px animated bar shows mic energy while recording.
+- **Auto-conversation LOOP mode** — after TTS finishes playing, automatically starts listening again. Fully hands-free back-and-forth.
+- **Three toggles**: VAD (auto-stop), SPEAK (auto-play TTS), LOOP (continuous conversation)
+- Push-to-talk fallback: click the mic button or hold Space bar (overrides VAD)
+- `chunksToBase64()`: Float32Array → Uint8Array → btoa in 8192-byte chunks
+- `playMp3Base64()`: decode → Blob URL → new Audio() → play → revoke
+
+### What Broke
+
+**Mic silent — AudioContext suspended on Windows.** `onaudioprocess` never fired. Cause: browsers on Windows start AudioContext in `suspended` state and require an explicit `await audioCtx.resume()`. Fix: added the resume call after creating the context.
+
+**`sampleRate: 16000` constraint rejected the headset.** Some devices don't support non-native sample rates. Fix: removed the `sampleRate` hint — let the browser use the native rate, send it to the server, and resample server-side with scipy/numpy.
+
+**Pip `[WinError 2]` on packages with console scripts.** Installing `kokoro-onnx` (the original TTS candidate) failed because pip couldn't create `.exe` shims in `C:\Python312\Scripts\` due to file locks. Switched to `edge-tts` which has no native binaries and installs cleanly.
+
+**VAD too sensitive / not sensitive enough.** Initial thresholds caused either constant false triggers or missed real speech. Tuned: `SPEECH_THRESHOLD = 0.012`, `SILENCE_THRESHOLD = 0.008`, `SILENCE_DURATION_MS = 900`, `MIN_SPEECH_MS = 400`. These work well for conversational voice at normal desktop distances.
+
+### What Was Learned
+
+- **AudioContext on Windows always starts suspended.** You must call `.resume()` before `onaudioprocess` will fire. This is a browser security restriction — audio capture requires an explicit user gesture or explicit resume.
+- **Native sample rate is always correct.** Never fight the device's native rate. Capture at whatever rate the hardware prefers and resample server-side. scipy's `resample_poly` with `math.gcd` is clean and accurate.
+- **VAD from first principles** — RMS energy from an AnalyserNode float time-domain buffer is enough to distinguish speech from silence for a close-mic use case. No ML model needed.
+- **Waveform visualization** needs to skip DC and ultrasonic bins. Taking only the lower half of the FFT spectrum (`frequencyBinCount / 2`) keeps the display in the voice frequency range (80 Hz–4 kHz) and avoids meaningless high-frequency noise filling the bars.
+- **edge-tts is remarkably good for a free service.** BrianNeural sounds natural enough for conversational use. The async streaming API returns MP3 chunks that can be concatenated and played directly.
+
+### Build Order
+
+| Step | Component | Notes |
+|------|-----------|-------|
+| 8.1 | `voice.py` — faster-whisper STT | CUDA float16, small.en, vad_filter |
+| 8.2 | `voice.py` — edge-tts TTS | BrianNeural, async MP3 stream |
+| 8.3 | `/ws/voice` WebSocket in `main.py` | transcribe → agent → synthesize pipeline |
+| 8.4 | `VoicePanel.tsx` — initial push-to-talk | device selector, AudioContext resume fix |
+| 8.5 | `VoicePanel.tsx` — VAD auto-stop | AnalyserNode, RMS polling, silence detection |
+| 8.6 | `VoicePanel.tsx` — frequency waveform | canvas FFT bars, requestAnimationFrame |
+| 8.7 | `VoicePanel.tsx` — auto-conversation LOOP | restart recording after TTS completes |
+| 8.8 | Upgrade Whisper `base.en` → `small.en` | better accuracy, negligible VRAM cost on 4090 |
+| 8.9 | `enkidu_agent.py` — identity grounding fix | always inject "user is Ben Pachter" — kills Cody hallucination |
+| 8.10 | `enkidu_agent.py` — self-reference recall fix | `_get_last_exchange()` + `_is_self_reference()` wired into both system prompts |

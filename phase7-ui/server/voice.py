@@ -18,7 +18,7 @@ logger = logging.getLogger("enkidu.voice")
 # STT — faster-whisper
 # ---------------------------------------------------------------------------
 
-_WHISPER_MODEL_SIZE = "base.en"   # small footprint, English-only, ~145 MB
+_WHISPER_MODEL_SIZE = "small.en"  # English-only, ~244 MB — noticeably better than base
 _whisper: Optional[object] = None
 
 
@@ -95,7 +95,7 @@ def transcribe(raw_bytes: bytes, sample_rate: int = 16000) -> str:
 # TTS — edge-tts
 # ---------------------------------------------------------------------------
 
-_TTS_VOICE = "en-US-GuyNeural"   # switch to "en-US-AriaNeural" for female
+_TTS_VOICE = "en-US-BrianNeural"  # deep, natural Microsoft neural voice
 
 
 async def synthesize(text: str) -> bytes:

@@ -1,73 +1,90 @@
-# React + TypeScript + Vite
+# Enkidu UI — React Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Custom Blade Runner terminal dashboard for the Enkidu AI assistant. Replaces Open WebUI with a purpose-built interface.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 18** + **Vite** + **TypeScript**
+- **Recharts** — GPU/system sparkline history charts
+- **Zustand** — global state (chat messages, GPU history ring buffer, model params, memory)
+- **Web Audio API** — microphone capture, VAD, waveform visualization
 
-## React Compiler
+## Dev Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev      # http://localhost:5173 (proxies /api and /ws to :8000)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Requires the FastAPI backend running: `python phase7-ui/server/main.py`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Production Build
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build    # outputs to dist/
 ```
+
+FastAPI serves `dist/` as a static SPA at `http://localhost:8000`.
+
+## Layout
+
+3-column CSS Grid:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ENKIDU  v8.0   VRAM 72%   62°C   285W        2026.04.16  ONLINE │
+├──────────────┬───────────────────────────┬───────────────────────┤
+│ VOICE        │ CHAT TERMINAL             │ MARKET                │
+│ TERMINAL     │                           │ regime + QV picks     │
+│              │ streaming responses       ├───────────────────────┤
+│ mic button   │ with model indicator      │ PARAMS / MEMORY tabs  │
+│ waveform     │                           ├───────────────────────┤
+│ VAD toggles  ├───────────────────────────┤ ▸ GPU DETAIL          │
+│              │ HISTORY (180px)           │   sparklines          │
+├──────────────┴───────────────────────────┴───────────────────────┤
+│  SYS: VRAM ████ 72%  GPU 68% 62°C  CPU 31%  RAM 55%             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## Components
+
+| Component | Description |
+|-----------|-------------|
+| `App.tsx` | Layout shell; owns GPU WebSocket (always connected) |
+| `ChatPanel.tsx` | Message thread; streaming tokens via `/ws/chat` |
+| `VoicePanel.tsx` | Push-to-talk + VAD + frequency waveform + auto-conversation loop |
+| `SystemMiniPanel.tsx` | Compact 112px strip — VRAM, GPU temp, CPU, RAM |
+| `GpuHistoryPanel.tsx` | 6 iCUE-style sparklines: GPU util, VRAM, temp, power, CPU, RAM |
+| `MarketPanel.tsx` | HMM regime badge + QV portfolio top picks |
+| `ModelParamsPanel.tsx` | Gemma parameter sliders (temp, top_p, top_k, etc.) |
+| `MemoryPanel.tsx` | Past conversation memory viewer |
+| `HistoryPanel.tsx` | Session conversation history |
+| `Header.tsx` | Title bar with live GPU stats inline |
+
+## Voice System (Phase 8)
+
+VoicePanel connects to `/ws/voice` which runs:
+
+1. **Whisper STT** (faster-whisper `small.en`, CUDA float16) — first use auto-downloads ~244 MB
+2. **Enkidu agent** (`run_agent()`) — Gemma/Claude routing, tool use, streaming tokens
+3. **edge-tts TTS** (`en-US-BrianNeural`) — MP3 streamed back and played
+
+VAD toggles:
+- **VAD** — auto-stop recording on 900ms of silence (no click needed to send)
+- **SPEAK** — auto-play TTS response
+- **LOOP** — after speaking, automatically start listening again (hands-free conversation)
+
+## Design System
+
+All colors are CSS variables in `index.css`:
+
+```css
+--bg-base:    #07080d   /* near-black background */
+--amber:      #ff9500   /* primary text + UI */
+--cyan:       #00e5ff   /* active / selected states */
+--red:        #ff1a40   /* alerts + recording state */
+--green:      #39d353   /* success + speaking state */
+--white-dim:  #8899aa   /* secondary text */
+```
+
+Aesthetic: Blade Runner (1982) terminal — phosphor glow, CRT scanline overlay, monospace throughout.

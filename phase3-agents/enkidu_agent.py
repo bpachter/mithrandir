@@ -162,6 +162,41 @@ Rules:
 """
 
 
+# ---------------------------------------------------------------------------
+# Identity + last-exchange helpers
+# ---------------------------------------------------------------------------
+
+def _get_last_exchange() -> tuple[str, str] | None:
+    """Return (user_msg, asst_msg) of the most recent saved exchange, or None."""
+    try:
+        import sqlite3
+        _here = os.path.dirname(__file__)
+        db_path = os.path.normpath(os.path.join(_here, "..", "phase4-memory", "memory.db"))
+        conn = sqlite3.connect(db_path)
+        row = conn.execute(
+            "SELECT user_msg, asst_msg FROM exchanges ORDER BY timestamp DESC LIMIT 1"
+        ).fetchone()
+        conn.close()
+        return (row[0], row[1]) if row else None
+    except Exception:
+        return None
+
+
+_SELF_REF_PATTERNS = [
+    "what did you say", "what did you just say",
+    "your last response", "your previous response",
+    "what was your last", "what you said", "you just said",
+    "literally your", "repeat that", "say that again",
+    "last message", "your last message", "what did you tell",
+]
+
+
+def _is_self_reference(query: str) -> bool:
+    """True when the user is asking Enkidu to recall its own prior output."""
+    lower = query.lower()
+    return any(p in lower for p in _SELF_REF_PATTERNS)
+
+
 def _build_system_prompt(user_message: str = "") -> str:
     try:
         regime_info = get_regime()
@@ -181,11 +216,35 @@ def _build_system_prompt(user_message: str = "") -> str:
         if retrieved and not retrieved.startswith("["):
             memory_block = retrieved
 
+    # Identity rule — always inject so the model never invents a different name
+    identity_block = (
+        "IDENTITY RULE: The user's name is Ben Pachter (Ben). "
+        "Never address him by any other name under any circumstances."
+    )
+
+    # Last exchange — always inject so Enkidu can recall its own prior output
+    last_exchange_block = ""
+    last_exchange = _get_last_exchange()
+    if last_exchange:
+        prev_user, prev_asst = last_exchange
+        if _is_self_reference(user_message):
+            last_exchange_block = (
+                "NOTE: The user is asking about your last response. "
+                f"It was:\n\nUser said: {prev_user}\nYou responded: {prev_asst}"
+            )
+        else:
+            last_exchange_block = (
+                f"Most recent exchange (for continuity):\n"
+                f"User: {prev_user}\nEnkidu: {prev_asst}"
+            )
+
+    extra = "\n\n".join(filter(None, [identity_block, last_exchange_block, memory_block]))
+
     return _SYSTEM_TEMPLATE.format(
         tools=tool_descriptions(),
         max_iter=MAX_ITERATIONS,
         regime=regime_block,
-        memory=memory_block,
+        memory=extra,
     )
 
 
@@ -346,6 +405,28 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         if retrieved and not retrieved.startswith("["):
             memory_block = f"\nRelevant past context:\n{retrieved}"
 
+    # Identity rule — must be first so model never invents a different name
+    identity_rule = (
+        "IDENTITY RULE: The user's name is Ben Pachter (Ben). "
+        "Never address him by any other name under any circumstances."
+    )
+
+    # Last exchange injection
+    last_exchange_block = ""
+    last_exchange = _get_last_exchange()
+    if last_exchange:
+        prev_user, prev_asst = last_exchange
+        if _is_self_reference(user_message):
+            last_exchange_block = (
+                "NOTE: The user is asking about your last response. "
+                f"It was:\n\nUser said: {prev_user}\nYou responded: {prev_asst}"
+            )
+        else:
+            last_exchange_block = (
+                f"Most recent exchange (for continuity):\n"
+                f"User: {prev_user}\nEnkidu: {prev_asst}"
+            )
+
     parts = [
         "You are Enkidu, a personal AI assistant built by Ben and running locally on his machine "
         "(an NVIDIA RTX 4090 GPU, Windows 11). You are powered by Gemma 4 26B via Ollama. "
@@ -358,8 +439,11 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         "Match the depth of your answer to the complexity of the question: short questions "
         "get concise answers, complex or personal questions get thorough, nuanced responses. "
         "Never pad with filler phrases like 'Great question!' or 'Certainly!'. "
-        "If you don't know something, say so directly."
+        "If you don't know something, say so directly.",
+        identity_rule,
     ]
+    if last_exchange_block:
+        parts.append(last_exchange_block)
     if web_context:
         parts.append(
             f"\n{web_context}\n"

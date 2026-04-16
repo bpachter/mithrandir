@@ -86,13 +86,22 @@ Everything below is free and open source.
 ## Architecture (Current State)
 
 ```
-iPhone (Telegram app)
-    ↓
-Telegram Bot API (short-polling, TLS patched for Windows)
+Interfaces
+    ├── Browser (React SPA — Blade Runner terminal UI)
+    │       WebSocket /ws/chat   ← streaming chat tokens
+    │       WebSocket /ws/gpu    ← live GPU/CPU/RAM stats (2 Hz)
+    │       WebSocket /ws/voice  ← STT → agent → TTS pipeline
+    │       REST APIs            ← history, portfolio, regime, params
+    └── iPhone (Telegram app)
+            Telegram Bot API (short-polling, TLS patched for Windows)
     ↓
 enkidu_agent.py — ReAct loop (Reason → Act → Observe)
     ↓
-Tool dispatch
+Routing: keyword/ticker heuristic
+    ├── Gemma 4 26B via Ollama (local GPU, free)    ← everyday queries
+    └── Claude claude-sonnet-4-6 via Anthropic API  ← tool-use / agentic queries
+    ↓
+Tool dispatch (Claude path)
     ├── edgar_screener   → SEC EDGAR financials + QV screened portfolio (116 quality-gated stocks)
     ├── python_sandbox   → subprocess code execution (pandas/numpy/scipy)
     ├── system_info      → GPU/CPU/RAM stats via nvidia-smi + psutil
@@ -102,14 +111,22 @@ Tool dispatch
     ├── recall_memory    → semantic search over past conversations (ChromaDB)
     ├── search_docs      → semantic search over codebase + JOURNEY.md (ChromaDB)
     └── web_search       → live web search via Tavily API (DDG fallback, no API key needed)
-    ↓
-Claude claude-sonnet-4-6 via Anthropic API (agentic loop)
-    ↓
-Response streamed back to Telegram
-    ↓
-[System prompt always includes: current HMM market regime + relevant memory context]
-[RGB keyboard soft blue at idle; rainbow animation during local inference]
+
+[Every query: HMM market regime + memory context + last exchange injected into system prompt]
+[Every Gemma query: live DuckDuckGo web context pre-fetched]
+[Identity grounding: user is always "Ben Pachter (Ben)" — prevents name hallucination]
+[RGB keyboard soft blue at idle; deep purple / galaxy swirl during inference]
 [Windows Task Scheduler: daily signal log + weekly alert push]
+
+Voice pipeline (Phase 8)
+    Microphone (Web Audio API, native sample rate, float32 PCM)
+    → VAD auto-stop (AnalyserNode RMS, 900ms silence threshold)
+    → WebSocket /ws/voice (base64 PCM + sample rate)
+    → Whisper small.en (CUDA float16, faster-whisper)
+    → enkidu_agent.run_agent()
+    → edge-tts BrianNeural (Microsoft neural TTS)
+    → MP3 streamed back and played in browser
+    → [optional] auto-restart listening for hands-free conversation loop
 ```
 
 ---
@@ -123,6 +140,9 @@ Response streamed back to Telegram
 | [Phase 3](./phase3-agents/) | ReAct agent loop + Telegram interface + HMM regime detection | ✅ Complete |
 | [Phase 4](./phase4-memory/) | Persistent memory via ChromaDB + SQLite + codebase RAG | ✅ Complete |
 | [Phase 5](./phase5-intelligence/) | Signal integrity, backtesting engine, proactive alerts | ✅ Complete |
+| Phase 6 | RGB lighting (Corsair iCUE + AlienFX), web search (Tavily/DDG), bot stability | ✅ Complete |
+| [Phase 7](./phase7-ui/) | Custom Blade Runner terminal UI — React/Vite/FastAPI, 3-column dashboard | ✅ Complete |
+| Phase 8 | Voice interaction — Whisper STT, edge-tts TTS, VAD auto-stop, conversation loop | ✅ Complete |
 
 ---
 
@@ -133,7 +153,10 @@ Response streamed back to Telegram
 | Local inference | [Ollama](https://ollama.com) + Gemma 4 26B (MoE) | 256K context, only 3.8B params active per inference, 18GB VRAM |
 | GPU | NVIDIA CUDA 12.x | Required for local inference — AMD ROCm not covered here |
 | Container runtime | Docker Desktop + WSL2 | Reproducible setup, GPU passthrough works well on Windows |
-| Chat UI | [Open WebUI](https://github.com/open-webui/open-webui) | Browser-based, connects to Ollama out of the box |
+| UI frontend | React 18 + Vite + TypeScript | Custom Blade Runner terminal dashboard; replaces Open WebUI |
+| UI backend | FastAPI (Python) | Serves SPA + WebSocket endpoints for chat, GPU, and voice |
+| Charts | Recharts | GPU/system sparklines with ring-buffer history |
+| State management | Zustand | Minimal boilerplate for chat + GPU + voice state |
 | Cloud fallback | Anthropic Claude API | Best reasoning quality, used selectively |
 | Financial data | SEC EDGAR + DefeatBeta (via WSL) | Free, comprehensive, no API key required |
 | RGB lighting | Corsair iCUE SDK + Alienware LightFX | Keyboard idle blue / deep purple during inference; tower galaxy swirl rainbow |
@@ -144,6 +167,9 @@ Response streamed back to Telegram
 | Conversation history | SQLite | Simple, zero infrastructure |
 | Backtesting | SQLite signals.db + yfinance | Tracks QV signal alpha over 30/90/180/365-day horizons |
 | Proactive alerts | Windows Task Scheduler + alert_engine.py | Daily dip scans + weekly performance push to Telegram |
+| Speech-to-text | faster-whisper small.en (CUDA float16) | ~244 MB, English-only, near-realtime on RTX 4090 |
+| Text-to-speech | edge-tts BrianNeural | Microsoft neural voice, free, no API key, low latency |
+| VAD | Web Audio API AnalyserNode (RMS) | Client-side voice activity detection — auto-stops on silence |
 
 ---
 
@@ -183,19 +209,40 @@ python test_claude.py  # Should print: Enkidu lives
 
 Follow the **[Phase 1 guide](./phase1-local-inference/README.md)** to get Ollama and Gemma running on your GPU.
 
-### 7. Run Enkidu
+### 7. Run the UI (Phase 7+)
 
 ```bash
-python enkidu.py
+# Build the frontend once (or after any UI changes)
+cd phase7-ui/client
+npm install
+npm run build
+cd ../..
+
+# Start the FastAPI server
+cd phase7-ui/server
+pip install fastapi uvicorn faster-whisper edge-tts psutil pynvml
+python main.py
 ```
 
-For the Phase 3 agent in Telegram, run `start_enkidu_bot.bat`.
-For the Phase 3 agent inside Open WebUI without OpenAI, see `phase3-agents/OPEN_WEBUI_SETUP.md`.
+Open `http://localhost:8000` in your browser. The Blade Runner terminal loads the full dashboard.
+
+**Voice setup** — first voice query will auto-download the Whisper `small.en` model (~244 MB). Subsequent queries are near-realtime on a CUDA GPU.
+
+### 7b. Run Enkidu via Telegram (Phase 3)
+
+```bash
+# In phase3-agents/
+python telegram_interface.py
+# Or use start_enkidu_bot.bat for Windows startup
+```
 
 Commands during the session:
 - `/local` — force next query to local Gemma
 - `/cloud` — force next query to Claude API
-- `/stats` — show session token usage
+- `/stats` — show session token usage + memory counts
+- `/history` — last 5 saved exchanges with timestamps
+- `/watchlist` — current QV top-15 picks
+- `/performance` — QV signal track record vs SPY
 - `/refresh` — re-download EDGAR data and regenerate the QV screened portfolio
 - `/exit` — quit
 
@@ -247,7 +294,7 @@ enkidu/
 ├── JOURNEY.md                        # Running log of what was built and broken
 ├── .env.example                      # Secret template — copy to .env and fill in
 ├── requirements.txt                  # Core Python dependencies
-├── enkidu.py                         # Main entry point — run this
+├── enkidu.py                         # Phase 0–2 entry point (REPL)
 ├── test_claude.py                    # Phase 0: Claude API proof of concept
 │
 ├── phase1-local-inference/           # Docker + Ollama + Open WebUI setup
@@ -260,7 +307,7 @@ enkidu/
 │   ├── tools/
 │   │   ├── system_info.py            # GPU/CPU/RAM context tool
 │   │   ├── edgar_screener.py         # EDGAR financial data tool
-│   │   └── lighting.py               # RGB keyboard animation (OpenRGB)
+│   │   └── lighting.py               # Corsair iCUE + AlienFX lighting (idle blue / inference swirl)
 │   └── quant-value/                  # Quantitative Value pipeline (bundled)
 │       ├── README.md
 │       ├── requirements.txt          # QV-specific heavy deps (edgartools, scipy)
@@ -269,8 +316,8 @@ enkidu/
 │       ├── docs/                     # QV methodology documentation
 │       └── data/                     # NOT in git — GB-scale EDGAR + market data
 │
-├── phase3-agents/                    # Agentic orchestration ✅ Complete
-│   ├── enkidu_agent.py               # ReAct loop — Reason → Act → Observe
+├── phase3-agents/                    # Agentic orchestration
+│   ├── enkidu_agent.py               # ReAct loop — Reason → Act → Observe; Gemma/Claude routing
 │   ├── telegram_interface.py         # Telegram bot + TLS fix + lighting hooks + crash isolation
 │   ├── requirements.txt              # pyTelegramBotAPI, pydantic, anthropic, tavily-python, ddgs
 │   └── tools/
@@ -278,17 +325,39 @@ enkidu/
 │       ├── python_sandbox.py         # Subprocess code execution
 │       ├── regime_detector.py        # HMM market regime inference
 │       └── web_search.py             # Tavily primary / DuckDuckGo fallback web search
-├── phase4-memory/                    # ChromaDB + SQLite memory ✅ Complete
+│
+├── phase4-memory/                    # ChromaDB + SQLite memory
 │   ├── memory_store.py               # Dual-write conversation store (SQLite + ChromaDB)
 │   ├── document_indexer.py           # Codebase + docs RAG indexer
 │   ├── memory_bridge.py              # Subprocess CLI bridge (isolates heavy deps)
 │   └── .venv/                        # Isolated env with chromadb, onnxruntime
 │
-└── phase5-intelligence/              # Signal integrity + backtesting + alerts ✅ Complete
-    ├── sector_classifier.py          # SIC code fetch → sectors.csv (43 financials/utilities separated)
-    ├── signal_logger.py              # Timestamp QV picks daily → signals.db
-    ├── performance_tracker.py        # Compute returns vs SPY at 30/90/180/365-day horizons
-    └── alert_engine.py               # Proactive Telegram alerts (price dips, ranking changes, perf)
+├── phase5-intelligence/              # Signal integrity + backtesting + alerts
+│   ├── sector_classifier.py          # SIC code fetch → sectors.csv (43 financials/utilities separated)
+│   ├── signal_logger.py              # Timestamp QV picks daily → signals.db
+│   ├── performance_tracker.py        # Compute returns vs SPY at 30/90/180/365-day horizons
+│   └── alert_engine.py               # Proactive Telegram alerts (price dips, ranking changes, perf)
+│
+└── phase7-ui/                        # Custom Blade Runner terminal UI (Phase 7–8)
+    ├── server/
+    │   ├── main.py                   # FastAPI — chat/gpu/voice WebSockets + REST APIs
+    │   └── voice.py                  # STT (faster-whisper small.en) + TTS (edge-tts BrianNeural)
+    └── client/                       # React 18 + Vite + TypeScript SPA
+        ├── src/
+        │   ├── App.tsx               # 3-column grid layout, GPU WebSocket owner
+        │   ├── store.ts              # Zustand state (messages, GPU history, params, memory)
+        │   ├── index.css             # Blade Runner design system — CSS variables + grid
+        │   └── components/
+        │       ├── ChatPanel.tsx     # Streaming chat with model indicator
+        │       ├── VoicePanel.tsx    # VAD mic, frequency waveform, auto-conversation loop
+        │       ├── SystemMiniPanel.tsx # Compact 112px GPU/CPU/RAM strip
+        │       ├── GpuHistoryPanel.tsx # iCUE-style sparkline history charts (Recharts)
+        │       ├── MarketPanel.tsx   # Regime badge + QV portfolio picks
+        │       ├── ModelParamsPanel.tsx # Gemma parameter sliders
+        │       ├── MemoryPanel.tsx   # Past conversation memory viewer
+        │       ├── HistoryPanel.tsx  # Session history
+        │       └── Header.tsx        # Live GPU stats inline
+        └── dist/                     # Production build (served by FastAPI)
 ```
 
 ---
