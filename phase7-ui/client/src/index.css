@@ -49,14 +49,14 @@ body::after {
 /* ── App grid ── */
 .app-grid {
   display: grid; height: 100vh; width: 100vw;
-  grid-template-columns: 1fr 320px;
-  grid-template-rows: 42px 1fr 220px;
+  grid-template-columns: 210px 1fr 300px;
+  grid-template-rows: 42px 1fr;
   gap: 1px; background: var(--border); overflow: hidden;
 }
-.app-header    { grid-column: 1/-1; grid-row: 1; }
-.panel-chat    { grid-column: 1;    grid-row: 2/4; }
-.panel-right-top    { grid-column: 2; grid-row: 2; }
-.panel-right-bottom { grid-column: 2; grid-row: 3; }
+.app-header  { grid-column: 1/-1; grid-row: 1; }
+.col-left    { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; overflow: hidden; }
+.col-center  { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; overflow: hidden; }
+.col-right   { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; overflow: hidden; }
 
 /* ── Panel ── */
 .panel {
@@ -133,6 +133,23 @@ body::after {
 .chat-send:hover   { background: var(--amber-glow); }
 .chat-send:active  { background: var(--amber); color: var(--bg); }
 .chat-send:disabled{ opacity: 0.3; cursor: not-allowed; }
+
+/* ── System mini (left sidebar bottom) ── */
+.sys-mini {
+  flex-shrink: 0; height: 112px;
+  background: var(--bg-panel); border-top: 1px solid var(--border);
+  padding: 8px 12px; display: flex; flex-direction: column; gap: 5px;
+}
+.sys-mini-title {
+  font-size: 10px; letter-spacing: 0.15em; color: var(--cyan-dim);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.sys-mini-row { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.sys-mini-label { font-size: 10px; color: var(--white-dim); letter-spacing: 0.08em; width: 34px; flex-shrink: 0; }
+.sys-mini-val   { font-family: var(--font-display); font-size: 14px; line-height: 1; width: 38px; flex-shrink: 0; }
+.sys-mini-bar   { flex: 1; height: 3px; background: var(--border); overflow: hidden; }
+.sys-mini-fill  { height: 100%; transition: width 400ms ease; }
+.sys-mini-extra { font-size: 9px; color: var(--white-dim); letter-spacing: 0.05em; flex-shrink: 0; }
 
 /* ── GPU metrics ── */
 .gpu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }

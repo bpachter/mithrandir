@@ -1,6 +1,4 @@
-import { useEffect } from 'react'
 import { useStore } from '../store'
-import { createGpuSocket } from '../api'
 
 function MetricBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = Math.min(100, (value / max) * 100)
@@ -25,12 +23,8 @@ function colorForUtil(u: number) {
 
 export default function GpuPanel() {
   const stats    = useStore((s) => s.gpuStats)
-  const setStats = useStore((s) => s.setGpuStats)
 
-  useEffect(() => {
-    const ws = createGpuSocket((s) => setStats(s as any))
-    return () => ws.close()
-  }, [])
+  // GPU WebSocket is now owned by App.tsx — GpuPanel is a pure display component
 
   if (!stats) {
     return (
