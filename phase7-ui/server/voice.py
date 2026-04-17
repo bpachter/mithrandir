@@ -218,11 +218,14 @@ def _load_kokoro() -> Optional[object]:
     with _kokoro_lock:
         if _kokoro_pipeline is not None:
             return _kokoro_pipeline
-        # hf-mirror.com is a public HuggingFace mirror — used as fallback because
-        # huggingface.co appears to be blocked on this machine's network.
-        # If the model is already cached locally this env var has no effect.
-        os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+        # Model is fully cached at ~/.cache/huggingface/hub/models--hexgrad--Kokoro-82M
+        # HF_HUB_OFFLINE=1 skips all network checks — uses cache only.
+        # huggingface.co is blocked on this machine anyway (WinError 10054).
+        # If cache is ever cleared, set HF_ENDPOINT=https://hf-mirror.com and
+        # remove HF_HUB_OFFLINE to re-download.
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
         os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+        os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")  # fallback if offline ever removed
         try:
             from kokoro import KPipeline
             lang = _KOKORO_LANG_MAP.get(_active_voice, _KOKORO_LANG)
