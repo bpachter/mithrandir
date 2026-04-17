@@ -203,8 +203,8 @@ _KOKORO_LANG     = os.environ.get("KOKORO_LANG",      "b")       # 'b'=British d
 _KOKORO_SR       = 24000
 
 # Character FX parameters
-_FX_PITCH        = float(os.environ.get("ENKIDU_PITCH",     "-3.0"))  # semitones, neg = deeper
-_FX_LOW_BOOST_DB = float(os.environ.get("ENKIDU_LOW_BOOST", "4.0"))   # dB bass boost
+_FX_PITCH        = float(os.environ.get("ENKIDU_PITCH",     "-2.0"))  # semitones, neg = deeper  (-1 = subtle, -3 = extreme)
+_FX_LOW_BOOST_DB = float(os.environ.get("ENKIDU_LOW_BOOST", "2.5"))   # dB bass boost (2-4 dB range)
 
 _kokoro_pipeline = None
 _kokoro_lock     = threading.Lock()
