@@ -1,7 +1,7 @@
 /**
- * GpuHistoryPanel.tsx — rolling sparkline graphs for GPU metrics
- * Inspired by iCUE's per-sensor history charts.
- * Reads from the gpuHistory ring-buffer in the Zustand store (120 pts = 60s at 2Hz).
+ * GpuHistoryPanel.tsx — full-width hardware monitoring bar
+ * Always visible across the top of the UI (row 2 of the app grid).
+ * Each metric shows a live value + 60-second sparkline history at 2 Hz.
  */
 
 import {
@@ -10,93 +10,82 @@ import {
 import { useStore } from '../store'
 import type { GpuHistoryPoint } from '../store'
 
-// ── Colours (match Blade Runner palette) ─────────────────────────────────
-
-const COLORS = {
-  gpu:   { stroke: '#00e5ff', fill: '#00e5ff18' },   // cyan  — GPU util
-  vram:  { stroke: '#ff9500', fill: '#ff950018' },   // amber — VRAM
-  temp:  { stroke: '#39d353', fill: '#39d35318' },   // green — temperature
-  power: { stroke: '#ff1a40', fill: '#ff1a4018' },   // red   — power draw
-  cpu:   { stroke: '#8899aa', fill: '#8899aa12' },   // dim   — CPU
+const C = {
+  gpu:      { stroke: '#00e5ff', fill: '#00e5ff18' },
+  vram:     { stroke: '#ff9500', fill: '#ff950018' },
+  temp:     { stroke: '#39d353', fill: '#39d35318' },
+  power:    { stroke: '#ff1a40', fill: '#ff1a4018' },
+  clock_sm: { stroke: '#c084fc', fill: '#c084fc15' },
+  clock_mem:{ stroke: '#818cf8', fill: '#818cf815' },
+  cpu:      { stroke: '#8899aa', fill: '#8899aa12' },
 }
 
-// ── Custom tooltip ────────────────────────────────────────────────────────
+function threshold(val: number, warn: number, crit: number): string {
+  if (val >= crit) return 'var(--red)'
+  if (val >= warn) return 'var(--amber)'
+  return 'var(--cyan)'
+}
 
 function SparkTip({ active, payload, unit }: any) {
   if (!active || !payload?.length) return null
+  const v = payload[0]?.value
   return (
     <div style={{
       background: '#0b0d14', border: '1px solid #1a2035',
-      padding: '2px 7px', fontSize: 10, fontFamily: 'var(--font-mono)',
+      padding: '2px 6px', fontSize: 9, fontFamily: 'var(--font-mono)',
       color: payload[0]?.color ?? '#ff9500',
     }}>
-      {typeof payload[0]?.value === 'number' ? payload[0].value.toFixed(1) : '—'}{unit}
+      {typeof v === 'number' ? v.toFixed(1) : '—'}{unit}
     </div>
   )
 }
 
-// ── Single sparkline card ─────────────────────────────────────────────────
+// ── Single metric cell ────────────────────────────────────────────────────
 
-interface SparkCardProps {
+interface CellProps {
   label:   string
   value:   string
+  color:   string          // current value color
   data:    GpuHistoryPoint[]
   dataKey: keyof GpuHistoryPoint
-  color:   { stroke: string; fill: string }
+  stroke:  string
   domain:  [number, number]
   unit:    string
-  warn?:   number
-  crit?:   number
+  sub?:    string          // secondary line (e.g. "of 24G")
 }
 
-function SparkCard({ label, value, data, dataKey, color, domain, unit, warn, crit }: SparkCardProps) {
-  // Determine value color
-  const numVal = data.length > 0 ? (data[data.length - 1][dataKey] as number) : 0
-  const valColor = crit && numVal >= crit ? 'var(--red)'
-    : warn && numVal >= warn ? 'var(--amber)'
-    : color.stroke
-
+function MetricCell({ label, value, color, data, dataKey, stroke, domain, unit, sub }: CellProps) {
   return (
-    <div style={{
-      background: '#07080d',
-      border: `1px solid #1a2035`,
-      padding: '6px 8px 4px',
-      display: 'flex', flexDirection: 'column', gap: 3,
-    }}>
-      {/* Header row */}
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 10, color: 'var(--white-dim)', letterSpacing: '0.12em' }}>
-          {label}
-        </span>
-        <span style={{
-          fontFamily: 'var(--font-display)', fontSize: 18, lineHeight: 1,
-          color: valColor, textShadow: `0 0 8px ${valColor}50`,
-        }}>
-          {value}
-        </span>
+    <div className="hw-cell">
+      <div className="hw-cell-header">
+        <span className="hw-cell-label">{label}</span>
+        <div>
+          <span className="hw-cell-value" style={{ color, textShadow: `0 0 8px ${color}60` }}>
+            {value}
+          </span>
+          {sub && <div className="hw-cell-sub">{sub}</div>}
+        </div>
       </div>
-
-      {/* Sparkline */}
-      <div style={{ height: 48 }}>
+      <div className="hw-cell-spark">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 1, right: 0, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={color.stroke} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={color.stroke} stopOpacity={0} />
+              <linearGradient id={`hg-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%"  stopColor={stroke} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={stroke} stopOpacity={0} />
               </linearGradient>
             </defs>
             <YAxis domain={domain} hide />
             <Tooltip
               content={<SparkTip unit={unit} />}
-              cursor={{ stroke: color.stroke, strokeWidth: 1, strokeOpacity: 0.4 }}
+              cursor={{ stroke, strokeWidth: 1, strokeOpacity: 0.35 }}
             />
             <Area
               type="monotone"
               dataKey={dataKey as string}
-              stroke={color.stroke}
+              stroke={stroke}
               strokeWidth={1.5}
-              fill={`url(#grad-${dataKey})`}
+              fill={`url(#hg-${dataKey})`}
               dot={false}
               isAnimationActive={false}
             />
@@ -107,101 +96,163 @@ function SparkCard({ label, value, data, dataKey, color, domain, unit, warn, cri
   )
 }
 
-// ── Main panel ────────────────────────────────────────────────────────────
+// ── Static cell (no sparkline — RAM, fan) ─────────────────────────────────
+
+interface StaticCellProps {
+  label:    string
+  value:    string
+  color:    string
+  barPct?:  number
+  barColor?:string
+  sub?:     string
+}
+
+function StaticCell({ label, value, color, barPct, barColor, sub }: StaticCellProps) {
+  return (
+    <div className="hw-cell">
+      <div className="hw-cell-header">
+        <span className="hw-cell-label">{label}</span>
+        <div>
+          <span className="hw-cell-value" style={{ color, textShadow: `0 0 8px ${color}60` }}>
+            {value}
+          </span>
+          {sub && <div className="hw-cell-sub">{sub}</div>}
+        </div>
+      </div>
+      {barPct !== undefined && (
+        <div className="hw-cell-bar-track">
+          <div
+            className="hw-cell-bar-fill"
+            style={{ width: `${Math.min(100, barPct)}%`, background: barColor ?? color, transition: 'width 400ms ease' }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────
 
 export default function GpuHistoryPanel() {
   const history = useStore((s) => s.gpuHistory)
   const stats   = useStore((s) => s.gpuStats)
 
-  if (history.length === 0) {
+  if (!stats || history.length === 0) {
     return (
-      <div style={{ padding: '10px 12px', fontSize: 11, color: 'var(--white-dim)' }}>
-        Collecting data…
+      <div className="hw-bar" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 11, color: 'var(--white-dim)', letterSpacing: '0.12em' }}>
+          ◈ COLLECTING HARDWARE DATA…
+        </span>
       </div>
     )
   }
 
-  const latest = history[history.length - 1]
+  const latest    = history[history.length - 1]
+  const vramPct   = (stats.vram_used / stats.vram_total) * 100
+  const vramUsedG = (stats.vram_used / 1024).toFixed(1)
+  const vramTotG  = (stats.vram_total / 1024).toFixed(0)
+  const powerPct  = stats.power_limit > 0 ? (stats.power_draw / stats.power_limit) * 100 : 0
+  // Graceful fallback for fields added after initial deployment (old backend may omit them)
+  const clockSm   = latest.clock_sm  ?? 0
+  const clockMem  = latest.clock_mem ?? 0
+  const fanSpeed  = stats.fan_speed  ?? 0
 
   return (
-    <div style={{
-      padding: '8px 10px',
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: 6,
-      overflow: 'auto',
-    }}>
-      <SparkCard
+    <div className="hw-bar">
+
+      {/* GPU UTIL */}
+      <MetricCell
         label="GPU UTIL"
         value={`${latest.gpu_util.toFixed(0)}%`}
-        data={history}
-        dataKey="gpu_util"
-        color={COLORS.gpu}
-        domain={[0, 100]}
-        unit="%"
-        warn={70} crit={90}
+        color={threshold(latest.gpu_util, 70, 90)}
+        data={history} dataKey="gpu_util"
+        stroke={C.gpu.stroke}
+        domain={[0, 100]} unit="%"
       />
-      <SparkCard
+
+      {/* VRAM */}
+      <MetricCell
         label="VRAM"
-        value={`${latest.vram_pct.toFixed(0)}%`}
-        data={history}
-        dataKey="vram_pct"
-        color={COLORS.vram}
-        domain={[0, 100]}
-        unit="%"
-        warn={70} crit={90}
+        value={`${vramUsedG}G`}
+        sub={`/ ${vramTotG}G  (${vramPct.toFixed(0)}%)`}
+        color={threshold(vramPct, 70, 90)}
+        data={history} dataKey="vram_pct"
+        stroke={C.vram.stroke}
+        domain={[0, 100]} unit="%"
       />
-      <SparkCard
+
+      {/* TEMP */}
+      <MetricCell
         label="TEMP"
         value={`${latest.temp.toFixed(0)}°C`}
-        data={history}
-        dataKey="temp"
-        color={COLORS.temp}
-        domain={[20, 100]}
-        unit="°C"
-        warn={70} crit={85}
+        color={threshold(latest.temp, 70, 85)}
+        data={history} dataKey="temp"
+        stroke={C.temp.stroke}
+        domain={[20, 100]} unit="°C"
       />
-      <SparkCard
+
+      {/* POWER */}
+      <MetricCell
         label="POWER"
         value={`${latest.power.toFixed(0)}W`}
-        data={history}
-        dataKey="power"
-        color={COLORS.power}
-        domain={[0, stats?.power_limit ?? 450]}
-        unit="W"
-        warn={350} crit={420}
+        sub={`/ ${stats.power_limit.toFixed(0)}W  (${powerPct.toFixed(0)}%)`}
+        color={threshold(powerPct, 78, 93)}
+        data={history} dataKey="power"
+        stroke={C.power.stroke}
+        domain={[0, stats.power_limit ?? 450]} unit="W"
       />
-      <SparkCard
+
+      {/* SM CLOCK */}
+      <MetricCell
+        label="SM CLK"
+        value={clockSm > 0 ? `${(clockSm / 1000).toFixed(2)}G` : '—'}
+        sub="GHz"
+        color="var(--cyan)"
+        data={history} dataKey="clock_sm"
+        stroke={C.clock_sm.stroke}
+        domain={[0, 3000]} unit="MHz"
+      />
+
+      {/* MEM CLOCK */}
+      <MetricCell
+        label="MEM CLK"
+        value={clockMem > 0 ? `${(clockMem / 1000).toFixed(1)}G` : '—'}
+        sub="GHz"
+        color="var(--cyan-dim)"
+        data={history} dataKey="clock_mem"
+        stroke={C.clock_mem.stroke}
+        domain={[0, 12000]} unit="MHz"
+      />
+
+      {/* FAN */}
+      <StaticCell
+        label="FAN"
+        value={fanSpeed > 0 ? `${fanSpeed.toFixed(0)}%` : '—'}
+        color={fanSpeed > 80 ? 'var(--amber)' : 'var(--white-dim)'}
+        barPct={fanSpeed}
+        barColor={fanSpeed > 80 ? 'var(--amber)' : 'var(--cyan-dim)'}
+      />
+
+      {/* CPU */}
+      <MetricCell
         label="CPU"
         value={`${latest.cpu_percent.toFixed(0)}%`}
-        data={history}
-        dataKey="cpu_percent"
-        color={COLORS.cpu}
-        domain={[0, 100]}
-        unit="%"
-        warn={70} crit={90}
+        color={threshold(latest.cpu_percent, 70, 90)}
+        data={history} dataKey="cpu_percent"
+        stroke={C.cpu.stroke}
+        domain={[0, 100]} unit="%"
       />
-      <div style={{
-        background: '#07080d', border: '1px solid #1a2035',
-        padding: '6px 8px', display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', gap: 4,
-      }}>
-        <div style={{ fontSize: 10, color: 'var(--white-dim)', letterSpacing: '0.1em' }}>RAM</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--cyan)' }}>
-          {stats?.ram_used_gb ?? '—'}G
-        </div>
-        <div style={{ fontSize: 10, color: 'var(--white-dim)' }}>
-          of {stats?.ram_total_gb ?? '—'}G ({stats?.ram_percent.toFixed(0) ?? '—'}%)
-        </div>
-        <div style={{ height: 3, background: '#1a2035', marginTop: 2 }}>
-          <div style={{
-            height: '100%',
-            width: `${stats?.ram_percent ?? 0}%`,
-            background: 'var(--cyan)',
-            transition: 'width 400ms ease',
-          }} />
-        </div>
-      </div>
+
+      {/* RAM */}
+      <StaticCell
+        label="RAM"
+        value={`${stats.ram_used_gb}G`}
+        sub={`/ ${stats.ram_total_gb}G  (${stats.ram_percent.toFixed(0)}%)`}
+        color={threshold(stats.ram_percent, 70, 90)}
+        barPct={stats.ram_percent}
+        barColor={threshold(stats.ram_percent, 70, 90)}
+      />
+
     </div>
   )
 }

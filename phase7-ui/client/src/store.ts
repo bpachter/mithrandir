@@ -16,6 +16,9 @@ export interface GpuStats {
   temp: number
   power_draw: number
   power_limit: number
+  clock_sm: number
+  clock_mem: number
+  fan_speed: number
   cpu_percent: number
   ram_used_gb: number
   ram_total_gb: number
@@ -27,8 +30,10 @@ export interface GemmaParams {
   temperature: number
   top_p: number
   top_k: number
+  min_p: number
   repeat_penalty: number
   num_ctx: number
+  num_predict: number
   seed: number
 }
 
@@ -69,6 +74,8 @@ export interface GpuHistoryPoint {
   vram_pct:    number
   temp:        number
   power:       number
+  clock_sm:    number
+  clock_mem:   number
   cpu_percent: number
 }
 
@@ -96,6 +103,7 @@ interface AppState {
   rightTab: 'gpu' | 'params' | 'market' | 'memory' | 'voice'
   bottomTab: 'history'
   activeConversationId: string | null
+  pendingChatInput: string | null   // set by DocsPanel "Ask Enkidu" button
 
   addMessage: (m: Message) => void
   appendStep: (id: string, step: string) => void
@@ -112,6 +120,7 @@ interface AppState {
   setMemory: (entries: MemoryEntry[], stats: MemoryStats) => void
   updateMemoryRating: (id: string, rating: number | null) => void
   removeMemoryEntry: (id: string) => void
+  setPendingChatInput: (q: string | null) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -120,8 +129,8 @@ export const useStore = create<AppState>((set) => ({
   gpuStats:   null,
   gpuHistory: [],
   params: {
-    temperature: 0.7, top_p: 0.9, top_k: 40,
-    repeat_penalty: 1.1, num_ctx: 8192, seed: -1,
+    temperature: 0.7, top_p: 0.9, top_k: 40, min_p: 0.0,
+    repeat_penalty: 1.1, num_ctx: 8192, num_predict: 2048, seed: -1,
   },
   history:     [],
   portfolio:   [],
@@ -131,6 +140,7 @@ export const useStore = create<AppState>((set) => ({
   rightTab:    'gpu',
   bottomTab: 'history',
   activeConversationId: null,
+  pendingChatInput: null,
 
   addMessage:  (m)    => set((s) => ({ messages: [...s.messages, m] })),
   appendStep:  (id, step) => set((s) => ({
@@ -162,4 +172,5 @@ export const useStore = create<AppState>((set) => ({
       ? { ...s.memoryStats, total: s.memoryStats.total - 1 }
       : null,
   })),
+  setPendingChatInput: (q) => set({ pendingChatInput: q }),
 }))

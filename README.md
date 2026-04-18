@@ -120,13 +120,22 @@ Tool dispatch (Claude path)
 
 Voice pipeline (Phase 8)
     Microphone (Web Audio API, native sample rate, float32 PCM)
-    → VAD auto-stop (AnalyserNode RMS, 900ms silence threshold)
+    → VAD auto-stop (AnalyserNode RMS threshold, 900ms silence window)
     → WebSocket /ws/voice (base64 PCM + sample rate)
-    → Whisper small.en (CUDA float16, faster-whisper)
+    → Whisper base.en (CUDA float16, faster-whisper)
     → enkidu_agent.run_agent()
-    → edge-tts BrianNeural (Microsoft neural TTS)
-    → MP3 streamed back and played in browser
+    → TTS (5-tier fallback chain, sentence-streamed for low latency):
+         1. F5-TTS voice cloning (~1-3s/sentence, uses voices/<profile>.wav reference)
+         2. Chatterbox voice cloning (~25s, slower fallback for .wav profiles)
+         3. Kokoro neural TTS (~50-100ms, primary for built-in voices + fast fallback)
+         4. edge-tts BrianNeural (cloud fallback, requires internet)
+         5. pyttsx3 SAPI5 (Windows offline last resort)
+    → WAV chunks streamed per-sentence, queued for sequential playback
+    → Character FX chain (pitch / formant / EQ / reverb / bitcrush) applied post-synthesis
     → [optional] auto-restart listening for hands-free conversation loop
+
+    Voice profiles: drop any 5-8s clean .wav into phase7-ui/server/voices/.
+    Auto-scan from YouTube: python phase7-ui/server/scan_bmo_voice.py <url> --out <name>
 ```
 
 ---
@@ -142,7 +151,7 @@ Voice pipeline (Phase 8)
 | [Phase 5](./phase5-intelligence/) | Signal integrity, backtesting engine, proactive alerts | ✅ Complete |
 | Phase 6 | RGB lighting (Corsair iCUE + AlienFX), web search (Tavily/DDG), bot stability | ✅ Complete |
 | [Phase 7](./phase7-ui/) | Custom Blade Runner terminal UI — React/Vite/FastAPI, 3-column dashboard | ✅ Complete |
-| Phase 8 | Voice interaction — Whisper STT, edge-tts TTS, VAD auto-stop, conversation loop | ✅ Complete |
+| Phase 8 | Voice interaction — Whisper STT, F5-TTS voice cloning (BMO), Kokoro/Chatterbox/edge-tts fallbacks, VAD auto-stop | ✅ Complete |
 
 ---
 
@@ -167,8 +176,8 @@ Voice pipeline (Phase 8)
 | Conversation history | SQLite | Simple, zero infrastructure |
 | Backtesting | SQLite signals.db + yfinance | Tracks QV signal alpha over 30/90/180/365-day horizons |
 | Proactive alerts | Windows Task Scheduler + alert_engine.py | Daily dip scans + weekly performance push to Telegram |
-| Speech-to-text | faster-whisper small.en (CUDA float16) | ~244 MB, English-only, near-realtime on RTX 4090 |
-| Text-to-speech | edge-tts BrianNeural | Microsoft neural voice, free, no API key, low latency |
+| Speech-to-text | faster-whisper base.en (CUDA float16) | English-only, near-realtime on RTX 4090 |
+| Text-to-speech | F5-TTS voice cloning (~1-3s) + Kokoro neural TTS (~50-100ms) + edge-tts/pyttsx3 fallbacks | 5-tier fallback chain; sentence-streamed; character FX post-process |
 | VAD | Web Audio API AnalyserNode (RMS) | Client-side voice activity detection — auto-stops on silence |
 
 ---
@@ -212,21 +221,25 @@ Follow the **[Phase 1 guide](./phase1-local-inference/README.md)** to get Ollama
 ### 7. Run the UI (Phase 7+)
 
 ```bash
-# Build the frontend once (or after any UI changes)
+# Install frontend dependencies and start the dev server (hot-reload)
 cd phase7-ui/client
 npm install
-npm run build
-cd ../..
+npm run dev          # http://localhost:5173
 
-# Start the FastAPI server
+# In a second terminal — start the FastAPI backend
 cd phase7-ui/server
-pip install fastapi uvicorn faster-whisper edge-tts psutil pynvml
-python main.py
+pip install fastapi uvicorn faster-whisper kokoro soundfile edge-tts psutil pynvml
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-Open `http://localhost:8000` in your browser. The Blade Runner terminal loads the full dashboard.
+Or use `phase7-ui/start_ui.bat` on Windows to start both with one click.
 
-**Voice setup** — first voice query will auto-download the Whisper `small.en` model (~244 MB). Subsequent queries are near-realtime on a CUDA GPU.
+Open `http://localhost:5173` in your browser (dev) or `http://localhost:8000` (production build).
+
+**Voice setup:**
+- First launch auto-downloads Whisper `base.en` (~145 MB) on first voice query.
+- F5-TTS voice cloning requires model weights in `phase7-ui/server/f5tts_model/` (~1.3 GB). Download separately — see `phase7-ui/server/f5tts_model/README.md`.
+- The default voice profile is BMO (Adventure Time). To use a different voice, record 5-8s of clean audio, save as `phase7-ui/server/voices/<name>.wav`, and update `ENKIDU_DEFAULT_VOICE` in `.env`.
 
 ### 7b. Run Enkidu via Telegram (Phase 3)
 
@@ -341,16 +354,23 @@ enkidu/
 └── phase7-ui/                        # Custom Blade Runner terminal UI (Phase 7–8)
     ├── server/
     │   ├── main.py                   # FastAPI — chat/gpu/voice WebSockets + REST APIs
-    │   └── voice.py                  # STT (faster-whisper small.en) + TTS (edge-tts BrianNeural)
+    │   ├── voice.py                  # STT (faster-whisper) + TTS (5-tier: F5-TTS/Chatterbox/Kokoro/edge-tts/pyttsx3) + character FX
+    │   ├── cuda_docs.py              # CUDA/GPU documentation search (RAG via ChromaDB)
+    │   ├── f5tts_worker.py           # F5-TTS subprocess worker (persistent process, stdin/stdout JSON)
+    │   ├── chatterbox_worker.py      # Chatterbox subprocess worker
+    │   ├── import_voice_from_youtube.py  # CLI: download + slice a YouTube clip into a voice profile
+    │   ├── scan_bmo_voice.py         # CLI: auto-detect best voice segment from a full video
+    │   ├── gemma_params.json         # Gemma inference parameter presets (temperature, top_p, etc.)
+    │   └── voices/
+    │       └── bmo.wav               # BMO (Adventure Time) voice reference clip for F5-TTS cloning
     └── client/                       # React 18 + Vite + TypeScript SPA
         ├── src/
         │   ├── App.tsx               # 3-column grid layout, GPU WebSocket owner
         │   ├── store.ts              # Zustand state (messages, GPU history, params, memory)
         │   ├── index.css             # Blade Runner design system — CSS variables + grid
         │   └── components/
-        │       ├── ChatPanel.tsx     # Streaming chat with model indicator
-        │       ├── VoicePanel.tsx    # VAD mic, frequency waveform, auto-conversation loop
-        │       ├── SystemMiniPanel.tsx # Compact 112px GPU/CPU/RAM strip
+        │       ├── ChatPanel.tsx     # Unified chat + voice (VAD mic, oscilloscope waveform, audio queue)
+        │       ├── DocsPanel.tsx     # CUDA/GPU docs browser with "Ask Enkidu" integration
         │       ├── GpuHistoryPanel.tsx # iCUE-style sparkline history charts (Recharts)
         │       ├── MarketPanel.tsx   # Regime badge + QV portfolio picks
         │       ├── ModelParamsPanel.tsx # Gemma parameter sliders

@@ -123,7 +123,13 @@ class AgentStep(BaseModel):
 # ---------------------------------------------------------------------------
 
 _SYSTEM_TEMPLATE = """\
-You are Enkidu, an AI assistant with access to financial data tools and a Python sandbox.
+You are Enkidu, an AI assistant with access to financial data tools, a Python sandbox, \
+and a CUDA/hardware reference database.
+
+You run on Ben Pachter's personal machine: an NVIDIA RTX 4090 (128 SMs, 24 GB GDDR6X, \
+1,008 GB/s bandwidth, 82.6 TFLOP/s BF16). The inference engine is Ollama running \
+Gemma 4 26B (Q4_K_M, ~13 GB VRAM). You are privacy-first — no cloud inference unless \
+the user's query explicitly needs a tool that requires it.
 
 You reason step by step using the ReAct pattern. At each step output ONLY a JSON object — \
 no prose before or after, no markdown fences.
@@ -150,8 +156,8 @@ Market context (injected automatically — do not call market_regime unless user
 {memory}
 
 Voice pipeline: Ben can speak to you via microphone. His speech is transcribed by Whisper \
-(faster-whisper, local GPU) and sent as text. Your response is spoken aloud by edge-tts \
-(BrianNeural). You DO have a working voice interface — never deny this.
+(faster-whisper, local GPU) and sent as text. Your response is spoken aloud by Kokoro TTS. \
+You DO have a working voice interface — never deny this.
 
 Rules:
 - Output ONLY valid JSON. No markdown. No commentary outside the JSON.
@@ -162,6 +168,10 @@ Rules:
 - Use python_sandbox for any arithmetic (CAGR, blended metrics, ratios, etc.).
 - Let the market regime inform your screening commentary (e.g. tighten filters in Contraction/Crisis).
 - If memory context is provided above, use it to give more grounded, personalized answers.
+- For CUDA, GPU hardware, Gemma4 architecture, or LLM inference questions, call cuda_reference \
+  to get precise specs and explanations from the local reference database.
+- Proactively call cuda_reference + system_info when Ben asks about performance, GPU stats, \
+  or how to get more out of the hardware — suggest concrete, RTX 4090-specific optimizations.
 - Maximum {max_iter} iterations. If you hit the limit, give your best answer with what you have.
 """
 
@@ -347,6 +357,17 @@ _TOOL_KEYWORDS = [
     # Memory / docs
     "remember", "last time", "previous conversation",
     "past conversation", "search docs", "history",
+    # CUDA / hardware / LLM inference deep-dives → cuda_reference tool
+    "cuda", "warp", "occupancy", "tensor core", "sm clock", "shared memory",
+    "memory bandwidth", "roofline", "flash attention", "kv cache",
+    "quantization", "gguf", "q4_k", "q8", "bfloat16",
+    "coalescing", "warp divergence", "register pressure", "l2 cache",
+    "gddr6x", "nvlink", "pcie bandwidth", "vram bandwidth",
+    "gemma4", "moe", "mixture of experts", "attention head",
+    "transformer", "inference speed", "tokens per second", "throughput",
+    "context window", "num_ctx", "ollama option", "model parameter",
+    "power draw", "power limit", "clock speed", "boost clock",
+    "optimize gpu", "gpu optimization", "how does cuda", "what is cuda",
     # Explicit web search request → Claude handles it with the web_search tool
     "search the web", "search online", "search internet", "look up online",
     "browse", "find online",
@@ -432,16 +453,21 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
             )
 
     parts = [
-        "You are Enkidu, a personal AI assistant built by Ben and running locally on his machine "
-        "(an NVIDIA RTX 4090 GPU, Windows 11). You are powered by Gemma 4 26B via Ollama. "
-        "You are not running on Google's servers or any cloud infrastructure — you run entirely "
-        "on Ben's home hardware. Ben built you as a privacy-first local assistant.\n"
+        "You are Enkidu, a personal AI assistant built by Ben and running locally on his machine. "
+        "Hardware: NVIDIA RTX 4090 (128 SMs, 16,384 CUDA cores, 512 Tensor Cores, "
+        "24 GB GDDR6X VRAM at 1,008 GB/s bandwidth, 82.6 TFLOP/s BF16, 72 MB L2 cache), "
+        "running Windows 11. "
+        "Inference engine: Ollama running Gemma 4 26B (Q4_K_M, ~13 GB VRAM, ~26B total params, "
+        "~3.8B active per token via MoE routing). "
+        "You are not running on Google's servers or any cloud — entirely on Ben's home hardware. "
+        "Ben built you as a privacy-first local assistant who can also teach him about the "
+        "hardware and CUDA programming model that powers you.\n"
         "\n"
         "You have a full voice interface: Ben can speak to you through his microphone. "
         "His speech is transcribed by Whisper (faster-whisper, running locally on the same GPU) "
         "and the transcription is what you receive as his message. Your response is then spoken "
-        "aloud by edge-tts (BrianNeural). You DO have a working voice pipeline — never tell Ben "
-        "you cannot hear him or that you lack voice capability. "
+        "aloud by Kokoro TTS (local neural TTS). You DO have a working voice pipeline — never tell "
+        "Ben you cannot hear him or that you lack voice capability. "
         "When responding to voice queries, keep answers conversational and concise — "
         "avoid markdown, bullet points, headers, URLs, and code blocks unless explicitly asked.\n"
         "\n"
@@ -449,7 +475,14 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         "not like a corporate FAQ. Match the depth of your answer to the complexity of the "
         "question: short questions get concise answers, complex questions get thorough responses. "
         "Never pad with filler phrases like 'Great question!' or 'Certainly!'. "
-        "If you don't know something, say so directly.",
+        "If you don't know something, say so directly.\n"
+        "\n"
+        "Hardware/CUDA guidance: When Ben asks about GPU performance, CUDA concepts, "
+        "RTX 4090 specs, Gemma4 internals, or LLM inference tuning, answer with "
+        "RTX 4090-specific detail. Key facts to draw on: ridge point ~82 FLOP/byte "
+        "(most LLM ops are memory-bound); KV cache ~0.25 GB per 1K tokens for Gemma4; "
+        "Flash Attention gives O(N) memory vs O(N²) naive; warp = 32 threads executing lockstep; "
+        "shared memory 128 KB/SM; GDDR6X latency ~600 cycles; registers <1 cycle.",
         identity_rule,
     ]
     if last_exchange_block:
@@ -472,7 +505,7 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
     return "\n".join(parts)
 
 
-def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True, prior_messages: Optional[list] = None, on_token: Optional[Callable[[str], None]] = None) -> Optional[str]:
+def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True, prior_messages: Optional[list] = None, on_token: Optional[Callable[[str], None]] = None, ollama_options: Optional[dict] = None) -> Optional[str]:
     """
     Send a query directly to Ollama with streaming enabled.
 
@@ -502,6 +535,8 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
     system = _build_local_system_prompt(query, web_context=web_context)
 
     try:
+        # Build options — filter out sentinel values Ollama doesn't expect
+        _opts = {k: v for k, v in (ollama_options or {}).items() if not (k == "seed" and v == -1)}
         resp = _req.post(
             f"{OLLAMA_URL}/api/chat",
             json={
@@ -512,6 +547,7 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
                     {"role": "user", "content": query},
                 ],
                 "stream": True,
+                **({"options": _opts} if _opts else {}),
             },
             stream=True,
             timeout=(180, 300),  # (connect, read) — 3 min for cold 26B model load
@@ -582,17 +618,21 @@ def run_agent(
     save_memory: bool = True,
     prior_messages: Optional[list] = None,
     on_token: Optional[Callable[[str], None]] = None,
+    ollama_options: Optional[dict] = None,
 ) -> str:
     """
     Run the ReAct loop for a single user message.
 
     Args:
-        user_message: The user's query text
-        on_step:      Optional callback — called with a short status string
-                      at each loop iteration (for live Telegram progress updates)
-        save_memory:  If False, skip saving to memory (caller handles it).
-                      Use False from Telegram so the interface can capture the
-                      exchange ID for rating buttons.
+        user_message:   The user's query text
+        on_step:        Optional callback — called with a short status string
+                        at each loop iteration (for live Telegram progress updates)
+        save_memory:    If False, skip saving to memory (caller handles it).
+                        Use False from Telegram so the interface can capture the
+                        exchange ID for rating buttons.
+        ollama_options: Optional dict of Ollama generation parameters
+                        (temperature, top_p, top_k, num_predict, etc.).
+                        Passed through to _run_local; ignored for cloud routes.
 
     Returns:
         The agent's final answer as a plain string.
@@ -600,7 +640,7 @@ def run_agent(
     """
     _lighting_start()
     try:
-        return _run_agent_inner(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token)
+        return _run_agent_inner(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options)
     finally:
         _lighting_stop()
 
@@ -611,12 +651,13 @@ def _run_agent_inner(
     save_memory: bool = True,
     prior_messages: Optional[list] = None,
     on_token: Optional[Callable[[str], None]] = None,
+    ollama_options: Optional[dict] = None,
 ) -> str:
     # --- Routing decision ---
     if _FORCE_LOCAL_ONLY:
         if on_step:
             on_step(f"Routing: forced local GPU ({OLLAMA_MODEL})")
-        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token)
+        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options)
         if result is not None:
             return result
         return (
@@ -627,7 +668,7 @@ def _run_agent_inner(
     if not _needs_tools(user_message):
         if on_step:
             on_step(f"Routing: local GPU ({OLLAMA_MODEL})")
-        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token)
+        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options)
         if result is not None:
             return result
         # Ollama unreachable — fall through to Claude

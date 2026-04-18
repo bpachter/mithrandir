@@ -403,3 +403,41 @@ register(
     },
     fn=lambda query: _web_mod.search(query),
 )
+
+# ---------------------------------------------------------------------------
+# CUDA / RTX 4090 / Gemma4 reference docs
+# ---------------------------------------------------------------------------
+
+_cuda_docs_path = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "phase7-ui", "server", "cuda_docs.py")
+)
+
+def _cuda_reference(query: str = "") -> str:
+    """Keyword search over the local CUDA/hardware/Gemma4 reference docs."""
+    try:
+        spec = importlib.util.spec_from_file_location("cuda_docs", _cuda_docs_path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.search_docs(query, max_results=4)
+    except Exception as e:
+        return f"cuda_reference unavailable: {e}"
+
+
+register(
+    name="cuda_reference",
+    description=(
+        "Look up RTX 4090 hardware specs, CUDA execution model details, memory hierarchy, "
+        "performance optimization tips, Gemma4 architecture facts, and LLM inference tuning "
+        "from the local reference database. "
+        "Use when the user asks about: GPU clock speeds, VRAM bandwidth, warp execution, "
+        "CUDA cores, tensor cores, Flash Attention, KV cache sizing, roofline model, "
+        "SM occupancy, memory coalescing, Gemma4 MoE routing, quantization trade-offs, "
+        "or any other hardware/CUDA/inference topic. "
+        "Also use proactively when you see anomalous GPU stats (high temp, low utilization, "
+        "high power) to suggest relevant optimizations."
+    ),
+    parameters={
+        "query": "str — topic to look up, e.g. 'KV cache VRAM usage' or 'warp divergence'"
+    },
+    fn=_cuda_reference,
+)

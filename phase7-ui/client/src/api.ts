@@ -53,6 +53,16 @@ export async function deleteMemory(id: string) {
   await fetch(`${BASE}/api/memory/${id}`, { method: 'DELETE' })
 }
 
+export async function fetchDocs() {
+  const r = await fetch(`${BASE}/api/docs`)
+  return r.json()  // { docs: DocEntry[], categories: string[] }
+}
+
+export async function searchDocs(query: string) {
+  const r = await fetch(`${BASE}/api/docs/search?q=${encodeURIComponent(query)}`)
+  return r.json()  // { results: string, query: string }
+}
+
 export function createChatSocket(
   onStep: (msg: string) => void,
   onToken: (token: string) => void,
@@ -76,6 +86,10 @@ export function createChatSocket(
     if ((data.type === 'tts_chunk' || data.type === 'tts_audio') && onAudio)
       onAudio(data.data, data.format ?? 'wav')
   }
+  // If the socket drops mid-response, synthesize a "done" event so the UI
+  // releases the busy spinner and the buttons become clickable again.
+  ws.onclose = () => { try { onDone() } catch {} }
+  ws.onerror = () => { try { onError('chat socket error'); onDone() } catch {} }
   return ws
 }
 

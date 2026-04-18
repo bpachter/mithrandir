@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react'
 import Header           from './components/Header'
 import ChatPanel        from './components/ChatPanel'
-import SystemMiniPanel  from './components/SystemMiniPanel'
 import GpuHistoryPanel  from './components/GpuHistoryPanel'
 import ModelParamsPanel from './components/ModelParamsPanel'
 import MarketPanel      from './components/MarketPanel'
 import MemoryPanel      from './components/MemoryPanel'
 import HistoryPanel     from './components/HistoryPanel'
+import DocsPanel        from './components/DocsPanel'
 import { useStore }     from './store'
 import { createGpuSocket } from './api'
 
-type RightBottomTab = 'params' | 'memory'
+type LeftTab = 'params' | 'docs'
 
 export default function App() {
-  const setGpuStats    = useStore((s) => s.setGpuStats)
-  const pushGpuHistory = useStore((s) => s.pushGpuHistory)
-  const [rbTab, setRbTab] = useState<RightBottomTab>('params')
+  const setGpuStats          = useStore((s) => s.setGpuStats)
+  const pushGpuHistory       = useStore((s) => s.pushGpuHistory)
+  const setPendingChatInput  = useStore((s) => s.setPendingChatInput)
+  const [leftTab, setLeftTab] = useState<LeftTab>('params')
 
   // GPU WebSocket lives here — always connected regardless of which panel is visible
   useEffect(() => {
@@ -28,6 +29,8 @@ export default function App() {
         vram_pct:    (s.vram_used / s.vram_total) * 100,
         temp:        s.temp,
         power:       s.power_draw,
+        clock_sm:    s.clock_sm  ?? 0,
+        clock_mem:   s.clock_mem ?? 0,
         cpu_percent: s.cpu_percent,
       })
     })
@@ -39,7 +42,28 @@ export default function App() {
       {/* ── Row 1: header ── */}
       <Header />
 
-      {/* ── Left column: Chat (with integrated voice) + History ── */}
+      {/* ── Row 2: hardware bar — spans full width ── */}
+      <div className="hw-bar-row">
+        <GpuHistoryPanel />
+      </div>
+
+      {/* ── Left column: Params / Cuda docs ── */}
+      <div className="col-left">
+        <div className="tab-bar">
+          <button className={`tab-btn ${leftTab === 'params' ? 'active' : ''}`} onClick={() => setLeftTab('params')}>PARAMS</button>
+          <button className={`tab-btn ${leftTab === 'docs' ? 'active' : ''}`}   onClick={() => setLeftTab('docs')}>CUDA</button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          {leftTab === 'params' && <ModelParamsPanel />}
+          {leftTab === 'docs'   && (
+            <DocsPanel onAskEnkidu={(q) => {
+              setPendingChatInput(q)
+            }} />
+          )}
+        </div>
+      </div>
+
+      {/* ── Middle column: Chat (with integrated voice) + History ── */}
       <div className="col-chat">
         <ChatPanel />
         <div style={{ flexShrink: 0, height: 180, borderTop: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -47,39 +71,17 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── Right column: System strip + Market + Params/Memory + GPU detail ── */}
+      {/* ── Right column: Market + Memory ── */}
       <div className="col-right">
-        {/* Compact system stats strip */}
-        <div style={{ flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
-          <SystemMiniPanel />
-        </div>
-
         {/* Market — takes remaining space */}
         <div style={{ flex: 3, minHeight: 0, overflow: 'hidden' }}>
           <MarketPanel />
         </div>
 
-        {/* Params / Memory tab strip */}
+        {/* Memory */}
         <div style={{ flex: 2, minHeight: 0, display: 'flex', flexDirection: 'column', borderTop: '1px solid var(--border)', overflow: 'hidden' }}>
-          <div className="tab-bar">
-            <button className={`tab-btn ${rbTab === 'params' ? 'active' : ''}`} onClick={() => setRbTab('params')}>PARAMS</button>
-            <button className={`tab-btn ${rbTab === 'memory' ? 'active' : ''}`} onClick={() => setRbTab('memory')}>MEMORY</button>
-          </div>
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-            {rbTab === 'params' && <ModelParamsPanel />}
-            {rbTab === 'memory' && <MemoryPanel />}
-          </div>
+          <MemoryPanel />
         </div>
-
-        {/* GPU detail sparklines */}
-        <details style={{ flexShrink: 0, borderTop: '1px solid var(--border)' }}>
-          <summary style={{ padding: '4px 12px', fontSize: 10, letterSpacing: '0.12em', color: 'var(--amber-dim)', cursor: 'pointer', listStyle: 'none', background: 'var(--bg-panel)' }}>
-            ▸ GPU DETAIL
-          </summary>
-          <div style={{ maxHeight: 320, overflow: 'auto' }}>
-            <GpuHistoryPanel />
-          </div>
-        </details>
       </div>
     </div>
   )

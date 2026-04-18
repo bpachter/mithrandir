@@ -17,6 +17,8 @@ let pendingBotId: string | null = null
 let tokenBuffer = ''
 let rafPending  = false
 let _onChatTtsError: ((msg: string) => void) | null = null
+let _reconnectAttempts = 0
+let _reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
 function flushTokenBuffer() {
   rafPending = false
@@ -42,7 +44,7 @@ function connectChatSocket(onTtsError?: (msg: string) => void) {
         messages: s.messages.map((m) => m.id === pendingBotId ? { ...m, content: response } : m),
       }))
     },
-    ()         => { flushTokenBuffer(); setBusy(false); pendingBotId = null },
+    ()         => { flushTokenBuffer(); setBusy(false); pendingBotId = null; _reconnectAttempts = 0 },
     (err)      => {
       flushTokenBuffer()
       if (pendingBotId) useStore.setState((s) => ({
@@ -53,6 +55,20 @@ function connectChatSocket(onTtsError?: (msg: string) => void) {
     (b64, fmt) => { enqueueAudio(b64, fmt) },
     (msg)      => { if (_onChatTtsError) _onChatTtsError(msg) },
   )
+  // Auto-reconnect on unexpected server drop. wasClean=false means the server
+  // closed without a normal WebSocket close handshake (crash / network drop).
+  // Intentional closes (Escape reset) set chatSocket=null before reconnecting,
+  // which guards against infinite loops here.
+  chatSocket.addEventListener('close', (ev: CloseEvent) => {
+    if (!ev.wasClean) {
+      const delay = Math.min(1000 * Math.pow(2, _reconnectAttempts), 30_000)
+      _reconnectAttempts++
+      console.log(`[enkidu-ws] chat socket dropped — reconnecting in ${delay}ms (attempt ${_reconnectAttempts})`)
+      _reconnectTimer = setTimeout(() => connectChatSocket(), delay)
+    } else {
+      _reconnectAttempts = 0
+    }
+  })
 }
 
 // ── VAD constants ─────────────────────────────────────────────────────────
@@ -94,11 +110,14 @@ async function startCapture(deviceId?: string): Promise<CaptureHandle> {
   const processor = audioCtx.createScriptProcessor(4096, 1, 1)
   const analyser  = audioCtx.createAnalyser()
   const silencer  = audioCtx.createGain()
-  analyser.fftSize = 256; silencer.gain.value = 0
+  analyser.fftSize = 1024; silencer.gain.value = 0  // 1024 gives smoother oscilloscope waveform
   const chunks: Float32Array[] = []
   processor.onaudioprocess = (e) => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)))
-  source.connect(analyser); source.connect(processor)
-  processor.connect(silencer); silencer.connect(audioCtx.destination)
+  // Connect analyser INTO the silent output path so Chrome doesn't optimize
+  // it out as a leaf node — without this, getFloatTimeDomainData returns zeros.
+  source.connect(analyser); analyser.connect(silencer)
+  source.connect(processor); processor.connect(silencer)
+  silencer.connect(audioCtx.destination)
   await audioCtx.resume()
   const stop = () => { processor.disconnect(); silencer.disconnect(); source.disconnect(); stream.getTracks().forEach((t) => t.stop()); audioCtx.close() }
   return { audioCtx, stream, chunks, analyser, stop }
@@ -211,41 +230,139 @@ function clearAudioQueue(): void {
 
 // ── Waveform ─────────────────────────────────────────────────────────────
 
-function Waveform({ analyser, active }: { analyser: AnalyserNode | null; active: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const rafRef    = useRef<number>(0)
+type WaveformMode = 'idle' | 'recording' | 'thinking' | 'speaking'
+
+function Waveform({ analyser, mode }: { analyser: AnalyserNode | null; mode: WaveformMode }) {
+  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const rafRef     = useRef<number>(0)
+  const phaseRef   = useRef<number>(0)  // idle breathing phase
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')!
-    const W = canvas.width, H = canvas.height
+
+    const resize = () => {
+      const w = canvas.offsetWidth  || 400
+      const h = canvas.offsetHeight || 64
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width  = w
+        canvas.height = h
+      }
+    }
+    resize()
+    const ro = new ResizeObserver(resize)
+    ro.observe(canvas)
 
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw)
+      const W = canvas.width, H = canvas.height
       ctx.clearRect(0, 0, W, H)
-      if (!analyser || !active) {
-        ctx.strokeStyle = '#ff1a4030'; ctx.lineWidth = 1
+
+      if (mode === 'recording' && analyser) {
+        // ── Oscilloscope waveform (time-domain, always visible) ───────────
+        // getFloatTimeDomainData gives [-1..1] directly from the mic.
+        // Amplify so even quiet mics look dramatic.
+        const time = new Float32Array(analyser.fftSize)
+        analyser.getFloatTimeDomainData(time)
+
+        // Compute peak amplitude this frame for auto-gain display
+        let peak = 0
+        for (let i = 0; i < time.length; i++) if (Math.abs(time[i]) > peak) peak = Math.abs(time[i])
+        // Amplify: boost quiet signal so it fills ~60% of canvas height,
+        // cap at 1 so loud signals don't clip the canvas.
+        const amp = peak > 0.001 ? Math.min(1, 0.6 / peak) : 40
+
+        // Glow under-fill
+        const fill = ctx.createLinearGradient(0, 0, 0, H)
+        fill.addColorStop(0, '#ff1a4000')
+        fill.addColorStop(0.5, '#ff1a4022')
+        fill.addColorStop(1, '#ff1a4000')
+        ctx.fillStyle = fill
+        ctx.beginPath()
+        ctx.moveTo(0, H / 2)
+        for (let i = 0; i < time.length; i++) {
+          const x = (i / (time.length - 1)) * W
+          const y = H / 2 - time[i] * amp * H * 0.5
+          ctx.lineTo(x, Math.max(0, Math.min(H, y)))
+        }
+        ctx.lineTo(W, H / 2)
+        ctx.closePath()
+        ctx.fill()
+
+        // Main waveform line
+        ctx.strokeStyle = '#ff1a40dd'
+        ctx.lineWidth = 1.5
+        ctx.shadowColor = '#ff1a40'
+        ctx.shadowBlur = 6
+        ctx.beginPath()
+        for (let i = 0; i < time.length; i++) {
+          const x = (i / (time.length - 1)) * W
+          const y = H / 2 - time[i] * amp * H * 0.5
+          i === 0 ? ctx.moveTo(x, Math.max(0, Math.min(H, y))) : ctx.lineTo(x, Math.max(0, Math.min(H, y)))
+        }
+        ctx.stroke()
+        ctx.shadowBlur = 0
+
+      } else if (mode === 'thinking') {
+        // ── Scanning line ─────────────────────────────────────────────────
+        phaseRef.current += 0.04
+        const x = ((Math.sin(phaseRef.current) * 0.5 + 0.5)) * W
+        const grad = ctx.createLinearGradient(0, 0, W, 0)
+        grad.addColorStop(0, '#ff8c0000')
+        grad.addColorStop(Math.max(0, x / W - 0.1), '#ff8c0000')
+        grad.addColorStop(x / W, '#ffaa44ff')
+        grad.addColorStop(Math.min(1, x / W + 0.1), '#ff8c0000')
+        grad.addColorStop(1, '#ff8c0000')
+        ctx.strokeStyle = grad
+        ctx.lineWidth = 1.5
         ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke()
-        return
-      }
-      const freq = new Uint8Array(analyser.frequencyBinCount)
-      analyser.getByteFrequencyData(freq)
-      const half = Math.floor(freq.length / 2)
-      const barW = W / half
-      for (let i = 0; i < half; i++) {
-        const h = (freq[i] / 255) * H
-        const grad = ctx.createLinearGradient(0, H - h, 0, H)
-        grad.addColorStop(0, '#ff1a40cc'); grad.addColorStop(1, '#ff1a4022')
-        ctx.fillStyle = grad
-        ctx.fillRect(i * barW, H - h, Math.max(1, barW - 1), h)
+        // Glowing dot at scan position
+        const glow = ctx.createRadialGradient(x, H / 2, 0, x, H / 2, 12)
+        glow.addColorStop(0, '#ffaa44cc')
+        glow.addColorStop(1, '#ffaa4400')
+        ctx.fillStyle = glow
+        ctx.beginPath(); ctx.arc(x, H / 2, 12, 0, Math.PI * 2); ctx.fill()
+
+      } else if (mode === 'speaking') {
+        // ── Animated sine wave ────────────────────────────────────────────
+        phaseRef.current += 0.08
+        ctx.strokeStyle = '#39d35388'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        for (let x = 0; x < W; x++) {
+          const y = H / 2 + Math.sin((x / W) * Math.PI * 6 + phaseRef.current) * (H * 0.3)
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+        }
+        ctx.stroke()
+        // Second layer, offset
+        ctx.strokeStyle = '#39d35344'
+        ctx.beginPath()
+        for (let x = 0; x < W; x++) {
+          const y = H / 2 + Math.sin((x / W) * Math.PI * 4 + phaseRef.current * 0.7) * (H * 0.18)
+          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+        }
+        ctx.stroke()
+
+      } else {
+        // ── Idle: slow breathing flat line ────────────────────────────────
+        phaseRef.current += 0.015
+        const alpha = 0.12 + Math.abs(Math.sin(phaseRef.current)) * 0.18
+        ctx.strokeStyle = `rgba(255, 26, 64, ${alpha})`
+        ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke()
       }
     }
     draw()
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [analyser, active])
+    return () => { cancelAnimationFrame(rafRef.current); ro.disconnect() }
+  }, [analyser, mode])
 
-  return <canvas ref={canvasRef} width={300} height={36} style={{ width: '100%', height: 36, display: 'block' }} />
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ width: '100%', height: 64, display: 'block' }}
+    />
+  )
 }
 
 // ── Component ─────────────────────────────────────────────────────────────
@@ -259,6 +376,8 @@ export default function ChatPanel() {
   const setBusy              = useStore((s) => s.setBusy)
   const clearMessages        = useStore((s) => s.clearMessages)
   const activeConversationId = useStore((s) => s.activeConversationId)
+  const pendingChatInput     = useStore((s) => s.pendingChatInput)
+  const setPendingChatInput  = useStore((s) => s.setPendingChatInput)
 
   const [input,        setInput]        = useState('')
   const [voiceState,   setVoiceState]   = useState<VoiceState>('idle')
@@ -269,8 +388,9 @@ export default function ChatPanel() {
   const [devices,      setDevices]      = useState<AudioDevice[]>([])
   const [selectedDev,  setSelectedDev]  = useState('')
   const [showDevSel,   setShowDevSel]   = useState(false)
-  const [voiceProfiles, setVoiceProfiles] = useState<string[]>(['default'])
-  const [selectedVoice, setSelectedVoice] = useState('default')
+  const [voiceProfiles,  setVoiceProfiles]  = useState<string[]>(['default'])
+  const [selectedVoice,  setSelectedVoice]  = useState('default')
+  const [activeAnalyser, setActiveAnalyser] = useState<AnalyserNode | null>(null)
 
   const bottomRef       = useRef<HTMLDivElement>(null)
   const voiceWsRef      = useRef<WebSocket | null>(null)
@@ -286,6 +406,14 @@ export default function ChatPanel() {
   useEffect(() => { voiceStateRef.current = voiceState }, [voiceState])
   useEffect(() => { loopRef.current = loopEnabled }, [loopEnabled])
 
+  // ── Pending input from DocsPanel "Ask Enkidu" button ─────────────────
+  useEffect(() => {
+    if (pendingChatInput) {
+      setInput(pendingChatInput)
+      setPendingChatInput(null)
+    }
+  }, [pendingChatInput])
+
   // ── Chat socket ──────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -295,6 +423,35 @@ export default function ChatPanel() {
     })
   }, [])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  // Emergency reset: Escape key clears busy state and reconnects sockets if
+  // the UI ever gets stuck (e.g. after a server hiccup mid-TTS).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'Escape') return
+      setBusy(false)
+      pendingBotId = null
+      voiceBotIdRef.current = null
+      setVoiceState('idle')
+      setTtsStatus('')
+      clearAudioQueue()
+      setMicError('')
+      // Cancel any pending auto-reconnect before closing so we don't loop.
+      if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null }
+      _reconnectAttempts = 0
+      try { chatSocket?.close() } catch {}
+      try { voiceWsRef.current?.close() } catch {}
+      chatSocket = null
+      voiceWsRef.current = null
+      setTimeout(() => {
+        connectChatSocket((m) => { setTtsStatus(`TTS: ${m}`); setTimeout(() => setTtsStatus(''), 4000) })
+        connectVoiceWs()
+      }, 200)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setBusy])
 
   // ── Mic devices ──────────────────────────────────────────────────────
 
@@ -332,6 +489,8 @@ export default function ChatPanel() {
   const connectVoiceWs = useCallback(() => {
     if (voiceWsRef.current && voiceWsRef.current.readyState <= WebSocket.OPEN) return
     const ws = new WebSocket('ws://localhost:8000/ws/voice')
+
+    ws.onopen = () => setMicError('')   // clear any stale error from a previous disconnect
 
     ws.onmessage = async (ev) => {
       const msg = JSON.parse(ev.data)
@@ -394,8 +553,35 @@ export default function ChatPanel() {
         setVoiceState('idle')
       }
     }
-    ws.onclose = () => { voiceWsRef.current = null }
-    ws.onerror = () => setMicError('Voice WS error — is the server running?')
+    ws.onclose = () => {
+      voiceWsRef.current = null
+      // If the socket drops while Enkidu was still responding, force-release
+      // the UI so buttons become clickable again. Without this reset the panel
+      // would stay locked on busy + speaking forever.
+      if (voiceStateRef.current !== 'idle' || pendingBotId) {
+        flushTokenBuffer()
+        clearAudioQueue()
+        setBusy(false)
+        pendingBotId = null
+        voiceBotIdRef.current = null
+        setVoiceState('idle')
+        setTtsStatus('')
+      }
+      // Auto-reconnect after a short delay so the next mic/send works.
+      setTimeout(() => { try { connectVoiceWs() } catch {} }, 400)
+    }
+    ws.onerror = () => {
+      setMicError('Voice WS error — is the server running?')
+      if (voiceStateRef.current !== 'idle' || pendingBotId) {
+        flushTokenBuffer()
+        clearAudioQueue()
+        setBusy(false)
+        pendingBotId = null
+        voiceBotIdRef.current = null
+        setVoiceState('idle')
+        setTtsStatus('')
+      }
+    }
     voiceWsRef.current = ws
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addMessage, setBusy])
@@ -414,7 +600,7 @@ export default function ChatPanel() {
   }, [])
 
   const sendAudio = useCallback((capture: CaptureHandle) => {
-    captureRef.current = null; analyserRef.current = null
+    captureRef.current = null; analyserRef.current = null; setActiveAnalyser(null)
     const actualRate = capture.audioCtx.sampleRate
     capture.stop()
     const { data, samples } = chunksToBase64(capture.chunks)
@@ -439,7 +625,7 @@ export default function ChatPanel() {
       }
     }
     setVoiceState('thinking')
-  }, [connectVoiceWs, selectedVoice])
+  }, [connectVoiceWs, selectedVoice, setActiveAnalyser])
 
   const startRecording = useCallback(async () => {
     if (voiceStateRef.current !== 'idle') return
@@ -449,6 +635,7 @@ export default function ChatPanel() {
     try {
       const capture = await startCapture(selectedDev || undefined)
       captureRef.current = capture; analyserRef.current = capture.analyser
+      setActiveAnalyser(capture.analyser)
       setVoiceState('recording')
 
       if (vadEnabled) {
@@ -564,12 +751,10 @@ export default function ChatPanel() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Waveform — only visible when recording */}
-      {isRecording && (
-        <div style={{ flexShrink: 0, background: '#06070c', borderTop: '1px solid var(--border)' }}>
-          <Waveform analyser={analyserRef.current} active={isRecording} />
-        </div>
-      )}
+      {/* Waveform — always visible, mode-driven animation */}
+      <div style={{ flexShrink: 0, background: '#06070c', borderTop: '1px solid var(--border)' }}>
+        <Waveform analyser={activeAnalyser} mode={voiceState} />
+      </div>
 
       {/* Mic error */}
       {micError && (

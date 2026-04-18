@@ -9,6 +9,8 @@ Endpoints:
   GET  /api/portfolio         top QV picks
   GET  /api/regime            current HMM market regime
   GET  /api/history           recent conversation history
+  GET  /api/docs              CUDA/hardware reference docs (all)
+  GET  /api/docs/search?q=    keyword search over docs
   WS   /ws/gpu                real-time GPU/CPU/RAM stats at 2 Hz
   WS   /ws/chat               streaming chat tokens
 
@@ -35,7 +37,9 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-load_dotenv(Path(__file__).parent.parent.parent / ".env")
+load_dotenv(Path(__file__).parent.parent.parent / ".env", override=True)
+
+_FORCED_VOICE_PROFILE = os.environ.get("ENKIDU_FORCE_VOICE_PROFILE", "").strip()
 
 # Voice module (STT + TTS) — imported lazily so missing deps don't crash startup
 _voice = None
@@ -59,6 +63,13 @@ def _get_voice():
         logger.warning(f"Voice module unavailable: {e}")
     return _voice
 
+
+def _effective_voice_profile(requested: Optional[str]) -> Optional[str]:
+    """Resolve requested profile with optional server-side override."""
+    if _FORCED_VOICE_PROFILE:
+        return _FORCED_VOICE_PROFILE
+    return requested
+
 # ---------------------------------------------------------------------------
 # Paths — reach back into the Enkidu monorepo
 # ---------------------------------------------------------------------------
@@ -73,7 +84,18 @@ for p in [str(_PHASE3), str(_PHASE3 / "tools"), str(_PHASE2T), str(_PHASE5)]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT)
+# Rotate server.log at 10 MB, keep 3 backups
+from logging.handlers import RotatingFileHandler as _RFH
+_file_handler = _RFH(
+    Path(__file__).parent / "server.log",
+    maxBytes=10 * 1024 * 1024,
+    backupCount=3,
+    encoding="utf-8",
+)
+_file_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+logging.getLogger().addHandler(_file_handler)
 logger = logging.getLogger("enkidu.ui")
 
 # ---------------------------------------------------------------------------
@@ -128,14 +150,22 @@ def _import_edgar():
 
 import subprocess
 
+def _safe_float(s: str, fallback: float = 0.0) -> float:
+    try:
+        return float(s.strip().replace("N/A", str(fallback)).replace("[Not Supported]", str(fallback)))
+    except Exception:
+        return fallback
+
+
 def _gpu_stats() -> dict:
-    """Query live GPU stats. Returns zeros if nvidia-smi is unavailable."""
+    """Query live GPU stats including clocks and fan. Returns zeros if nvidia-smi is unavailable."""
     try:
         out = subprocess.check_output(
             [
                 "nvidia-smi",
                 "--query-gpu=utilization.gpu,utilization.memory,"
-                "memory.used,memory.total,temperature.gpu,power.draw,power.limit",
+                "memory.used,memory.total,temperature.gpu,power.draw,power.limit,"
+                "clocks.current.sm,clocks.current.memory,fan.speed",
                 "--format=csv,noheader,nounits",
             ],
             timeout=2,
@@ -143,19 +173,23 @@ def _gpu_stats() -> dict:
         ).decode().strip()
         parts = [p.strip() for p in out.split(",")]
         return {
-            "gpu_util":    float(parts[0]),
-            "mem_util":    float(parts[1]),
-            "vram_used":   float(parts[2]),
-            "vram_total":  float(parts[3]),
-            "temp":        float(parts[4]),
-            "power_draw":  float(parts[5].replace("N/A", "0")),
-            "power_limit": float(parts[6].replace("N/A", "300")),
+            "gpu_util":    _safe_float(parts[0]),
+            "mem_util":    _safe_float(parts[1]),
+            "vram_used":   _safe_float(parts[2]),
+            "vram_total":  _safe_float(parts[3], 24576),
+            "temp":        _safe_float(parts[4]),
+            "power_draw":  _safe_float(parts[5]),
+            "power_limit": _safe_float(parts[6], 300),
+            "clock_sm":    _safe_float(parts[7]),
+            "clock_mem":   _safe_float(parts[8]),
+            "fan_speed":   _safe_float(parts[9]),
         }
     except Exception:
         return {
             "gpu_util": 0, "mem_util": 0,
             "vram_used": 0, "vram_total": 24576,
             "temp": 0, "power_draw": 0, "power_limit": 300,
+            "clock_sm": 0, "clock_mem": 0, "fan_speed": 0,
         }
 
 
@@ -179,8 +213,10 @@ _DEFAULT_PARAMS = {
     "temperature":    0.7,
     "top_p":          0.9,
     "top_k":          40,
+    "min_p":          0.0,
     "repeat_penalty": 1.1,
     "num_ctx":        8192,
+    "num_predict":    2048,
     "seed":           -1,
 }
 
@@ -228,8 +264,10 @@ class ParamsUpdate(BaseModel):
     temperature:    Optional[float] = None
     top_p:          Optional[float] = None
     top_k:          Optional[int]   = None
+    min_p:          Optional[float] = None
     repeat_penalty: Optional[float] = None
     num_ctx:        Optional[int]   = None
+    num_predict:    Optional[int]   = None
     seed:           Optional[int]   = None
 
 
@@ -257,8 +295,9 @@ def get_regime_endpoint():
 def get_portfolio():
     try:
         import pandas as pd
-        qv_path = Path("C:/Users/benpa/QuantitativeValue/data/processed/quantitative_value_portfolio.csv")
-        if not qv_path.exists():
+        _qv_root = os.environ.get("QV_PATH", "")
+        qv_path = Path(_qv_root) / "data/processed/quantitative_value_portfolio.csv" if _qv_root else Path()
+        if not _qv_root or not qv_path.exists():
             return {"picks": [], "error": "portfolio CSV not found"}
         df = pd.read_csv(qv_path)
         top = df.head(25)
@@ -396,13 +435,48 @@ async def delete_memory(exchange_id: str):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+@app.get("/api/docs")
+def get_docs():
+    """Return all CUDA/hardware/inference reference entries."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("cuda_docs", Path(__file__).parent / "cuda_docs.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return {"docs": mod.get_all_docs(), "categories": mod.get_categories()}
+    except Exception as e:
+        logger.warning(f"cuda_docs unavailable: {e}")
+        return {"docs": [], "categories": [], "error": str(e)}
+
+
+@app.get("/api/docs/search")
+def search_docs(q: str = ""):
+    """Keyword search over CUDA/hardware docs. Returns plain-text results."""
+    if not q.strip():
+        return {"results": "", "query": q}
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("cuda_docs", Path(__file__).parent / "cuda_docs.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        results = mod.search_docs(q, max_results=5)
+        return {"results": results, "query": q}
+    except Exception as e:
+        logger.warning(f"cuda_docs search failed: {e}")
+        return {"results": "", "query": q, "error": str(e)}
+
+
 @app.get("/api/test-audio")
 async def test_audio():
     """Returns a short TTS clip directly as audio — open in browser to test playback."""
     voice = _get_voice()
     if voice is None:
         return JSONResponse({"error": "voice unavailable"}, status_code=503)
-    data, fmt = await voice.synthesize("Enkidu online. Audio system is working.")
+    test_profile = _effective_voice_profile(None)
+    data, fmt = await voice.synthesize(
+        "Enkidu online. Audio system is working.",
+        voice_profile=test_profile,
+    )
     mime = "audio/wav" if fmt == "wav" else "audio/mpeg"
     return Response(content=data, media_type=mime)
 
@@ -414,9 +488,10 @@ def get_voices():
     if voice is None:
         return {"voices": [], "active": "default"}
     profiles = voice.list_voices()
+    active = _FORCED_VOICE_PROFILE or voice.get_active_voice()
     return {
         "voices": ["default"] + profiles,
-        "active": voice.get_active_voice(),
+        "active": active,
     }
 
 
@@ -430,6 +505,13 @@ def set_voice(body: VoiceSelect):
     voice = _get_voice()
     if voice is None:
         return JSONResponse({"error": "voice module unavailable"}, status_code=503)
+    if _FORCED_VOICE_PROFILE and body.profile != _FORCED_VOICE_PROFILE:
+        return {
+            "ok": True,
+            "active": _FORCED_VOICE_PROFILE,
+            "locked": True,
+            "note": f"voice is locked to '{_FORCED_VOICE_PROFILE}'",
+        }
     ok = voice.set_active_voice(body.profile)
     if not ok:
         return JSONResponse({"error": f"profile '{body.profile}' not found"}, status_code=404)
@@ -512,7 +594,7 @@ async def ws_chat(ws: WebSocket):
             conversation_id  = data.get("conversation_id")
             prior_messages   = _fetch_prior_messages(conversation_id) if conversation_id else []
             tts_enabled      = data.get("tts", True)   # client can opt out
-            voice_profile_req = data.get("voice_profile")  # None → use module _active_voice
+            voice_profile_req = _effective_voice_profile(data.get("voice_profile"))
 
             loop = asyncio.get_running_loop()
             tokens_sent = [0]
@@ -541,7 +623,7 @@ async def ws_chat(ws: WebSocket):
             try:
                 response = await loop.run_in_executor(
                     None,
-                    lambda: run_agent(message, on_step=on_step, on_token=on_token, prior_messages=prior_messages),
+                    lambda: run_agent(message, on_step=on_step, on_token=on_token, prior_messages=prior_messages, ollama_options=dict(_gemma_params)),
                 )
                 if tokens_sent[0] == 0:
                     final_text = response or ""
@@ -565,13 +647,16 @@ async def ws_chat(ws: WebSocket):
 
                     async def _send_chunk(audio_bytes: bytes, fmt: str, _seq: int) -> None:
                         nonlocal seq
-                        await ws.send_json({
-                            "type":   "tts_chunk",
-                            "data":   base64.b64encode(audio_bytes).decode(),
-                            "format": fmt,
-                            "seq":    _seq,
-                        })
-                        seq += 1
+                        try:
+                            await ws.send_json({
+                                "type":   "tts_chunk",
+                                "data":   base64.b64encode(audio_bytes).decode(),
+                                "format": fmt,
+                                "seq":    _seq,
+                            })
+                            seq += 1
+                        except Exception as send_exc:
+                            raise WebSocketDisconnect() from send_exc
 
                     try:
                         logger.info(f"TTS: synthesizing {len(final_text)} chars (profile={voice_profile_req!r})")
@@ -581,17 +666,28 @@ async def ws_chat(ws: WebSocket):
                                 _send_chunk,
                                 voice_profile=voice_profile_req,
                             ),
-                            timeout=180.0,
+                            timeout=60.0,
                         )
                         if seq == 0:
                             # synthesize_streaming ran but sent nothing — all engines failed
                             logger.warning("TTS: synthesize_streaming produced no audio chunks")
-                            await ws.send_json({"type": "tts_error", "content": "TTS: no audio produced (check server logs)"})
+                            try:
+                                await ws.send_json({"type": "tts_error", "content": "TTS: no audio produced (check server logs)"})
+                            except Exception:
+                                pass
+                    except WebSocketDisconnect:
+                        return
                     except Exception as e:
                         logger.error(f"Chat TTS error: {e}", exc_info=True)
-                        await ws.send_json({"type": "tts_error", "content": f"TTS error: {e}"})
+                        try:
+                            await ws.send_json({"type": "tts_error", "content": f"TTS error: {e}"})
+                        except Exception:
+                            pass
 
-            await ws.send_json({"type": "done"})
+            try:
+                await ws.send_json({"type": "done"})
+            except Exception:
+                return
 
     except (WebSocketDisconnect, Exception):
         pass
@@ -628,7 +724,7 @@ async def ws_voice(ws: WebSocket):
 
             raw_bytes    = base64.b64decode(data["data"])
             sample_rate  = int(data.get("rate", 16000))
-            voice_profile = data.get("voice_profile")   # None → use module-level active voice
+            voice_profile = _effective_voice_profile(data.get("voice_profile"))
 
             # ── 1. Transcribe ──────────────────────────────────────────────
             await ws.send_json({"type": "status", "content": "Transcribing…"})
@@ -671,7 +767,7 @@ async def ws_voice(ws: WebSocket):
                 try:
                     response = await loop.run_in_executor(
                         None,
-                        lambda: run_agent(text, on_step=on_step, on_token=on_token),
+                        lambda: run_agent(text, on_step=on_step, on_token=on_token, ollama_options=dict(_gemma_params)),
                     )
                     if collected_tokens:
                         final_text = "".join(collected_tokens)
@@ -685,15 +781,24 @@ async def ws_voice(ws: WebSocket):
                     continue
 
             # ── 3. TTS — sentence streaming ────────────────────────────────
-            await ws.send_json({"type": "status", "content": "Speaking…"})
+            try:
+                await ws.send_json({"type": "status", "content": "Speaking…"})
+            except Exception:
+                # Client already gone — abandon this request quietly.
+                continue
 
             async def _send_voice_chunk(audio_bytes: bytes, fmt: str, seq: int) -> None:
-                await ws.send_json({
-                    "type":   "tts_chunk",
-                    "data":   base64.b64encode(audio_bytes).decode(),
-                    "format": fmt,
-                    "seq":    seq,
-                })
+                try:
+                    await ws.send_json({
+                        "type":   "tts_chunk",
+                        "data":   base64.b64encode(audio_bytes).decode(),
+                        "format": fmt,
+                        "seq":    seq,
+                    })
+                except Exception as send_exc:
+                    # Translate send-after-close into a normal disconnect so
+                    # synthesize_streaming can unwind without logging a traceback.
+                    raise WebSocketDisconnect() from send_exc
 
             try:
                 await asyncio.wait_for(
@@ -702,16 +807,28 @@ async def ws_voice(ws: WebSocket):
                         _send_voice_chunk,
                         voice_profile=voice_profile,
                     ),
-                    timeout=180.0,
+                    timeout=60.0,
                 )
             except asyncio.TimeoutError:
-                logger.error("TTS timed out after 180s")
-                await ws.send_json({"type": "tts_error", "content": "TTS timed out"})
+                logger.error("TTS timed out after 60s")
+                try:
+                    await ws.send_json({"type": "tts_error", "content": "TTS timed out"})
+                except Exception:
+                    pass
+            except WebSocketDisconnect:
+                # Client closed the socket mid-stream — nothing more to do.
+                return
             except Exception as e:
                 logger.error(f"TTS error: {e}")
-                await ws.send_json({"type": "tts_error", "content": str(e)})
+                try:
+                    await ws.send_json({"type": "tts_error", "content": str(e)})
+                except Exception:
+                    pass
 
-            await ws.send_json({"type": "done"})
+            try:
+                await ws.send_json({"type": "done"})
+            except Exception:
+                return
 
     except WebSocketDisconnect:
         pass
@@ -751,4 +868,9 @@ if _CLIENT_DIST.exists():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # reload=False: the server writes server.log, test_tts.wav and touches voices/
+    # during TTS. watchfiles would restart the process mid-stream and kill in-flight
+    # WebSocket TTS chunks before the browser plays them. Only /api/test-audio
+    # survives reload (single fast HTTP response), which is why that was audible
+    # while chat/voice TTS was not.
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

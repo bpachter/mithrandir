@@ -21,13 +21,19 @@ from pathlib import Path
 warnings.filterwarnings("ignore")
 
 # ── Add ffmpeg to PATH so torchaudio / soundfile can find it ─────────────────
-_FFMPEG_DIR = r"C:\ffmpeg\bin\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin"
+# Set FFMPEG_DIR in .env to point at the bin/ folder containing ffmpeg.exe.
+_FFMPEG_DIR = os.environ.get(
+    "FFMPEG_DIR",
+    r"C:\ffmpeg\bin\ffmpeg-master-latest-win64-gpl-shared\ffmpeg-master-latest-win64-gpl-shared\bin",
+)
 if os.path.isdir(_FFMPEG_DIR) and _FFMPEG_DIR not in os.environ.get("PATH", ""):
     os.environ["PATH"] = _FFMPEG_DIR + os.pathsep + os.environ.get("PATH", "")
 
-# Suppress F5-TTS load chatter
+# Suppress F5-TTS load chatter.
+# Must use utf-8 encoding — F5-TTS internals print unicode chars (e.g. ≈)
+# that cp1252 (Windows default) cannot encode, causing a UnicodeEncodeError.
 _real_stdout = sys.stdout
-sys.stdout = open(os.devnull, "w")
+sys.stdout = open(os.devnull, "w", encoding="utf-8", errors="replace")
 
 import torch
 import torchaudio
@@ -59,17 +65,18 @@ for line in sys.stdin:
         req        = json.loads(line)
         text       = req["text"]
         voice_path = req.get("voice_path", "")
+        ref_text   = req.get("ref_text", "")  # empty \u2192 F5 auto-transcribes (slow!)
 
         if not voice_path or not os.path.exists(voice_path):
             print(json.dumps({"ok": False, "error": "no valid voice_path for F5-TTS"}), flush=True)
             continue
 
         # Suppress any stdout prints from tts.infer() (e.g. "Converting audio...")
-        sys.stdout = open(os.devnull, "w")
+        sys.stdout = open(os.devnull, "w", encoding="utf-8", errors="replace")
         try:
             wav, sr, _ = tts.infer(
                 ref_file  =voice_path,
-                ref_text  ="",       # auto-transcribe reference
+                ref_text  =ref_text,  # pass through: "" \u2192 auto-transcribe, else use as-is
                 gen_text  =text,
                 seed      =-1,
             )
