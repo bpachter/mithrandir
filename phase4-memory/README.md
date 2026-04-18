@@ -2,6 +2,11 @@
 
 **Status:** ✅ Complete (April 13, 2026)
 
+![Memory recall across sessions](../assets/phase4-memory-recall.gif)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 4” -->
+
+> **Plain English:** Out of the box, an LLM forgets *everything* the moment you close the window. This phase gives Enkidu a memory — a small local database that stores every conversation and lets the agent re-read past chats by *meaning*, not keyword. It also indexes the project's own source code, so when you ask "why did we build X?" it can quote the exact file and decision instead of making something up.
+
 Gives Enkidu two complementary memory systems: conversation memory across sessions (semantic retrieval + structured history), and document/codebase RAG (index your repo and knowledge base so the agent can cite its own prior work).
 
 ---
@@ -115,6 +120,9 @@ Thresholds:
 - Document index: cosine distance < 0.45 (top 4 results)
 
 ---
+
+![/stats output showing memory + doc-index counts](../assets/phase4-stats.png)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 4” -->
 
 ## Telegram Commands
 

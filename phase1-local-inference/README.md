@@ -2,6 +2,11 @@
 
 **Status: ✅ Complete**
 
+![Open WebUI chatting with local Gemma](../assets/phase1-openwebui-chat.png)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 1 — Local Inference” -->
+
+> **Plain English:** This phase puts a real AI model on your own GPU. Two free programs (Docker and Ollama) do all the heavy lifting. After ~1 hour you'll be chatting with Gemma in your browser at `localhost:3000`, with **no internet required and no per-question cost.** If you've ever installed a Steam game, the difficulty level is similar — wait for downloads, click some things, run two terminal commands.
+
 Get Gemma 4 26B running locally on your GPU. By the end of this phase you will be able to chat with a state-of-the-art LLM in a browser with no internet connection required and no API costs.
 
 **Time to complete:** 1-2 hours (mostly waiting for downloads)
@@ -33,6 +38,9 @@ Get Gemma 4 26B running locally on your GPU. By the end of this phase you will b
 
 ---
 
+![docker compose up](../assets/phase1-docker-compose-up.gif)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 1” -->
+
 ## Step 1 — Start Ollama + Open WebUI
 
 This repo includes a `docker-compose.yml` that starts both Ollama and Open WebUI in one command. From this directory:
@@ -53,6 +61,9 @@ docker ps
 ```
 
 ---
+
+![Pulling Gemma weights](../assets/phase1-ollama-pull.gif)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 1” -->
 
 ## Step 2 — Pull Gemma 4 26B
 
@@ -98,6 +109,9 @@ Run the benchmark to measure local vs cloud performance:
 python phase1-local-inference/inference_bench.py
 ```
 
+![Benchmark output — 144 tok/s local vs 31 tok/s cloud](../assets/phase1-benchmark.png)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 1” -->
+
 ### Actual results from this build (RTX 4090, cold start)
 
 | Metric | Gemma 4 26B (local) | Claude Opus 4.6 (cloud) |
@@ -113,6 +127,9 @@ Monitor GPU VRAM usage while the benchmark runs:
 # PowerShell
 nvidia-smi
 ```
+
+![nvidia-smi during inference](../assets/phase1-nvidia-smi.png)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 1” — shows ~18 GB VRAM used by the Ollama process -->
 
 ---
 

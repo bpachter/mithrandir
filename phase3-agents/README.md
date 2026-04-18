@@ -2,6 +2,11 @@
 
 **Status: ✅ Complete** (April 13, 2026)
 
+![Telegram chat on iPhone](../assets/phase3-telegram-iphone.png)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 3” -->
+
+> **Plain English:** Phase 2 made the model *use* tools. Phase 3 makes it *think in steps*. Instead of one prompt → one answer, the agent now writes itself a plan, picks a tool, looks at the result, decides what to do next, and only stops when it has the real answer. It also gets a phone interface — a Telegram bot — so you can talk to your home AI from anywhere.
+
 Move Enkidu from a prompt-injection tool pipeline to a true agentic system: one that can reason, plan, call tools, observe results, and self-correct — all triggered from an iPhone via Telegram.
 
 Enkidu can also be exposed inside Open WebUI through a local bridge and native Open WebUI function. See `OPEN_WEBUI_SETUP.md` in this folder.
@@ -72,6 +77,9 @@ TELEGRAM_ALLOWED_USER_ID=your_numeric_user_id
 ```
 
 ---
+
+![ReAct loop in console](../assets/phase3-react-loop.gif)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 3” -->
 
 ### 2. ReAct Agent Loop
 
@@ -154,6 +162,9 @@ Implementation: `subprocess` running in a restricted environment (no network, no
 This enables: compound growth calculations, ratio analysis, portfolio statistics, anything requiring actual arithmetic on real numbers.
 
 ---
+
+![Market regime injected into the system prompt](../assets/phase3-regime-injection.png)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 3” -->
 
 ### 5. HMM Regime Detection *(Advanced — later in phase)*
 

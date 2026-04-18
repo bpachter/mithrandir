@@ -2,6 +2,11 @@
 
 **Status: Complete**
 
+![Routing decision in the REPL](../assets/phase2-routing-decision.gif)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 2” -->
+
+> **Plain English:** A language model is just a text predictor — it doesn't actually *know* what your GPU temperature is or what stocks are cheap today. This phase teaches Enkidu to **look things up first, then answer.** It also adds a traffic cop ("the router") that decides which model handles each question — the free local Gemma for most things, paid Claude only when the question really needs the extra horsepower.
+
 A Python orchestrator that routes queries between local Gemma and Claude API, and runs tools that inject real context — financial data, system stats, RGB lighting — before sending to the model.
 
 ---
@@ -62,6 +67,9 @@ Injects real-time hardware stats into the prompt when you ask about performance,
 
 ---
 
+![EDGAR tool returning a QV portfolio answer](../assets/phase2-qv-portfolio.png)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 2” -->
+
 ### `tools/edgar_screener.py` — Financial Data Tool
 
 Injects EDGAR financial context when you ask about stocks or companies. Backed by the bundled QV pipeline at `quant-value/`.
@@ -81,6 +89,9 @@ Injects EDGAR financial context when you ask about stocks or companies. Backed b
 See [quant-value/README.md](./quant-value/README.md) for full pipeline details.
 
 ---
+
+![RGB keyboard during inference](../assets/phase2-rgb-inference.gif)
+<!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 2” -->
 
 ### `tools/lighting.py` — RGB Keyboard Animation
 

@@ -1,12 +1,35 @@
 # Enkidu — Building a Local AI Assistant from Scratch
 
-A public learning journal and working codebase for building a privacy-first, locally-hosted AI assistant on consumer hardware.
+> *A public learning journal and working codebase for building a privacy-first, locally-hosted AI assistant on consumer hardware.*
 
-**Goal:** Run open-source LLM inference locally on your own GPU for private, zero-cost queries — with Claude API as a fallback for tasks requiring more powerful reasoning.
+![Enkidu running locally on a single RTX 4090](./assets/hero-enkidu-ui.png)
+<!-- ⤴ Capture: full UI mid-stream — see docs/MEDIA_GUIDE.md "Hero / Repo-level" -->
 
-**Required Vibe Check:** https://www.youtube.com/watch?v=vWGQBQU8Vr0
+## In one paragraph (for non-engineers)
 
-This is not a polished product. It is a documented journey — including the mistakes. If you want to build something similar, start here.
+A "large language model" (LLM) is the kind of AI behind ChatGPT, Claude, and Gemini. Most people use them through a website and pay per question. **This project shows how to run one yourself, on your own computer, for free, with no data ever leaving your machine.** The model is Google's open-source Gemma 4. The hardware is a normal gaming PC with an NVIDIA graphics card. The result is a private assistant that's actually useful — it reads SEC filings, tracks markets, remembers past conversations, and even speaks in a cloned voice.
+
+## In one paragraph (for engineers)
+
+Local-first agentic stack: **Gemma 4 26B (MoE, 18 GB VRAM, ~144 tok/s on a 4090)** served via Ollama, fronted by a ReAct loop with Pydantic-validated tool calls, smart routing to Claude for heavy reasoning, ChromaDB+SQLite memory with codebase RAG, HMM-based market regime injection, a quantitative-value EDGAR screener over 9.8 K filings, faster-whisper STT + F5-TTS voice cloning with a 5-tier fallback chain, and a custom React/FastAPI/WebSocket UI. Telegram bot for mobile. All local except an optional Claude/Tavily fallback.
+
+## What this is — and is not
+
+- **It is** a documented, reproducible build with every step, every bug, every fix in [JOURNEY.md](./JOURNEY.md).
+- **It is not** a polished product. There is no installer. There are sharp edges. That is the point — you'll learn more from a real build than a sanitised one.
+
+**Required vibe check before you start:** [youtube.com/watch?v=vWGQBQU8Vr0](https://www.youtube.com/watch?v=vWGQBQU8Vr0)
+
+## TL;DR — Why this matters
+
+| Question | Answer |
+|---|---|
+| Can a normal person actually run a frontier LLM at home? | Yes, if you have an NVIDIA GPU with 8 GB+ VRAM. |
+| What does it cost? | $0 in API fees. You pay for electricity. |
+| Is it as good as ChatGPT / Claude? | For most everyday questions, yes. For the hardest reasoning, Claude is still better — so Enkidu uses Claude *only when needed* and keeps everything else local. |
+| How fast is it? | ~144 tokens/second on an RTX 4090 — about 4× the speed I get from a typical cloud API. |
+| Does my data leave the machine? | No, unless you explicitly route a query to the Claude fallback. |
+| How long does setup take? | ~1–2 hours, mostly waiting for the model to download. |
 
 ---
 
@@ -84,6 +107,11 @@ Everything below is free and open source.
 ---
 
 ## Architecture (Current State)
+
+![System architecture diagram](./assets/architecture-diagram.png)
+<!-- ⤴ Capture: rendered/cleaned-up version of the ASCII diagram below — see docs/MEDIA_GUIDE.md "Hero / Repo-level" -->
+
+> **Plain English:** Two ways in (browser or iPhone). One brain in the middle (the agent). Two engines under the hood (local Gemma for cheap/fast, Claude for hard reasoning). A toolbox of things the agent can do (read SEC filings, run Python, search the web, recall memory). Everything underlined below is what gets shoved into the model's prompt *before* it answers, so the answers are grounded in real data instead of guesses.
 
 ```
 Interfaces
@@ -183,6 +211,11 @@ Voice pipeline (Phase 7)
 
 ## Getting Started
 
+> **First time setting up an AI project?** Read each step before running it. The order matters, and a couple of these (Docker, WSL2) need a one-time machine reboot. Budget ~1–2 hours, mostly waiting for downloads. The full Phase 1 walkthrough has screenshots: [phase1-local-inference/README.md](./phase1-local-inference/README.md).
+
+![Terminal: docker compose up + ollama pull](./assets/phase1-docker-compose-up.gif)
+<!-- ⤴ Capture: see docs/MEDIA_GUIDE.md "Phase 1" -->
+
 ### 1. Install prerequisites
 
 Make sure you have Python, Git, Docker Desktop, and WSL2 (Windows) installed from the table above before continuing.
@@ -261,6 +294,11 @@ Commands during the session:
 ---
 
 ## EDGAR Financial Screener (Phase 2 Tool)
+
+![EDGAR tool answering a ticker question](./assets/phase2-edgar-tool.png)
+<!-- ⤴ Capture: REPL showing [EDGAR CONTEXT] block + answer — see docs/MEDIA_GUIDE.md "Phase 2" -->
+
+> **Plain English:** Public companies in the U.S. are required to file their financials with the SEC. Those filings are free. Enkidu downloads them in bulk, computes a quality + value score for every company, and lets you ask plain-English questions like "what's undervalued right now?" The model doesn't *know* the answer — it *looks it up* from real filings before answering.
 
 Enkidu includes a quantitative value investment screener built directly into the tool pipeline. When you ask about stocks or financial data, it automatically:
 
