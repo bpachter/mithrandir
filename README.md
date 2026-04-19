@@ -2,8 +2,7 @@
 
 > *A public learning journal and working codebase for building a privacy-first, locally-hosted AI assistant on consumer hardware.*
 
-![Enkidu running locally on a single RTX 4090](./assets/hero-enkidu-ui.png)
-<!-- ⤴ Capture: full UI mid-stream — see docs/MEDIA_GUIDE.md "Hero / Repo-level" -->
+> Visual placeholder: add `assets/hero-enkidu-ui.png` once captured (see [assets/README.md](./assets/README.md)).
 
 ## In one paragraph (for non-engineers)
 
@@ -108,8 +107,7 @@ Everything below is free and open source.
 
 ## Architecture (Current State)
 
-![System architecture diagram](./assets/architecture-diagram.png)
-<!-- ⤴ Capture: rendered/cleaned-up version of the ASCII diagram below — see docs/MEDIA_GUIDE.md "Hero / Repo-level" -->
+> Visual placeholder: add `assets/architecture-diagram.png` once rendered (see [assets/README.md](./assets/README.md)).
 
 > **Plain English:** Two ways in (browser or iPhone). One brain in the middle (the agent). Two engines under the hood (local Gemma for cheap/fast, Claude for hard reasoning). A toolbox of things the agent can do (read SEC filings, run Python, search the web, recall memory). Everything underlined below is what gets shoved into the model's prompt *before* it answers, so the answers are grounded in real data instead of guesses.
 
@@ -130,7 +128,7 @@ Routing: keyword/ticker heuristic
     └── Claude claude-sonnet-4-6 via Anthropic API  ← tool-use / agentic queries
     ↓
 Tool dispatch (Claude path)
-    ├── edgar_screener   → SEC EDGAR financials + QV screened portfolio (116 quality-gated stocks)
+    ├── edgar_screener   → SEC EDGAR financials + QV screened portfolio (~360 quality-gated stocks)
     ├── python_sandbox   → subprocess code execution (pandas/numpy/scipy)
     ├── system_info      → GPU/CPU/RAM stats via nvidia-smi + psutil
     ├── market_regime    → HMM regime detection (Expansion/Recovery/Contraction/Crisis)
@@ -141,7 +139,7 @@ Tool dispatch (Claude path)
     └── web_search       → live web search via Tavily API (DDG fallback, no API key needed)
 
 [Every query: HMM market regime + memory context + last exchange injected into system prompt]
-[Every Gemma query: live DuckDuckGo web context pre-fetched]
+[Gemma path attempts a live DuckDuckGo pre-search; if it fails, query continues normally]
 [Identity grounding: user is always "Ben Pachter (Ben)" — prevents name hallucination]
 [RGB keyboard soft blue at idle; deep purple / galaxy swirl during inference]
 [Windows Task Scheduler: daily signal log + weekly alert push]
@@ -196,7 +194,7 @@ Voice pipeline (Phase 7)
 | Cloud fallback | Anthropic Claude API | Best reasoning quality, used selectively |
 | Financial data | SEC EDGAR + DefeatBeta (via WSL) | Free, comprehensive, no API key required |
 | RGB lighting | Corsair iCUE SDK + Alienware LightFX | Keyboard idle blue / deep purple during inference; tower galaxy swirl rainbow |
-| Web search | Tavily API + DuckDuckGo fallback | Live internet results injected into every Gemma query; full page extraction via Tavily |
+| Web search | Tavily API + DuckDuckGo fallback | Live internet results are attempted on the Gemma path and injected when available; full page extraction via Tavily |
 | Agentic interface | Telegram Bot (pyTelegramBotAPI) | iPhone access, no server needed, first-class Bot API |
 | Regime detection | hmmlearn GaussianHMM + yfinance SPY data | Local, 4-state market regime injected into every prompt |
 | Vector memory | ChromaDB + nomic-embed-text | Local embeddings, no cloud required |
@@ -213,8 +211,7 @@ Voice pipeline (Phase 7)
 
 > **First time setting up an AI project?** Read each step before running it. The order matters, and a couple of these (Docker, WSL2) need a one-time machine reboot. Budget ~1–2 hours, mostly waiting for downloads. The full Phase 1 walkthrough has screenshots: [phase1-local-inference/README.md](./phase1-local-inference/README.md).
 
-![Terminal: docker compose up + ollama pull](./assets/phase1-docker-compose-up.gif)
-<!-- ⤴ Capture: see docs/MEDIA_GUIDE.md "Phase 1" -->
+> Visual placeholder: add `assets/phase1-docker-compose-up.gif` after capture (see [assets/README.md](./assets/README.md)).
 
 ### 1. Install prerequisites
 
@@ -270,7 +267,7 @@ Open `http://localhost:5173` in your browser (dev) or `http://localhost:8000` (p
 
 **Voice setup:**
 - First launch auto-downloads Whisper `base.en` (~145 MB) on first voice query.
-- F5-TTS voice cloning requires model weights in `phase6-ui/server/f5tts_model/` (~1.3 GB). Download separately — see `phase6-ui/server/f5tts_model/README.md`.
+- F5-TTS voice cloning requires model weights in `phase6-ui/server/f5tts_model/` (~1.3 GB). These files are not tracked in git and must be placed manually.
 - The default voice profile is BMO (Adventure Time). To use a different voice, record 5-8s of clean audio, save as `phase6-ui/server/voices/<name>.wav`, and update `ENKIDU_DEFAULT_VOICE` in `.env`.
 
 ### 7b. Run Enkidu via Telegram (Phase 3)
@@ -282,21 +279,19 @@ python telegram_interface.py
 ```
 
 Commands during the session:
-- `/local` — force next query to local Gemma
-- `/cloud` — force next query to Claude API
+- `/help` — show available commands and examples
 - `/stats` — show session token usage + memory counts
 - `/history` — last 5 saved exchanges with timestamps
 - `/watchlist` — current QV top-15 picks
 - `/performance` — QV signal track record vs SPY
 - `/refresh` — re-download EDGAR data and regenerate the QV screened portfolio
-- `/exit` — quit
+- `/rate <text>` — save feedback on the last response
 
 ---
 
 ## EDGAR Financial Screener (Phase 2 Tool)
 
-![EDGAR tool answering a ticker question](./assets/phase2-edgar-tool.png)
-<!-- ⤴ Capture: REPL showing [EDGAR CONTEXT] block + answer — see docs/MEDIA_GUIDE.md "Phase 2" -->
+> Visual placeholder: add `assets/phase2-edgar-tool.png` after capture (see [assets/README.md](./assets/README.md)).
 
 > **Plain English:** Public companies in the U.S. are required to file their financials with the SEC. Those filings are free. Enkidu downloads them in bulk, computes a quality + value score for every company, and lets you ask plain-English questions like "what's undervalued right now?" The model doesn't *know* the answer — it *looks it up* from real filings before answering.
 
