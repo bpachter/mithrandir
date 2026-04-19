@@ -74,21 +74,24 @@ class RiskScreener:
         df['delta_ca_excl_cash'] = df['delta_current_assets'] - df['delta_cash']
         df['delta_cl_adjusted'] = df['delta_current_liabilities']  # Simplified
         
-        # Note: Depreciation expense not directly available in current data structure
-        # Would need to extract from cash flow statement or calculate from changes in PP&E
-        # For now, we'll approximate using a simplified approach
-        df['depreciation_approx'] = df['total_assets'] * 0.05  # Rough 5% estimate
-        
+        # Use actual D&A from income statement / cash flow (now extracted from EDGAR)
+        # Fall back to 5% of assets only when D&A is genuinely unavailable
+        if 'depreciation_amortization' in df.columns:
+            df['depreciation_approx'] = df['depreciation_amortization'].fillna(df['total_assets'] * 0.05)
+        else:
+            df['depreciation_approx'] = df['total_assets'] * 0.05
+
         df['sta'] = (
-            (df['delta_ca_excl_cash'] - df['delta_cl_adjusted'] - df['depreciation_approx']) 
+            (df['delta_ca_excl_cash'] - df['delta_cl_adjusted'] - df['depreciation_approx'])
             / df['total_assets']
         )
         
         # Scaled Net Operating Assets (SNOA)
         # Operating Assets ≈ Total Assets - Cash
-        # Operating Liabilities ≈ Total Liabilities - Long-term Debt
+        # Operating Liabilities ≈ Total Liabilities - Total Debt (all interest-bearing claims)
         df['operating_assets'] = df['total_assets'] - df['cash'].fillna(0)
-        df['operating_liabilities'] = df['total_liabilities'] - df['long_term_debt'].fillna(0)
+        total_debt_col = df['total_debt'] if 'total_debt' in df.columns else df['long_term_debt'].fillna(0)
+        df['operating_liabilities'] = df['total_liabilities'] - total_debt_col.fillna(0)
         
         df['snoa'] = (
             (df['operating_assets'] - df['operating_liabilities']) 
@@ -125,38 +128,64 @@ class RiskScreener:
         df = df.sort_values(['ticker', 'period_end'])
         
         # Calculate year-over-year metrics for indices
-        for col in ['revenue', 'total_assets', 'gross_profit', 'long_term_debt']:
+        lag_cols = ['revenue', 'total_assets', 'gross_profit', 'long_term_debt',
+                    'accounts_receivable', 'depreciation_amortization', 'sga_expense',
+                    'current_assets']
+        for col in lag_cols:
             if col in df.columns:
                 df[f'{col}_lag'] = df.groupby('ticker')[col].shift(1)
-        
+
         # 1. Days Sales in Receivables Index (DSRI)
-        # Note: Receivables not in current data - would need accounts receivable
-        # Approximating as 0 for now - this is a significant limitation
-        df['dsri'] = 1.0  # Neutral value when receivables data unavailable
-        
+        # DSR = Accounts Receivable / Revenue; DSRI = DSR_t / DSR_{t-1}
+        # A rising DSRI may indicate channel-stuffing or aggressive revenue recognition
+        if 'accounts_receivable' in df.columns and 'accounts_receivable_lag' in df.columns:
+            df['dsr_current'] = df['accounts_receivable'] / df['revenue']
+            df['dsr_lag'] = df['accounts_receivable_lag'] / df['revenue_lag']
+            df['dsri'] = df['dsr_current'] / df['dsr_lag']
+        else:
+            df['dsri'] = 1.0  # Neutral when receivables data unavailable
+
         # 2. Gross Margin Index (GMI)
         df['gross_margin_lag'] = df['gross_profit_lag'] / df['revenue_lag']
         df['gross_margin_current'] = df['gross_profit'] / df['revenue']
         df['gmi'] = df['gross_margin_lag'] / df['gross_margin_current']
-        
-        # 3. Asset Quality Index (AQI) 
+
+        # 3. Asset Quality Index (AQI)
         # AQI = (1 - (PPE + Current Assets)/Total Assets) current / prior
-        # Approximating PPE as Total Assets - Current Assets
+        # Approximating PP&E as Total Assets - Current Assets
         df['ppe'] = df['total_assets'] - df['current_assets']
-        df['ppe_lag'] = df['total_assets_lag'] - df.groupby('ticker')['current_assets'].shift(1)
-        
+        df['ppe_lag'] = df['total_assets_lag'] - df['current_assets_lag'] if 'current_assets_lag' in df.columns else df['total_assets_lag'] - df.groupby('ticker')['current_assets'].shift(1)
+
         df['asset_quality'] = 1 - (df['ppe'] + df['current_assets']) / df['total_assets']
         df['asset_quality_lag'] = 1 - (df['ppe_lag'] + df.groupby('ticker')['current_assets'].shift(1)) / df['total_assets_lag']
         df['aqi'] = df['asset_quality'] / df['asset_quality_lag']
-        
+
         # 4. Sales Growth Index (SGI)
         df['sgi'] = df['revenue'] / df['revenue_lag']
-        
-        # 5. Depreciation Index (DEPI) - requires depreciation data not available
-        df['depi'] = 1.0  # Neutral when depreciation data unavailable
-        
-        # 6. SG&A Index (SGAI) - requires SG&A expense data not available
-        df['sgai'] = 1.0  # Neutral when SG&A data unavailable
+
+        # 5. Depreciation Index (DEPI)
+        # DEPI = [DEP_rate_{t-1}] / [DEP_rate_t]  where DEP_rate = DEP / (PP&E + DEP)
+        # Rising DEPI (slowing depreciation rate) may signal asset life manipulation
+        if 'depreciation_amortization' in df.columns and 'depreciation_amortization_lag' in df.columns:
+            dep = df['depreciation_amortization'].fillna(0)
+            dep_lag = df['depreciation_amortization_lag'].fillna(0)
+            ppe_gross = df['ppe'].fillna(0)
+            ppe_gross_lag = df['ppe_lag'].fillna(0)
+            dep_rate = dep / (ppe_gross + dep).replace(0, np.nan)
+            dep_rate_lag = dep_lag / (ppe_gross_lag + dep_lag).replace(0, np.nan)
+            df['depi'] = dep_rate_lag / dep_rate
+        else:
+            df['depi'] = 1.0  # Neutral when D&A data unavailable
+
+        # 6. SG&A Index (SGAI)
+        # SGAI = (SGA_t / Revenue_t) / (SGA_{t-1} / Revenue_{t-1})
+        # Rising SGAI indicates deteriorating operating leverage
+        if 'sga_expense' in df.columns and 'sga_expense_lag' in df.columns:
+            sga_ratio = df['sga_expense'] / df['revenue']
+            sga_ratio_lag = df['sga_expense_lag'] / df['revenue_lag']
+            df['sgai'] = sga_ratio / sga_ratio_lag
+        else:
+            df['sgai'] = 1.0  # Neutral when SG&A data unavailable
         
         # 7. Total Accruals to Total Assets (TATA)
         # TATA = (Net Income - CFO) / Total Assets
@@ -216,22 +245,34 @@ class RiskScreener:
         # 3. Liquidity indicator
         df['liquidity_distress'] = df['cash'] / df['total_assets']
         
-        # 4. Interest coverage (simplified)
-        # Note: Interest expense not available, using operating income as proxy
-        df['interest_coverage_proxy'] = np.where(
-            df['operating_income'] > 0, 
-            np.log(df['operating_income'] / df['total_assets']),
-            -5  # Penalty for negative operating income
-        )
-        
+        # 4. Interest coverage: EBIT / Interest Expense
+        # Companies that can't cover interest are at high distress risk
+        if 'interest_expense' in df.columns:
+            df['interest_coverage'] = np.where(
+                df['interest_expense'] > 0,
+                df['operating_income'] / df['interest_expense'],
+                np.where(df['operating_income'] > 0, 10.0, 0.5)  # No debt = safe; loss = risky
+            )
+            # Cap at 10x to avoid outlier leverage; log-scale the coverage ratio
+            df['interest_coverage_signal'] = np.log(
+                np.clip(df['interest_coverage'].fillna(1.0), 0.1, 10.0)
+            )
+        else:
+            # Fallback: use log(EBIT / assets) as a coverage proxy
+            df['interest_coverage_signal'] = np.where(
+                df['operating_income'] > 0,
+                np.log(df['operating_income'] / df['total_assets']),
+                -5
+            )
+
         # Simple logistic regression approximation for financial distress
-        # Coefficients estimated to penalize: low profitability, high leverage, low liquidity
+        # Coefficients penalise: low profitability, high leverage, low liquidity, poor coverage
         df['distress_score'] = (
             -3.0  # Intercept
             - 10.0 * df['roa_distress'].fillna(0)  # Penalize low/negative ROA
-            + 5.0 * df['leverage_distress'].fillna(0.5)  # Penalize high leverage  
+            + 5.0 * df['leverage_distress'].fillna(0.5)  # Penalize high leverage
             - 8.0 * df['liquidity_distress'].fillna(0.05)  # Penalize low cash
-            + df['interest_coverage_proxy'].fillna(-2)  # Penalize low coverage
+            - 1.5 * df['interest_coverage_signal'].fillna(-2)  # Reward high coverage
         )
         
         # Convert to probability using logistic function

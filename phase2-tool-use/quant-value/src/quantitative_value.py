@@ -162,11 +162,13 @@ class QuantitativeValueScreener:
         df['f_score'] += df['f_liquidity']
 
         # 7. Shares outstanding not increasing (no dilution)
-        # Using shares_outstanding field if available, otherwise skip
-        if 'shares_outstanding' in df.columns and 'shares_outstanding_yoy' in df.columns:
+        # Use shares_diluted_yoy (computed in compute_metrics via _compute_growth_rates)
+        if 'shares_diluted_yoy' in df.columns:
+            df['f_shares'] = (df['shares_diluted_yoy'] <= 0).fillna(0).astype(int)
+        elif 'shares_outstanding_yoy' in df.columns:
             df['f_shares'] = (df['shares_outstanding_yoy'] <= 0).fillna(0).astype(int)
         else:
-            df['f_shares'] = 0  # Can't calculate without share data
+            df['f_shares'] = 0
         df['f_score'] += df['f_shares']
 
         # === OPERATING EFFICIENCY (2 points) ===
@@ -178,8 +180,11 @@ class QuantitativeValueScreener:
             df['f_margin'] = 0
         df['f_score'] += df['f_margin']
 
-        # 9. Asset turnover increasing (revenue growth > asset growth)
-        if 'revenue_yoy' in df.columns and 'total_assets_yoy' in df.columns:
+        # 9. Asset turnover increasing (asset_turnover = revenue / total_assets)
+        if 'asset_turnover_yoy' in df.columns:
+            df['f_turnover'] = (df['asset_turnover_yoy'] > 0).fillna(0).astype(int)
+        elif 'revenue_yoy' in df.columns and 'total_assets_yoy' in df.columns:
+            # Fallback: revenue growing faster than assets
             df['f_turnover'] = (df['revenue_yoy'] > df['total_assets_yoy']).fillna(0).astype(int)
         else:
             df['f_turnover'] = 0
@@ -293,15 +298,25 @@ class QuantitativeValueScreener:
         else:
             # Fallback to book value approximation
             logger.info("Using book value approximation for enterprise value")
-            
-            # Calculate total debt (using long-term debt; short-term not available in metrics)
-            df['total_debt'] = df['long_term_debt'].fillna(0)
+
+            # Use all-in total_debt if already computed by MetricsCalculator
+            if 'total_debt' not in df.columns:
+                df['total_debt'] = (
+                    df['long_term_debt'].fillna(0)
+                    + df['short_term_borrowings'].fillna(0) if 'short_term_borrowings' in df.columns else 0
+                    + df['current_portion_lt_debt'].fillna(0) if 'current_portion_lt_debt' in df.columns else 0
+                )
+
+            minority = df['minority_interest'].fillna(0) if 'minority_interest' in df.columns else 0
+            preferred = df['preferred_stock'].fillna(0) if 'preferred_stock' in df.columns else 0
 
             # Enterprise Value (using book equity as market cap proxy)
             df['enterprise_value'] = (
-                df['total_equity'].fillna(0) +
-                df['total_debt'] -
-                df['cash'].fillna(0)
+                df['total_equity'].fillna(0)
+                + df['total_debt']
+                + minority
+                + preferred
+                - df['cash'].fillna(0)
             )
 
         # Ensure EV is positive for ratios
@@ -330,6 +345,8 @@ class QuantitativeValueScreener:
         df = df.copy()
 
         # Calculate value metrics
+        # Per Carlisle/Gray, Value Composite uses percentile ranks of:
+        # EV/EBIT, EV/EBITDA, EV/FCF, EV/Gross Profit, P/B
         value_metrics = []
 
         # 1. EV/EBIT (primary valuation metric)
@@ -337,18 +354,25 @@ class QuantitativeValueScreener:
             df['ev_ebit'] = df['enterprise_value'] / df['operating_income']
         value_metrics.append('ev_ebit')
 
-        # 2. EV/Revenue (for companies with low/negative EBIT)
-        if 'ev_revenue' not in df.columns:
-            df['ev_revenue'] = df['enterprise_value'] / df['revenue']
-        value_metrics.append('ev_revenue')
+        # 2. EV/EBITDA (adds back non-cash D&A to normalize across capital structures)
+        if 'ev_ebitda' not in df.columns and 'ebitda' in df.columns:
+            df['ev_ebitda'] = df['enterprise_value'] / df['ebitda']
+        if 'ev_ebitda' in df.columns:
+            value_metrics.append('ev_ebitda')
 
-        # 3. EV/FCF (if free cash flow available)
+        # 3. EV/Gross Profit (Novy-Marx: gross profit is a cleaner earnings proxy)
+        if 'ev_gross_profit' not in df.columns and 'gross_profit' in df.columns:
+            df['ev_gross_profit'] = df['enterprise_value'] / df['gross_profit']
+        if 'ev_gross_profit' in df.columns:
+            value_metrics.append('ev_gross_profit')
+
+        # 4. EV/FCF (if free cash flow available)
         if 'fcf' in df.columns:
             if 'ev_fcf' not in df.columns:
                 df['ev_fcf'] = df['enterprise_value'] / df['fcf']
             value_metrics.append('ev_fcf')
 
-        # 4. P/B (if market data available)
+        # 5. P/B (if market data available)
         if 'price_to_book' in df.columns:
             value_metrics.append('price_to_book')
 

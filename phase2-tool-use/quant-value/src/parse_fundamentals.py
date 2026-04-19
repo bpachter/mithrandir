@@ -88,6 +88,60 @@ TAG_MAPPING = {
     'shares_diluted': [
         'WeightedAverageNumberOfDilutedSharesOutstanding',
         'WeightedAverageNumberDilutedSharesOutstandingAdjustment'
+    ],
+    'shares_outstanding': [
+        'CommonStockSharesOutstanding',
+        'SharesOutstanding'
+    ],
+
+    # Additional metrics for Carlisle/Gray QV scoring
+    'accounts_receivable': [
+        'AccountsReceivableNetCurrent',
+        'ReceivablesNetCurrent',
+        'AccountsReceivableTrade',
+        'AccountsReceivableNet'
+    ],
+    'depreciation_amortization': [
+        'DepreciationDepletionAndAmortization',
+        'DepreciationAndAmortization',
+        'Depreciation',
+        'AmortizationOfIntangibleAssets'
+    ],
+    'sga_expense': [
+        'SellingGeneralAndAdministrativeExpense',
+        'GeneralAndAdministrativeExpense',
+        'SellingAndMarketingExpense',
+        'SellingExpense'
+    ],
+    'interest_expense': [
+        'InterestExpense',
+        'InterestAndDebtExpense',
+        'InterestExpenseDebt',
+        'FinancingInterestExpense'
+    ],
+    'short_term_borrowings': [
+        'ShortTermBorrowings',
+        'NotesPayableToBanksShortTerm',
+        'LineOfCredit',
+        'ShortTermBankLoansAndNotesPayable'
+    ],
+    'current_portion_lt_debt': [
+        'LongTermDebtCurrent',
+        'LongTermNotesPayableCurrent',
+        'CurrentPortionOfLongTermDebt',
+        'DebtCurrent'
+    ],
+    'minority_interest': [
+        'MinorityInterest',
+        'NoncontrollingInterestMember',
+        'MinorityInterestInSubsidiaries',
+        'RedeemableNoncontrollingInterestEquityCarryingAmount'
+    ],
+    'preferred_stock': [
+        'PreferredStockValue',
+        'PreferredStockValueOutstanding',
+        'RedeemablePreferredStockValue',
+        'PreferredStockSharesOutstanding'
     ]
 }
 

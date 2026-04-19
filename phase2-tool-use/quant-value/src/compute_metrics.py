@@ -38,7 +38,10 @@ class MetricsCalculator:
             'revenue', 'cogs', 'gross_profit', 'operating_income', 'ebit', 'net_income',
             'total_assets', 'current_assets', 'cash', 'total_liabilities',
             'current_liabilities', 'long_term_debt', 'total_equity',
-            'cfo', 'capex', 'dividends_paid', 'shares_diluted'
+            'cfo', 'capex', 'dividends_paid', 'shares_diluted', 'shares_outstanding',
+            'accounts_receivable', 'depreciation_amortization', 'sga_expense',
+            'interest_expense', 'short_term_borrowings', 'current_portion_lt_debt',
+            'minority_interest', 'preferred_stock'
         ]
         for col in numeric_cols:
             if col in df.columns:
@@ -79,9 +82,22 @@ class MetricsCalculator:
         df['fcf'] = df['cfo'] - df['capex'].abs()  # capex is often negative
         df['fcf_margin'] = self._safe_divide(df['fcf'], df['revenue'])
 
-        # Leverage ratios
-        df['debt_to_equity'] = self._safe_divide(df['long_term_debt'], df['total_equity'])
-        df['debt_to_assets'] = self._safe_divide(df['long_term_debt'], df['total_assets'])
+        # Total debt (all interest-bearing obligations per Carlisle/Gray)
+        df['total_debt'] = (
+            df['long_term_debt'].fillna(0)
+            + df['short_term_borrowings'].fillna(0)
+            + df['current_portion_lt_debt'].fillna(0)
+        )
+
+        # EBITDA = EBIT + D&A (needed for EV/EBITDA value multiple)
+        df['ebitda'] = df['ebit'] + df['depreciation_amortization'].fillna(0)
+
+        # Asset turnover = revenue / total assets (used in F-Score efficiency component)
+        df['asset_turnover'] = self._safe_divide(df['revenue'], df['total_assets'])
+
+        # Leverage ratios — use total_debt not just long_term_debt
+        df['debt_to_equity'] = self._safe_divide(df['total_debt'], df['total_equity'])
+        df['debt_to_assets'] = self._safe_divide(df['total_debt'], df['total_assets'])
 
         # Profitability ratios
         df['roa'] = self._safe_divide(df['net_income'], df['total_assets'])
@@ -128,7 +144,17 @@ class MetricsCalculator:
         Returns:
             DataFrame with growth columns added
         """
-        growth_metrics = ['revenue', 'net_income', 'fcf', 'ebit']
+        growth_metrics = [
+            'revenue', 'net_income', 'fcf', 'ebit',
+            # Ratio columns needed for Piotroski F-Score components
+            'gross_margin',      # F8: gross margin improving
+            'current_ratio',     # F6: current ratio improving
+            'debt_to_equity',    # F5: leverage declining
+            'roa',               # F3: ROA improving
+            'asset_turnover',    # F9: asset turnover improving
+            'total_assets',      # used in F9 fallback
+            'shares_diluted',    # F7: no share dilution
+        ]
 
         for metric in growth_metrics:
             if metric not in df.columns:

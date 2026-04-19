@@ -444,11 +444,12 @@ class MarketDataProvider:
             # Return fundamentals with enterprise_value calculated from book values
             df = fundamentals_df.copy()
             df['market_cap_final'] = np.nan
-            df['enterprise_value'] = (
-                df.get('total_equity', df.get('stockholders_equity', 0)).fillna(0) +
-                df.get('long_term_debt', 0).fillna(0) -
-                df.get('cash', 0).fillna(0)
-            )
+            # Use total_debt (all interest-bearing claims) per Carlisle/Gray
+            total_debt = df['total_debt'].fillna(0) if 'total_debt' in df.columns else df.get('long_term_debt', pd.Series(0, index=df.index)).fillna(0)
+            minority = df['minority_interest'].fillna(0) if 'minority_interest' in df.columns else 0
+            preferred = df['preferred_stock'].fillna(0) if 'preferred_stock' in df.columns else 0
+            equity = df['total_equity'].fillna(0) if 'total_equity' in df.columns else df.get('stockholders_equity', pd.Series(0, index=df.index)).fillna(0)
+            df['enterprise_value'] = equity + total_debt + minority + preferred - df.get('cash', pd.Series(0, index=df.index)).fillna(0)
             df['enterprise_value'] = df['enterprise_value'].replace(0, np.nan)
 
             # Calculate valuation ratios
@@ -456,6 +457,10 @@ class MarketDataProvider:
                 df['ev_revenue'] = df['enterprise_value'] / df['revenue']
             if 'operating_income' in df.columns:
                 df['ev_ebit'] = df['enterprise_value'] / df['operating_income']
+            if 'ebitda' in df.columns:
+                df['ev_ebitda'] = df['enterprise_value'] / df['ebitda']
+            if 'gross_profit' in df.columns:
+                df['ev_gross_profit'] = df['enterprise_value'] / df['gross_profit']
             if 'fcf' in df.columns:
                 df['ev_fcf'] = df['enterprise_value'] / df['fcf']
 
@@ -483,12 +488,26 @@ class MarketDataProvider:
         # Use market cap from API if available, otherwise use calculated
         merged['market_cap_final'] = merged['market_cap'].fillna(merged['market_cap_calculated'])
         
-        # Calculate net debt (total debt - cash)
-        # Use available column names from our data
-        debt_col = 'long_term_debt'
-        cash_col = 'cash'
-        
-        merged['net_debt'] = merged[debt_col].fillna(0) - merged[cash_col].fillna(0)
+        # Calculate net debt using total debt (all interest-bearing obligations)
+        # Per Carlisle/Gray: EV = Market Cap + Total Debt + Minority Interest
+        #                        + Preferred Stock - Cash
+        # total_debt = long_term_debt + short_term_borrowings + current_portion_lt_debt
+        if 'total_debt' in merged.columns:
+            debt_component = merged['total_debt'].fillna(0)
+        else:
+            # Fallback to long_term_debt only if total_debt not computed yet
+            debt_component = merged['long_term_debt'].fillna(0)
+
+        # Add minority interest and preferred stock to EV (they are claims senior to common equity)
+        minority = merged['minority_interest'].fillna(0) if 'minority_interest' in merged.columns else 0
+        preferred = merged['preferred_stock'].fillna(0) if 'preferred_stock' in merged.columns else 0
+
+        merged['net_debt'] = (
+            debt_component
+            + minority
+            + preferred
+            - merged['cash'].fillna(0)
+        )
 
         # FX conversion: EDGAR reports fundamentals in the company's native currency
         # (e.g. JPY for MUFG/KYOCF, EUR for ASML) while market_cap_final is always USD.
@@ -521,9 +540,13 @@ class MarketDataProvider:
             merged['ev_revenue'] = merged['enterprise_value'] / merged['revenue']
         if 'operating_income' in merged.columns:
             merged['ev_ebit'] = merged['enterprise_value'] / merged['operating_income']
+        if 'ebitda' in merged.columns:
+            merged['ev_ebitda'] = merged['enterprise_value'] / merged['ebitda']
+        if 'gross_profit' in merged.columns:
+            merged['ev_gross_profit'] = merged['enterprise_value'] / merged['gross_profit']
         if 'fcf' in merged.columns:
             merged['ev_fcf'] = merged['enterprise_value'] / merged['fcf']
-        
+
         # Market-based metrics
         merged['log_market_cap'] = np.log(merged['market_cap_final'].replace(0, np.nan))
         
