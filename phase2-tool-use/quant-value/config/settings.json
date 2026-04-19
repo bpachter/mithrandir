@@ -27,7 +27,7 @@
     "annual_periods": {
       "forms": ["10-K", "20-F"],
       "fiscal_period": "FY",
-      "years_history": 2
+      "years_history": 5
     },
     "quarterly_periods": {
       "forms": ["10-Q"],

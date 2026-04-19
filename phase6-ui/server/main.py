@@ -122,16 +122,20 @@ def _import_system_info():
         logger.warning(f"system_info unavailable: {e}")
         return None
 
-def _import_regime():
+def _import_regime_mod():
     try:
         import importlib.util
         spec = importlib.util.spec_from_file_location("regime_detector", _PHASE3 / "tools" / "regime_detector.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        return mod.get_regime
+        return mod
     except Exception as e:
         logger.warning(f"regime_detector unavailable: {e}")
         return None
+
+def _import_regime():
+    mod = _import_regime_mod()
+    return mod.get_regime if mod else None
 
 def _import_edgar():
     try:
@@ -304,6 +308,19 @@ def get_regime_endpoint():
         return fn()
     except Exception as e:
         return {"regime": "Unknown", "confidence": 0, "error": str(e)}
+
+
+@app.post("/api/regime/retrain")
+def retrain_regime_endpoint():
+    """Force a fresh HMM retrain from 10 years of SPY data."""
+    mod = _import_regime_mod()
+    if mod is None:
+        return JSONResponse(status_code=503, content={"error": "regime_detector unavailable"})
+    try:
+        result = mod.retrain()
+        return {"status": "ok", **result}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/api/portfolio")

@@ -27,6 +27,7 @@ The trained model is cached at tools/regime_model.pkl so it loads instantly
 after the first run. Call retrain() to force a fresh download + retrain.
 """
 
+import logging
 import os
 import pickle
 import warnings
@@ -38,6 +39,7 @@ from hmmlearn.hmm import GaussianHMM
 from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore")
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -151,16 +153,20 @@ def retrain(years: int = 10, n_states: int = 4, n_iter: int = 200) -> dict:
 
 
 def _load_or_train() -> dict:
-    """Load cached model if it exists and is <7 days old, else retrain."""
+    """Load cached model if it exists and is <3 days old, else retrain."""
     if os.path.exists(_MODEL_PATH):
         try:
             with open(_MODEL_PATH, "rb") as f:
                 payload = pickle.load(f)
             trained_at = datetime.fromisoformat(payload["trained_at"])
-            if (datetime.now() - trained_at).days < 7:
+            age_days = (datetime.now() - trained_at).days
+            if age_days < 3:
+                logger.info(f"Regime model loaded from cache (trained {age_days}d ago)")
                 return payload
-        except Exception:
-            pass
+            else:
+                logger.info(f"Regime model is {age_days}d old — retraining")
+        except Exception as e:
+            logger.warning(f"Failed to load cached regime model: {e} — retraining")
 
     return {"model": None, "labels": {}, "feature_df": pd.DataFrame(),
             "trained_at": "", "_needs_train": True}
@@ -225,15 +231,24 @@ def get_regime() -> dict:
 
     df = payload["feature_df"]
 
-    # If feature data is >3 days stale, fetch fresh features for current prediction
-    # (model weights stay the same; only the input changes)
+    # If feature data is stale, fetch fresh features for current prediction.
+    # Model weights stay the same; we just run the latest SPY data through them.
     last_date = df.index[-1]
-    if (datetime.now() - last_date.to_pydatetime().replace(tzinfo=None)).days > 3:
+    data_age_days = (datetime.now() - last_date.to_pydatetime().replace(tzinfo=None)).days
+    if data_age_days > 0:
         try:
-            df = _fetch_features(years=1)  # lightweight refresh
-            payload["feature_df"] = df
-        except Exception:
-            pass  # fall back to cached features
+            logger.info(f"Feature data is {data_age_days}d stale — refreshing")
+            fresh_df = _fetch_features(years=1)
+            payload["feature_df"] = fresh_df
+            df = fresh_df
+            # Persist refreshed features so the next call doesn't re-fetch
+            with open(_MODEL_PATH, "wb") as f:
+                pickle.dump(payload, f)
+            logger.info(f"Feature data refreshed through {df.index[-1].date()}")
+        except Exception as e:
+            logger.warning(
+                f"Feature refresh failed ({e}) — predicting on data as of {last_date.date()}"
+            )
 
     return _predict_current(payload, df)
 
