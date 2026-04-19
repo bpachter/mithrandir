@@ -1,0 +1,53 @@
+name: Feature Request
+description: Suggest a new capability or improvement.
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea? We want to hear it — especially if it makes Enkidu faster, smarter, or more useful for local AI work.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What gap are you trying to fill?
+      placeholder: "e.g. I often want to ask Enkidu about a stock while I'm away from my desk. Telegram support would help."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you expect this to work?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you think about?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Financial / EDGAR pipeline
+        - Voice (STT/TTS)
+        - Memory / RAG
+        - React UI
+        - Agent / reasoning
+        - Onboarding / setup
+        - CI / testing
+        - Documentation
+        - Other
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to submit a PR for this

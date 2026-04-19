@@ -1,0 +1,48 @@
+name: Benchmark Needed
+description: A new capability needs a golden test or latency threshold in the benchmark suite.
+labels: ["benchmark-needed", "testing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        When a new feature ships, it should have a benchmark entry so regressions are caught automatically.
+
+  - type: textarea
+    id: capability
+    attributes:
+      label: Capability to benchmark
+      description: What behaviour should be tested?
+      placeholder: "e.g. The new voice round-trip latency should be under 5 seconds p95."
+    validations:
+      required: true
+
+  - type: textarea
+    id: golden_prompt
+    attributes:
+      label: Proposed golden prompt
+      description: What prompt would exercise this capability?
+      placeholder: "e.g. 'What is the current GPU temperature?' — must contain '°C' and respond in < 20s"
+    validations:
+      required: true
+
+  - type: input
+    id: expected_output
+    attributes:
+      label: Expected output constraints
+      placeholder: "must_contain_any: ['°C', 'celsius'], max_latency_ms: 20000"
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - identity
+        - routing
+        - tool_use
+        - finance
+        - cuda
+        - voice
+        - safety
+        - latency
+    validations:
+      required: true

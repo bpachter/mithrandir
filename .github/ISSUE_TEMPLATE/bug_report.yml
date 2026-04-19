@@ -1,0 +1,79 @@
+name: Bug Report
+description: Something broken? File a bug report.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. The more detail you provide, the faster we can fix it.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: "e.g. Voice TTS crashes when the response is longer than 500 words."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reliably reproduce this?
+      placeholder: |
+        1. Start Enkidu with `scripts/start.bat`
+        2. Ask "Explain CUDA memory hierarchy in detail"
+        3. Voice output crashes after ~200 words
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      placeholder: "TTS should synthesize the full response"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Chat (text)
+        - Voice (STT/TTS)
+        - Financial screener (EDGAR)
+        - Memory (ChromaDB)
+        - Telegram bot
+        - React UI
+        - Health checks / startup
+        - Benchmark / CI
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste from `phase6-ui/server/server.log` or terminal output.
+      render: shell
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: "Windows 11 Home 10.0.26200"
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: "RTX 4090 24GB"
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.11.9"

@@ -1,0 +1,48 @@
+name: Good First Issue (maintainer only)
+description: Flag an issue as suitable for a first-time contributor.
+labels: ["good first issue", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to create an issue that is well-scoped and approachable for new contributors.
+
+  - type: textarea
+    id: task
+    attributes:
+      label: Task description
+      description: What needs to be done? Be specific — include file paths and expected behaviour.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and pointers
+      description: Which files/functions are relevant? What should a contributor read first?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know this is done?
+      placeholder: |
+        - [ ] Tests pass (`python tests/test_health.py`)
+        - [ ] New behaviour described in PR description
+        - [ ] No regressions in benchmark (`python tests/benchmark.py --category identity`)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Estimated effort
+      options:
+        - "< 1 hour"
+        - "1-4 hours"
+        - "half day"
+        - "1-2 days"
+    validations:
+      required: true
