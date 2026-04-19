@@ -83,6 +83,13 @@ class QuantitativeValueScreener:
         """
         df = self.metrics_df[self.metrics_df['frequency'] == frequency].copy()
 
+        # Prefer rows where revenue is present — avoids picking a recent stub
+        # row that only has share/price data and missing income statement fields.
+        if 'revenue' in df.columns:
+            df_with_rev = df[df['revenue'].notna()]
+            if not df_with_rev.empty:
+                df = df_with_rev
+
         # Sort by period_end and get most recent period per company
         df = df.sort_values('period_end', ascending=False)
         latest = df.groupby('ticker').first().reset_index()
