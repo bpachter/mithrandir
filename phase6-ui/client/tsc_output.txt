@@ -1,0 +1,3 @@
+src/components/DemoPanel.tsx(92,11): error TS6133: 'step' is declared but its value is never read.
+src/components/DemoPanel.tsx(260,23): error TS2339: Property 'tags' does not exist on type 'Demo'.
+src/components/DemoPanel.tsx(260,45): error TS7006: Parameter 'tag' implicitly has an 'any' type.

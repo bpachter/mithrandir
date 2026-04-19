@@ -1,5 +1,61 @@
 const BASE = 'http://localhost:8000'
 
+function isHtmlInsteadOfJsonError(e: unknown): boolean {
+  return e instanceof Error && e.message.includes('returned HTML instead of JSON')
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchJsonWithRetry<T>(
+  url: string,
+  endpointLabel: string,
+  init?: RequestInit,
+  attempts = 3,
+): Promise<T> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const r = await fetch(url, init)
+      return await parseJsonOrThrow<T>(r, endpointLabel)
+    } catch (e) {
+      lastErr = e
+      if (!isHtmlInsteadOfJsonError(e) || i === attempts - 1) {
+        throw e
+      }
+      await delay(120 * (i + 1))
+    }
+  }
+  throw lastErr
+}
+
+async function parseJsonOrThrow<T>(r: Response, endpointLabel: string): Promise<T> {
+  const ct = (r.headers.get('content-type') || '').toLowerCase()
+  const body = await r.text()
+
+  if (!r.ok) {
+    throw new Error(`${endpointLabel} ${r.status}: ${body.slice(0, 200)}`)
+  }
+
+  const trimmed = body.trimStart().toLowerCase()
+  if (trimmed.startsWith('<!doctype') || trimmed.startsWith('<html')) {
+    throw new Error(
+      `${endpointLabel} returned HTML instead of JSON. ` +
+      'Ensure phase6-ui backend is running on http://localhost:8000 and refresh the browser.',
+    )
+  }
+
+  try {
+    return JSON.parse(body) as T
+  } catch {
+    throw new Error(
+      `${endpointLabel} returned non-JSON payload (content-type: ${ct || 'unknown'}). ` +
+      `Body head: ${body.slice(0, 120)}`,
+    )
+  }
+}
+
 export async function fetchParams() {
   const r = await fetch(`${BASE}/api/params`)
   return r.json()
@@ -144,15 +200,20 @@ export interface SitingLayer {
 }
 
 export async function fetchSitingFactors(): Promise<SitingFactorsResponse> {
-  const r = await fetch(`${BASE}/api/siting/factors`)
-  if (!r.ok) throw new Error(`siting/factors ${r.status}`)
-  return r.json()
+  return fetchJsonWithRetry<SitingFactorsResponse>(
+    `${BASE}/api/siting/factors`,
+    'siting/factors',
+  )
 }
 
-export async function fetchSitingSample(): Promise<{ results: SiteResultDTO[] }> {
-  const r = await fetch(`${BASE}/api/siting/sample`)
-  if (!r.ok) throw new Error(`siting/sample ${r.status}`)
-  return r.json()
+export async function fetchSitingSample(): Promise<{ results?: SiteResultDTO[]; sites?: Array<{ site_id: string; lat: number; lon: number; [k: string]: unknown }> }> {
+  return fetchJsonWithRetry<{
+    results?: SiteResultDTO[]
+    sites?: Array<{ site_id: string; lat: number; lon: number; [k: string]: unknown }>
+  }>(
+    `${BASE}/api/siting/sample`,
+    'siting/sample',
+  )
 }
 
 export async function scoreSites(payload: {
@@ -160,22 +221,28 @@ export async function scoreSites(payload: {
   archetype?: Archetype
   weight_overrides?: Record<string, number>
 }): Promise<{ results: SiteResultDTO[] }> {
-  const r = await fetch(`${BASE}/api/siting/score`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!r.ok) throw new Error(`siting/score ${r.status}`)
-  return r.json()
+  return fetchJsonWithRetry<{ results: SiteResultDTO[] }>(
+    `${BASE}/api/siting/score`,
+    'siting/score',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
 }
 
 export async function fetchSitingLayers(): Promise<{
   layers: SitingLayer[]
   data_sources: Record<string, unknown>
 }> {
-  const r = await fetch(`${BASE}/api/siting/layers`)
-  if (!r.ok) throw new Error(`siting/layers ${r.status}`)
-  return r.json()
+  return fetchJsonWithRetry<{
+    layers: SitingLayer[]
+    data_sources: Record<string, unknown>
+  }>(
+    `${BASE}/api/siting/layers`,
+    'siting/layers',
+  )
 }
 
 export interface SitingLayerGeoJSON {
@@ -200,11 +267,29 @@ export async function fetchSitingLayerGeoJSON(
   const params = new URLSearchParams()
   if (bbox) params.set('bbox', bbox.join(','))
   params.set('limit', String(limit))
-  const r = await fetch(`${BASE}/api/siting/layer/${layerKey}?${params.toString()}`)
-  if (r.status === 404) {
-    const j = await r.json().catch(() => ({}))
-    return { error: j.error ?? 'not cached' }
+  const url = `${BASE}/api/siting/layer/${layerKey}?${params.toString()}`
+  let lastErr: unknown
+  for (let i = 0; i < 3; i++) {
+    const r = await fetch(url)
+    if (r.status === 404) {
+      const text = await r.text()
+      let j: { error?: string } = {}
+      try {
+        j = JSON.parse(text)
+      } catch {
+        j = {}
+      }
+      return { error: j.error ?? 'not cached' }
+    }
+    try {
+      return await parseJsonOrThrow<SitingLayerGeoJSON>(r, `siting/layer/${layerKey}`)
+    } catch (e) {
+      lastErr = e
+      if (!isHtmlInsteadOfJsonError(e) || i === 2) {
+        throw e
+      }
+      await delay(120 * (i + 1))
+    }
   }
-  if (!r.ok) throw new Error(`siting/layer/${layerKey} ${r.status}`)
-  return r.json()
+  throw lastErr
 }

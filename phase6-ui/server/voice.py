@@ -226,7 +226,7 @@ _FX_RING_DEPTH   = float(os.environ.get("ENKIDU_RING_DEPTH", "0.0"))   # off
 _FX_COMB_MS      = float(os.environ.get("ENKIDU_COMB_MS",   "2.0"))    # short speaker-box resonance (not metallic plate)
 _FX_COMB_FB      = float(os.environ.get("ENKIDU_COMB_FB",   "0.22"))   # light feedback — subtle, not resonant
 _FX_COMB_MIX     = float(os.environ.get("ENKIDU_COMB_MIX",  "0.12"))   # wet/dry mix
-_FX_DRIVE        = float(os.environ.get("ENKIDU_DRIVE",     "1.8"))    # soft warmth — no aggression
+_FX_DRIVE        = float(os.environ.get("ENKIDU_DRIVE",     "1.4"))    # soft warmth — no aggression; lower = cleaner consonants
 _FX_FORMANT      = float(os.environ.get("ENKIDU_FORMANT",   "1.06"))   # slight brightening — small vocal tract
 _FX_SUB_MIX      = float(os.environ.get("ENKIDU_SUB_MIX",   "0.0"))    # no subharmonic
 _FX_SUB_CUTOFF   = float(os.environ.get("ENKIDU_SUB_CUTOFF", "120"))   # subharmonic LPF cutoff (Hz)
@@ -256,6 +256,16 @@ _FX_CRUSH_BITS   = int(float(os.environ.get("ENKIDU_CRUSH_BITS", "13")))
 _FX_CRUSH_DECIM  = int(float(os.environ.get("ENKIDU_CRUSH_DECIM", "1")))   # downsample factor
 _FX_MEGATRON     = os.environ.get("ENKIDU_MEGATRON", "1") == "1"       # enable extended character FX chain
 _MEGATRON_SLOWDOWN = float(os.environ.get("ENKIDU_MEGATRON_SLOWDOWN", "1.00"))
+
+# Profiles that skip F5-TTS / Chatterbox voice cloning and use Kokoro + FX only.
+# 'bmo' is in here by default: the bmo.wav reference clip is a phone-answer scene
+# ("ring ring hello football hello bemo") which F5-TTS echoes into every response.
+# BMO's character is fully defined by the FX chain — cloning adds nothing and hallucinates.
+_FX_ONLY_PROFILES: frozenset[str] = frozenset(
+    s.strip().lower() for s in
+    os.environ.get("ENKIDU_FX_ONLY_PROFILES", "bmo").split(",")
+    if s.strip()
+)
 
 _kokoro_pipeline = None
 _kokoro_pipeline_lang: Optional[str] = None
@@ -1295,10 +1305,14 @@ async def synthesize(text: str, voice_profile: Optional[str] = None) -> tuple[by
         return b"", "wav"
 
     profile    = voice_profile if voice_profile is not None else _active_voice
+    # FX-only profiles (e.g. 'bmo') skip voice cloning entirely — their character
+    # is fully defined by the Kokoro + FX chain; cloning a short cartoon clip
+    # adds nothing and causes F5-TTS to echo the reference audio's phrases.
+    use_clone   = profile.lower() not in _FX_ONLY_PROFILES
     # A wav-only profile is any profile name that isn't a built-in Kokoro voice
     # AND has a .wav reference file in voices/.
     is_wav_profile = profile not in _KOKORO_LANG_MAP
-    voice_path     = get_voice_path(profile) if is_wav_profile else None
+    voice_path     = get_voice_path(profile) if (is_wav_profile and use_clone) else None
     loop           = asyncio.get_event_loop()
 
     # 1. F5-TTS first when the user explicitly picked a wav profile.
@@ -1361,7 +1375,8 @@ async def synthesize_streaming(
 
     sentences  = split_sentences(text)
     profile    = voice_profile if voice_profile is not None else _active_voice
-    is_wav_profile = profile not in _KOKORO_LANG_MAP and get_voice_path(profile) is not None
+    use_clone  = profile.lower() not in _FX_ONLY_PROFILES
+    is_wav_profile = use_clone and profile not in _KOKORO_LANG_MAP and get_voice_path(profile) is not None
     stream_clone = os.environ.get("ENKIDU_STREAM_CLONE", "0") == "1"
     # Quality-clone mode is OFF by default: F5-TTS takes 40-60s to load + synthesize,
     # which exceeds the 60s TTS wall clock and produces silence.

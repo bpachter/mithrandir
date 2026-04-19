@@ -56,6 +56,51 @@ function colorForScore(score: number, killed: boolean): string {
 
 const ARCHETYPES: Archetype[] = ['training', 'inference', 'mixed']
 
+const FALLBACK_SAMPLE_SITES: Array<{ site_id: string; lat: number; lon: number; state: string }> = [
+  { site_id: 'TX-ABL-001', lat: 32.4487, lon: -99.7331, state: 'TX' },
+  { site_id: 'VA-LDN-001', lat: 39.0840, lon: -77.6555, state: 'VA' },
+  { site_id: 'GA-DGL-001', lat: 33.9526, lon: -84.5499, state: 'GA' },
+  { site_id: 'AZ-PHX-001', lat: 33.4484, lon: -112.0740, state: 'AZ' },
+  { site_id: 'IA-DSM-001', lat: 41.5868, lon: -93.6250, state: 'IA' },
+  { site_id: 'WI-MTP-001', lat: 42.7228, lon: -87.7829, state: 'WI' },
+  { site_id: 'WA-QCY-001', lat: 47.2343, lon: -119.8521, state: 'WA' },
+  { site_id: 'NE-OMA-001', lat: 41.2565, lon: -95.9345, state: 'NE' },
+  { site_id: 'TN-CLA-001', lat: 36.5298, lon: -87.3595, state: 'TN' },
+  { site_id: 'TX-TMP-001', lat: 31.0982, lon: -97.3428, state: 'TX' },
+]
+
+type SiteInput = { site_id: string; lat: number; lon: number; [k: string]: unknown }
+
+const FALLBACK_BY_ID: Record<string, SiteInput> = Object.fromEntries(
+  FALLBACK_SAMPLE_SITES.map((s) => [s.site_id, s]),
+)
+
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v)
+}
+
+function toSiteInputsFromResults(results: SiteResultDTO[]): SiteInput[] {
+  const out: SiteInput[] = []
+  for (const r of results as Array<SiteResultDTO & { extras?: Record<string, unknown> }>) {
+    const lat = isFiniteNumber(r.lat) ? r.lat : FALLBACK_BY_ID[r.site_id]?.lat
+    const lon = isFiniteNumber(r.lon) ? r.lon : FALLBACK_BY_ID[r.site_id]?.lon
+    if (!isFiniteNumber(lat) || !isFiniteNumber(lon)) continue
+    out.push({ site_id: r.site_id, lat, lon, ...(r.extras ?? {}) })
+  }
+  return out
+}
+
+function mergeCoordsIntoResults(results: SiteResultDTO[], inputs: SiteInput[]): SiteResultDTO[] {
+  const byId = new Map(inputs.map((s) => [s.site_id, s]))
+  return results
+    .map((r) => {
+      const src = byId.get(r.site_id)
+      if (!src) return r
+      return { ...r, lat: src.lat, lon: src.lon, extras: { ...(r.extras ?? {}), ...src } }
+    })
+    .filter((r) => isFiniteNumber(r.lat) && isFiniteNumber(r.lon))
+}
+
 export default function SitingPanel() {
   const mapDivRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MLMap | null>(null)
@@ -70,6 +115,7 @@ export default function SitingPanel() {
   const [weightOverrides, setWeightOverrides] = useState<Record<string, number>>({})
 
   const [sites, setSites] = useState<SiteResultDTO[]>([])
+  const [siteInputs, setSiteInputs] = useState<SiteInput[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [scoring, setScoring] = useState(false)
   const [layerStatus, setLayerStatus] = useState<Record<string, 'idle' | 'loading' | 'ok' | 'missing' | 'error'>>({})
@@ -84,7 +130,38 @@ export default function SitingPanel() {
       for (const l of r.layers) enabled[l.key] = false
       setEnabledLayers(enabled)
     }).catch(e => setError(String(e)))
-    fetchSitingSample().then(r => setSites(r.results)).catch(() => {})
+    fetchSitingSample()
+      .then(async (r) => {
+        if (Array.isArray(r.results)) {
+          const inputs = toSiteInputsFromResults(r.results)
+          if (inputs.length > 0) {
+            setSiteInputs(inputs)
+            setSites(mergeCoordsIntoResults(r.results, inputs))
+            return
+          }
+          const scored = await scoreSites({ sites: FALLBACK_SAMPLE_SITES, archetype })
+          setSiteInputs(FALLBACK_SAMPLE_SITES)
+          setSites(mergeCoordsIntoResults(scored.results, FALLBACK_SAMPLE_SITES))
+          return
+        }
+        if (Array.isArray(r.sites) && r.sites.length > 0) {
+          const scored = await scoreSites({ sites: r.sites, archetype })
+          setSiteInputs(r.sites)
+          setSites(mergeCoordsIntoResults(scored.results, r.sites))
+        }
+      })
+      .catch(async () => {
+        try {
+          const scored = await scoreSites({
+            sites: FALLBACK_SAMPLE_SITES,
+            archetype,
+          })
+          setSiteInputs(FALLBACK_SAMPLE_SITES)
+          setSites(mergeCoordsIntoResults(scored.results, FALLBACK_SAMPLE_SITES))
+        } catch (e) {
+          setError(String(e))
+        }
+      })
   }, [])
 
   // ── init MapLibre ─────────────────────────────────────────────────────
@@ -257,16 +334,16 @@ export default function SitingPanel() {
 
   // ── re-score on archetype / weight changes ────────────────────────────
   async function rescoreAll() {
-    if (sites.length === 0) return
+    if (siteInputs.length === 0) return
     setScoring(true)
     setError(null)
     try {
       const r = await scoreSites({
-        sites: sites.map(s => ({ site_id: s.site_id, lat: s.lat, lon: s.lon, ...(s.extras ?? {}) })),
+        sites: siteInputs,
         archetype,
         weight_overrides: Object.keys(weightOverrides).length ? weightOverrides : undefined,
       })
-      setSites(r.results)
+      setSites(mergeCoordsIntoResults(r.results, siteInputs))
     } catch (e) {
       setError(String(e))
     } finally {
