@@ -209,9 +209,7 @@ Voice pipeline (Phase 7)
 
 ## Getting Started
 
-> **First time setting up an AI project?** Read each step before running it. The order matters, and a couple of these (Docker, WSL2) need a one-time machine reboot. Budget ~1–2 hours, mostly waiting for downloads. The full Phase 1 walkthrough has screenshots: [phase1-local-inference/README.md](./phase1-local-inference/README.md).
-
-> Visual placeholder: add `assets/phase1-docker-compose-up.gif` after capture (see [assets/README.md](./assets/README.md)).
+> **First time setting up an AI project?** Read each step before running it. The order matters, and a couple of these (Docker, WSL2) need a one-time machine reboot. Budget ~1–2 hours, mostly waiting for downloads. See [phase1-local-inference/README.md](./phase1-local-inference/README.md) for the full walkthrough.
 
 ### 1. Install prerequisites
 

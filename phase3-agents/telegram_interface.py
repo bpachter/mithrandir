@@ -91,15 +91,14 @@ class _TLSAdapter(HTTPAdapter):
 _cached_session: Optional[requests.Session] = None
 
 def _patched_session(reset=False):
-    # Cache the session so urllib3 reuses the TLS connection across polls —
-    # creating a new TCP+TLS handshake on every request was the source of the
-    # repeated WinError 10054 resets. We only create a fresh session when
-    # telebot signals reset=True (i.e. after an actual request failure).
     global _cached_session
     if reset or _cached_session is None:
         s = requests.Session()
         s.verify = False
         s.mount("https://", _TLSAdapter())
+        # Disable TCP keep-alive: each request gets its own connection so
+        # there's no stale socket for the server to reset mid-poll.
+        s.headers.update({"Connection": "close"})
         _cached_session = s
     return _cached_session
 
@@ -115,9 +114,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger("enkidu.telegram")
 logging.getLogger("urllib3").setLevel(logging.WARNING)
-# Downgrade telebot's ConnectionReset noise to WARNING — infinity_polling
-# recovers from these automatically; ERROR level is misleading.
 logging.getLogger("TeleBot").setLevel(logging.WARNING)
+
+
+class _ConnectionResetFilter(logging.Filter):
+    """Suppress ConnectionReset / ConnectionError noise from the TeleBot logger.
+
+    infinity_polling recovers from these automatically; logging them as ERROR
+    is misleading and fills the terminal with red noise.
+    """
+    _SUPPRESS = ("ConnectionResetError", "ConnectionError", "10054", "RemoteDisconnected")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        return not any(kw in msg for kw in self._SUPPRESS)
+
+
+logging.getLogger("TeleBot").addFilter(_ConnectionResetFilter())
 
 # ---------------------------------------------------------------------------
 # Config from .env
@@ -673,7 +686,7 @@ def main():
             # long-lived TLS connections (WinError 10054), so we don't keep
             # the getUpdates connection open at all. Telegram responds
             # immediately with any pending updates or an empty list.
-            bot.infinity_polling(timeout=10, long_polling_timeout=0, interval=1)
+            bot.infinity_polling(timeout=10, long_polling_timeout=0, interval=1, skip_pending=True)
         except KeyboardInterrupt:
             print("\nBot stopped.")
             break

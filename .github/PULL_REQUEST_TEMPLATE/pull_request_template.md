@@ -18,10 +18,6 @@
 - [ ] Manually tested the changed feature end-to-end
 - [ ] No regressions in other areas I can check
 
-## Screenshots / demo
-
-<!-- For UI changes, paste a screenshot or short video. -->
-
 ## Checklist
 
 - [ ] PR title follows the format: `feat:`, `fix:`, `refactor:`, `test:`, or `docs:`
