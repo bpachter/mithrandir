@@ -1,0 +1,157 @@
+name: Enkidu Benchmark CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Benchmark category (leave blank for all)"
+        required: false
+        default: ""
+
+jobs:
+  # ── Fast unit tests (no LLM, no API keys required) ──────────────────────────
+  unit-tests:
+    name: Unit Tests (health checks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install core deps
+        run: |
+          pip install --upgrade pip
+          pip install python-dotenv requests psutil pydantic fastapi uvicorn
+
+      - name: Create stub .env
+        run: |
+          cp .env.example .env
+          sed -i 's|ANTHROPIC_API_KEY=sk-ant-...|ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY || "sk-ant-stub" }}|' .env
+
+      - name: Run health unit tests
+        run: python tests/test_health.py
+
+  # ── Golden benchmark (requires ANTHROPIC_API_KEY secret) ────────────────────
+  benchmark:
+    name: Golden Benchmark
+    runs-on: ubuntu-latest
+    # Only run on push to main or manual trigger (not every PR to save API cost)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: unit-tests
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install anthropic python-dotenv requests psutil pydantic
+
+      - name: Create .env
+        run: |
+          cp .env.example .env
+          echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env
+          echo "ENKIDU_FORCE_LOCAL_ONLY=0" >> .env
+
+      - name: Run benchmark (identity + routing + safety categories)
+        run: |
+          python tests/benchmark.py \
+            --category identity \
+            --json > /tmp/scorecard_identity.json
+          python tests/benchmark.py \
+            --category routing \
+            --json > /tmp/scorecard_routing.json
+          python tests/benchmark.py \
+            --category safety \
+            --json > /tmp/scorecard_safety.json
+
+      - name: Check scores meet threshold
+        run: |
+          python - <<'EOF'
+          import json, sys
+          threshold = 0.85
+          failed = []
+          for cat in ["identity", "routing", "safety"]:
+              sc = json.load(open(f"/tmp/scorecard_{cat}.json"))
+              score = sc["summary"]["score"]
+              print(f"  {cat}: {score:.1%} (threshold: {threshold:.0%})")
+              if score < threshold:
+                  failed.append(f"{cat}: {score:.1%} < {threshold:.0%}")
+          if failed:
+              print(f"\nFAIL: {len(failed)} category/categories below threshold:")
+              for f in failed: print(f"  - {f}")
+              sys.exit(1)
+          else:
+              print("\nAll categories passed threshold.")
+          EOF
+
+      - name: Upload scorecards as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-scorecards-${{ github.sha }}
+          path: /tmp/scorecard_*.json
+          retention-days: 90
+
+  # ── Latency regression check ─────────────────────────────────────────────────
+  latency-check:
+    name: Latency Regression
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: unit-tests
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install anthropic python-dotenv requests psutil pydantic
+
+      - name: Create .env
+        run: |
+          cp .env.example .env
+          echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env
+
+      - name: Latency-only benchmark
+        run: |
+          python tests/benchmark.py --latency-only --json > /tmp/latency.json
+
+      - name: Check p95 latency threshold
+        run: |
+          python - <<'EOF'
+          import json, sys
+          sc = json.load(open("/tmp/latency.json"))
+          p95 = sc["latency"]["p95_ms"]
+          threshold = 60000  # 60 seconds p95 for cloud tool calls
+          print(f"p95 latency: {p95:.0f}ms (threshold: {threshold}ms)")
+          if p95 > threshold:
+              print(f"FAIL: p95 latency {p95:.0f}ms exceeds {threshold}ms threshold")
+              sys.exit(1)
+          else:
+              print("Latency within threshold.")
+          EOF
