@@ -86,7 +86,7 @@ async def proxy_http(request: Request, path: str):
             status_code=resp.status_code,
             media_type=resp.headers.get("content-type"),
         )
-    except (httpx.ConnectError, httpx.TimeoutException) as e:
+    except httpx.HTTPError as e:
         logger.warning("GPU unreachable: %s", e)
         return Response(content=_OFFLINE_BODY, status_code=503, media_type="application/json")
 
