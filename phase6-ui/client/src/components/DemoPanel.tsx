@@ -25,6 +25,7 @@ interface Demo {
   step_count: number
   intro: string
   steps?: DemoStep[]
+  tags?: string[]
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -89,7 +90,6 @@ export default function DemoPanel({ onAskEnkidu }: { onAskEnkidu: (q: string) =>
 
   if (activeDemo) {
     const steps = activeDemo.steps ?? []
-    const step = steps[currentStep]
     const catColor = CATEGORY_COLORS[activeDemo.category] || 'var(--amber)'
 
     return (

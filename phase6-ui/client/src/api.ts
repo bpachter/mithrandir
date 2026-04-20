@@ -57,41 +57,44 @@ async function fetchJsonWithRetry<T>(
   throw new Error(`${endpointLabel}: exhausted ${attempts} attempts`)
 }
 
-export async function fetchParams() {
-  return fetchJsonWithRetry<object>(`${API_BASE}/api/params`, 'params')
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyJson = any
+
+export async function fetchParams(): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/params`, 'params')
 }
 
-export async function saveParams(params: object) {
-  return fetchJsonWithRetry<object>(`${API_BASE}/api/params`, 'params', {
+export async function saveParams(params: object): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/params`, 'params', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   })
 }
 
-export async function fetchHistory() {
-  const data = await fetchJsonWithRetry<{ exchanges?: unknown[] }>(`${API_BASE}/api/history`, 'history')
+export async function fetchHistory(): Promise<AnyJson[]> {
+  const data = await fetchJsonWithRetry<{ exchanges?: AnyJson[] }>(`${API_BASE}/api/history`, 'history')
   return data.exchanges ?? []
 }
 
-export async function fetchHistoryItem(id: string) {
-  return fetchJsonWithRetry<object>(`${API_BASE}/api/history/${id}`, 'history/item')
+export async function fetchHistoryItem(id: string): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/history/${id}`, 'history/item')
 }
 
-export async function fetchPortfolio() {
-  const data = await fetchJsonWithRetry<{ picks?: unknown[] }>(`${API_BASE}/api/portfolio`, 'portfolio')
+export async function fetchPortfolio(): Promise<AnyJson[]> {
+  const data = await fetchJsonWithRetry<{ picks?: AnyJson[] }>(`${API_BASE}/api/portfolio`, 'portfolio')
   return data.picks ?? []
 }
 
-export async function fetchRegime() {
-  return fetchJsonWithRetry<object>(`${API_BASE}/api/regime`, 'regime')
+export async function fetchRegime(): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/regime`, 'regime')
 }
 
-export async function fetchMemory() {
-  return fetchJsonWithRetry<object>(`${API_BASE}/api/memory`, 'memory')
+export async function fetchMemory(): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/memory`, 'memory')
 }
 
-export async function rateMemory(id: string, rating: number | null) {
+export async function rateMemory(id: string, rating: number | null): Promise<void> {
   const r = await fetch(`${API_BASE}/api/memory/${id}/rate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -100,17 +103,17 @@ export async function rateMemory(id: string, rating: number | null) {
   if (!r.ok) throw new Error(`rateMemory ${r.status}: ${(await r.text()).slice(0, 200)}`)
 }
 
-export async function deleteMemory(id: string) {
+export async function deleteMemory(id: string): Promise<void> {
   const r = await fetch(`${API_BASE}/api/memory/${id}`, { method: 'DELETE' })
   if (!r.ok) throw new Error(`deleteMemory ${r.status}: ${(await r.text()).slice(0, 200)}`)
 }
 
-export async function fetchDocs() {
-  return fetchJsonWithRetry<object>(`${API_BASE}/api/docs`, 'docs')
+export async function fetchDocs(): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/docs`, 'docs')
 }
 
-export async function searchDocs(query: string) {
-  return fetchJsonWithRetry<object>(
+export async function searchDocs(query: string): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(
     `${API_BASE}/api/docs/search?q=${encodeURIComponent(query)}`,
     'docs/search',
   )
