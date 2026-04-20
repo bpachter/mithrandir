@@ -9,6 +9,8 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 
+const API_BASE = import.meta.env.VITE_API_BASE ?? ''
+
 interface DemoStep {
   label: string
   prompt: string
@@ -51,7 +53,7 @@ export default function DemoPanel({ onAskEnkidu }: { onAskEnkidu: (q: string) =>
   const busy = useStore((s) => s.busy)
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/demos')
+    fetch(`${API_BASE}/api/demos`)
       .then((r) => r.json())
       .then((d) => setDemos(d.demos || []))
       .catch(() => setError('Backend not reachable'))
@@ -60,7 +62,7 @@ export default function DemoPanel({ onAskEnkidu }: { onAskEnkidu: (q: string) =>
   async function startDemo(demo: Demo) {
     setLoading(true)
     try {
-      const r = await fetch(`http://localhost:8000/api/demos/${demo.id}`)
+      const r = await fetch(`${API_BASE}/api/demos/${demo.id}`)
       const full: Demo = await r.json()
       setActiveDemo(full)
       setCurrentStep(0)
