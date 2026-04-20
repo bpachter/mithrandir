@@ -8,19 +8,16 @@ import MemoryPanel      from './components/MemoryPanel'
 import HistoryPanel     from './components/HistoryPanel'
 import DocsPanel        from './components/DocsPanel'
 import DemoPanel        from './components/DemoPanel'
-import SitingPanel      from './components/SitingPanel'
 import { useStore }     from './store'
 import { createGpuSocket } from './api'
 
 type LeftTab = 'params' | 'docs' | 'demo'
-type Workspace = 'console' | 'siting'
 
 export default function App() {
   const setGpuStats          = useStore((s) => s.setGpuStats)
   const pushGpuHistory       = useStore((s) => s.pushGpuHistory)
   const setPendingChatInput  = useStore((s) => s.setPendingChatInput)
   const [leftTab, setLeftTab] = useState<LeftTab>('params')
-  const [workspace, setWorkspace] = useState<Workspace>('console')
 
   // GPU WebSocket lives here — always connected regardless of which panel is visible
   useEffect(() => {
@@ -46,22 +43,6 @@ export default function App() {
       {/* ── Row 1: header ── */}
       <Header />
 
-      {/* Workspace switcher — fixed top-right under header */}
-      <div className="workspace-switch">
-        <button
-          className={`ws-btn ${workspace === 'console' ? 'active' : ''}`}
-          onClick={() => setWorkspace('console')}
-        >CONSOLE</button>
-        <button
-          className={`ws-btn ${workspace === 'siting' ? 'active' : ''}`}
-          onClick={() => setWorkspace('siting')}
-        >SITING</button>
-      </div>
-
-      {workspace === 'siting' ? (
-        <div className="full-workspace"><SitingPanel /></div>
-      ) : (
-        <>
       {/* ── Row 2: hardware bar — spans full width ── */}
       <div className="hw-bar-row">
         <GpuHistoryPanel />
@@ -99,18 +80,13 @@ export default function App() {
 
       {/* ── Right column: Market + Memory ── */}
       <div className="col-right">
-        {/* Market — takes remaining space */}
         <div style={{ flex: 3, minHeight: 0, overflow: 'hidden' }}>
           <MarketPanel />
         </div>
-
-        {/* Memory */}
         <div style={{ flex: 2, minHeight: 0, display: 'flex', flexDirection: 'column', borderTop: '1px solid var(--border)', overflow: 'hidden' }}>
           <MemoryPanel />
         </div>
       </div>
-        </>
-      )}
     </div>
   )
 }

@@ -59,42 +59,6 @@ body::after {
 .col-chat    { grid-column: 2; grid-row: 3; display: flex; flex-direction: column; overflow: hidden; }
 .col-right   { grid-column: 3; grid-row: 3; display: flex; flex-direction: column; overflow: hidden; }
 
-/* Full-screen workspace (siting map) — spans rows 2/3 */
-.full-workspace {
-  grid-column: 1 / -1;
-  grid-row: 2 / 4;
-  position: relative;
-  overflow: hidden;
-  background: var(--bg);
-}
-
-/* Workspace switcher pinned to the header row, right side */
-.workspace-switch {
-  position: fixed;
-  top: 8px;
-  right: 16px;
-  z-index: 1000;
-  display: flex;
-  gap: 4px;
-}
-.ws-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--white-dim);
-  font-family: var(--font-display);
-  font-size: 14px;
-  letter-spacing: 0.18em;
-  padding: 4px 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.ws-btn:hover { color: var(--cyan); border-color: var(--cyan-dim); }
-.ws-btn.active {
-  color: var(--bg);
-  background: var(--amber);
-  border-color: var(--amber);
-  box-shadow: 0 0 12px var(--amber-glow);
-}
 
 /* ── Hardware monitoring bar ── */
 .hw-bar {
