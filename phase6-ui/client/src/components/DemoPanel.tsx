@@ -257,7 +257,7 @@ export default function DemoPanel({ onAskEnkidu }: { onAskEnkidu: (q: string) =>
                 {demo.description}
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
-                {demo.tags.slice(0, 4).map((tag) => (
+                {(demo.tags ?? []).slice(0, 4).map((tag: string) => (
                   <span key={tag} style={{ fontSize: 9, padding: '1px 5px', border: `1px solid ${catColor}44`, color: catColor, letterSpacing: '0.08em', opacity: 0.7 }}>
                     {tag}
                   </span>

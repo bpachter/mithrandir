@@ -772,3 +772,14 @@
  > recursivelyTraversePassiveMountEffects node_modules/react-dom/cjs/react-dom-client.development.js:15439:10
  > commitPassiveMountOnFiber node_modules/react-dom/cjs/react-dom-client.development.js:15476:10
 
+[2m1:58:34 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m1:58:43 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m1:58:47 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/SitingPanel.tsx[22m
+[2m1:58:47 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/components/SitingPanel.css[22m
+[2m1:59:01 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m1:59:29 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m2:03:45 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/App.tsx, /src/components/ChatPanel.tsx, /src/components/DocsPanel.tsx, /src/components/MemoryPanel.tsx, /src/components/HistoryPanel.tsx, /src/components/ModelParamsPanel.tsx, /src/components/MarketPanel.tsx[22m
+[2m2:03:56 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m2:03:56 PM[22m [36m[1m[vite][22m[39m server restarted.
+[2m2:04:35 PM[22m [36m[1m[vite][22m[39m [32mvite.config.ts changed, restarting server...[39m
+[2m2:04:35 PM[22m [36m[1m[vite][22m[39m server restarted.
