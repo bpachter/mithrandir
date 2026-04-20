@@ -1,32 +1,15 @@
-const BASE = 'http://localhost:8000'
+/// <reference types="vite/client" />
 
-function isHtmlInsteadOfJsonError(e: unknown): boolean {
-  return e instanceof Error && e.message.includes('returned HTML instead of JSON')
-}
+// In dev: empty string — vite proxies /api/* and /ws/* to localhost:8000
+// In production: set VITE_API_BASE to the Railway gateway URL
+const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-async function fetchJsonWithRetry<T>(
-  url: string,
-  endpointLabel: string,
-  init?: RequestInit,
-  attempts = 3,
-): Promise<T> {
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const r = await fetch(url, init)
-      return await parseJsonOrThrow<T>(r, endpointLabel)
-    } catch (e) {
-      if (!isHtmlInsteadOfJsonError(e) || i === attempts - 1) {
-        throw e
-      }
-      await delay(120 * (i + 1))
-    }
+function wsBase(): string {
+  if (API_BASE) {
+    return API_BASE.replace('https://', 'wss://').replace('http://', 'ws://')
   }
-  // Unreachable: loop above always returns or throws on the final attempt.
-  throw new Error(`${endpointLabel}: exhausted ${attempts} attempts`)
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${proto}://${window.location.host}`
 }
 
 async function parseJsonOrThrow<T>(r: Response, endpointLabel: string): Promise<T> {
@@ -41,7 +24,7 @@ async function parseJsonOrThrow<T>(r: Response, endpointLabel: string): Promise<
   if (trimmed.startsWith('<!doctype') || trimmed.startsWith('<html')) {
     throw new Error(
       `${endpointLabel} returned HTML instead of JSON. ` +
-      'Ensure phase6-ui backend is running on http://localhost:8000 and refresh the browser.',
+      'Ensure Enkidu backend is running and refresh.',
     )
   }
 
@@ -49,79 +32,88 @@ async function parseJsonOrThrow<T>(r: Response, endpointLabel: string): Promise<
     return JSON.parse(body) as T
   } catch {
     throw new Error(
-      `${endpointLabel} returned non-JSON payload (content-type: ${ct || 'unknown'}). ` +
-      `Body head: ${body.slice(0, 120)}`,
+      `${endpointLabel} returned non-JSON (content-type: ${ct || 'unknown'}). ` +
+      `Body: ${body.slice(0, 120)}`,
     )
   }
 }
 
+async function fetchJsonWithRetry<T>(
+  url: string,
+  endpointLabel: string,
+  init?: RequestInit,
+  attempts = 3,
+): Promise<T> {
+  for (let i = 0; i < attempts; i++) {
+    const r = await fetch(url, init)
+    try {
+      return await parseJsonOrThrow<T>(r, endpointLabel)
+    } catch (e) {
+      const isHtml = e instanceof Error && e.message.includes('returned HTML instead of JSON')
+      if (!isHtml || i === attempts - 1) throw e
+      await new Promise(res => setTimeout(res, 120 * (i + 1)))
+    }
+  }
+  throw new Error(`${endpointLabel}: exhausted ${attempts} attempts`)
+}
+
 export async function fetchParams() {
-  const r = await fetch(`${BASE}/api/params`)
-  return r.json()
+  return fetchJsonWithRetry<object>(`${API_BASE}/api/params`, 'params')
 }
 
 export async function saveParams(params: object) {
-  const r = await fetch(`${BASE}/api/params`, {
+  return fetchJsonWithRetry<object>(`${API_BASE}/api/params`, 'params', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   })
-  return r.json()
-}
-
-export async function fetchHistoryItem(id: string) {
-  const r = await fetch(`${BASE}/api/history/${id}`)
-  return r.json()
 }
 
 export async function fetchHistory() {
-  const r = await fetch(`${BASE}/api/history`)
-  const data = await r.json()
+  const data = await fetchJsonWithRetry<{ exchanges?: unknown[] }>(`${API_BASE}/api/history`, 'history')
   return data.exchanges ?? []
 }
 
+export async function fetchHistoryItem(id: string) {
+  return fetchJsonWithRetry<object>(`${API_BASE}/api/history/${id}`, 'history/item')
+}
+
 export async function fetchPortfolio() {
-  const r = await fetch(`${BASE}/api/portfolio`)
-  const data = await r.json()
+  const data = await fetchJsonWithRetry<{ picks?: unknown[] }>(`${API_BASE}/api/portfolio`, 'portfolio')
   return data.picks ?? []
 }
 
 export async function fetchRegime() {
-  const r = await fetch(`${BASE}/api/regime`)
-  return r.json()
+  return fetchJsonWithRetry<object>(`${API_BASE}/api/regime`, 'regime')
 }
 
 export async function fetchMemory() {
-  const r = await fetch(`${BASE}/api/memory`)
-  return r.json()
+  return fetchJsonWithRetry<object>(`${API_BASE}/api/memory`, 'memory')
 }
 
 export async function rateMemory(id: string, rating: number | null) {
-  const r = await fetch(`${BASE}/api/memory/${id}/rate`, {
+  const r = await fetch(`${API_BASE}/api/memory/${id}/rate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rating }),
   })
-  if (!r.ok) {
-    throw new Error(`rateMemory ${r.status}: ${(await r.text()).slice(0, 200)}`)
-  }
+  if (!r.ok) throw new Error(`rateMemory ${r.status}: ${(await r.text()).slice(0, 200)}`)
 }
 
 export async function deleteMemory(id: string) {
-  const r = await fetch(`${BASE}/api/memory/${id}`, { method: 'DELETE' })
-  if (!r.ok) {
-    throw new Error(`deleteMemory ${r.status}: ${(await r.text()).slice(0, 200)}`)
-  }
+  const r = await fetch(`${API_BASE}/api/memory/${id}`, { method: 'DELETE' })
+  if (!r.ok) throw new Error(`deleteMemory ${r.status}: ${(await r.text()).slice(0, 200)}`)
 }
 
 export async function fetchDocs() {
-  const r = await fetch(`${BASE}/api/docs`)
-  return r.json()  // { docs: DocEntry[], categories: string[] }
+  return fetchJsonWithRetry<object>(`${API_BASE}/api/docs`, 'docs')
 }
 
 export async function searchDocs(query: string) {
-  const r = await fetch(`${BASE}/api/docs/search?q=${encodeURIComponent(query)}`)
-  return r.json()  // { results: string, query: string }
+  return fetchJsonWithRetry<object>(
+    `${API_BASE}/api/docs/search?q=${encodeURIComponent(query)}`,
+    'docs/search',
+  )
 }
 
 export function createChatSocket(
@@ -133,7 +125,7 @@ export function createChatSocket(
   onAudio?: (b64: string, fmt: string) => void,
   onTtsError?: (msg: string) => void,
 ): WebSocket {
-  const ws = new WebSocket('ws://localhost:8000/ws/chat')
+  const ws = new WebSocket(`${wsBase()}/ws/chat`)
   ws.onmessage = (ev) => {
     const data = JSON.parse(ev.data)
     if (data.type === 'step')      onStep(data.content)
@@ -142,290 +134,16 @@ export function createChatSocket(
     if (data.type === 'done')      onDone()
     if (data.type === 'error')     onError(data.content)
     if (data.type === 'tts_error' && onTtsError) onTtsError(data.content)
-    // tts_chunk: sentence-by-sentence streaming (primary path)
-    // tts_audio: single-shot legacy (kept for backward compat)
     if ((data.type === 'tts_chunk' || data.type === 'tts_audio') && onAudio)
       onAudio(data.data, data.format ?? 'wav')
   }
-  // If the socket drops mid-response, synthesize a "done" event so the UI
-  // releases the busy spinner and the buttons become clickable again.
   ws.onclose = () => { try { onDone() } catch {} }
   ws.onerror = () => { try { onError('chat socket error'); onDone() } catch {} }
   return ws
 }
 
 export function createGpuSocket(onStats: (s: object) => void): WebSocket {
-  const ws = new WebSocket('ws://localhost:8000/ws/gpu')
+  const ws = new WebSocket(`${wsBase()}/ws/gpu`)
   ws.onmessage = (ev) => onStats(JSON.parse(ev.data))
   return ws
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────
-// Phase 7 — Data Center Siting
-// ─────────────────────────────────────────────────────────────────────────
-
-export type Archetype = 'training' | 'inference' | 'mixed'
-
-export interface FactorResultDTO {
-  factor: string
-  raw_value: number | null
-  normalized: number          // 0..1
-  weight: number
-  weighted: number            // weight * normalized
-  killed: boolean
-  provenance: Record<string, unknown>
-}
-
-export interface SiteResultDTO {
-  site_id: string
-  lat: number
-  lon: number
-  composite: number           // 0..10
-  factors: Record<string, FactorResultDTO>
-  kill_flags: Record<string, boolean>
-  imputed: string[]
-  provenance: Record<string, unknown>
-  extras?: Record<string, unknown>
-}
-
-export interface SitingFactorsResponse {
-  factors: string[]
-  default_archetype: Archetype
-  weights: Record<Archetype, Record<string, number>>
-  kill_criteria: Record<string, unknown>
-}
-
-export interface SitingLayer {
-  key: string
-  source: string
-  layer: string
-  name: string
-  cached: boolean
-}
-
-export async function fetchSitingFactors(): Promise<SitingFactorsResponse> {
-  return fetchJsonWithRetry<SitingFactorsResponse>(
-    `${BASE}/api/siting/factors`,
-    'siting/factors',
-  )
-}
-
-export async function fetchSitingSample(): Promise<{ results?: SiteResultDTO[]; sites?: Array<{ site_id: string; lat: number; lon: number; [k: string]: unknown }> }> {
-  return fetchJsonWithRetry<{
-    results?: SiteResultDTO[]
-    sites?: Array<{ site_id: string; lat: number; lon: number; [k: string]: unknown }>
-  }>(
-    `${BASE}/api/siting/sample`,
-    'siting/sample',
-  )
-}
-
-export async function scoreSites(payload: {
-  sites: Array<{ site_id: string; lat: number; lon: number; [k: string]: unknown }>
-  archetype?: Archetype
-  weight_overrides?: Record<string, number>
-}): Promise<{ results: SiteResultDTO[] }> {
-  return fetchJsonWithRetry<{ results: SiteResultDTO[] }>(
-    `${BASE}/api/siting/score`,
-    'siting/score',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    },
-  )
-}
-
-export async function fetchSitingLayers(): Promise<{
-  layers: SitingLayer[]
-  data_sources: Record<string, unknown>
-}> {
-  return fetchJsonWithRetry<{
-    layers: SitingLayer[]
-    data_sources: Record<string, unknown>
-  }>(
-    `${BASE}/api/siting/layers`,
-    'siting/layers',
-  )
-}
-
-export interface SitingLayerGeoJSON {
-  type: 'FeatureCollection'
-  features: GeoJSON.Feature[]
-  _meta: {
-    layer: string
-    name: string
-    source: string
-    returned: number
-    limit: number
-    bbox: string | null
-    cache_path: string
-  }
-}
-
-export async function fetchSitingLayerGeoJSON(
-  layerKey: string,
-  bbox?: [number, number, number, number],
-  limit = 5000,
-): Promise<SitingLayerGeoJSON | { error: string }> {
-  const params = new URLSearchParams()
-  if (bbox) params.set('bbox', bbox.join(','))
-  params.set('limit', String(limit))
-  const url = `${BASE}/api/siting/layer/${layerKey}?${params.toString()}`
-  let lastErr: unknown
-  for (let i = 0; i < 3; i++) {
-    const r = await fetch(url)
-    if (r.status === 404) {
-      const text = await r.text()
-      let j: { error?: string } = {}
-      try {
-        j = JSON.parse(text)
-      } catch {
-        j = {}
-      }
-      return { error: j.error ?? 'not cached' }
-    }
-    try {
-      return await parseJsonOrThrow<SitingLayerGeoJSON>(r, `siting/layer/${layerKey}`)
-    } catch (e) {
-      lastErr = e
-      if (!isHtmlInsteadOfJsonError(e) || i === 2) {
-        throw e
-      }
-      await delay(120 * (i + 1))
-    }
-  }
-  throw lastErr
-}
-
-// ── Live (proxy) layers ──────────────────────────────────────────────────
-
-export interface LiveLayer {
-  key: string
-  name: string
-  group: string
-  geom: 'point' | 'line' | 'polygon'
-  color: string
-  style?: string | null
-  min_zoom: number
-  source: string
-}
-
-export async function fetchSitingLiveLayers(): Promise<{ layers: LiveLayer[] }> {
-  return fetchJsonWithRetry<{ layers: LiveLayer[] }>(
-    `${BASE}/api/siting/live_layers`,
-    'siting/live_layers',
-  )
-}
-
-export interface LiveLayerGeoJSON {
-  type: 'FeatureCollection'
-  features: GeoJSON.Feature[]
-  _meta: {
-    layer: string
-    name: string
-    source: string
-    group: string
-    geom: 'point' | 'line' | 'polygon'
-    color: string
-    style?: string | null
-    min_zoom: number
-    returned: number
-    limit: number
-    bbox: string | null
-    state?: string | null
-    truncated?: boolean
-    live: true
-  }
-}
-
-export async function fetchSitingProxyGeoJSON(
-  layerKey: string,
-  bbox: [number, number, number, number],
-  limit = 8000,
-  state?: string | null,
-): Promise<LiveLayerGeoJSON | { error: string }> {
-  const params = new URLSearchParams()
-  params.set('bbox', bbox.join(','))
-  params.set('limit', String(limit))
-  if (state) params.set('state', state)
-  const url = `${BASE}/api/siting/proxy/${layerKey}?${params.toString()}`
-  try {
-    const r = await fetch(url)
-    if (!r.ok) {
-      let j: { error?: string } = {}
-      try { j = await r.json() } catch { /* ignore */ }
-      return { error: j.error ?? `HTTP ${r.status}` }
-    }
-    return await parseJsonOrThrow<LiveLayerGeoJSON>(r, `siting/proxy/${layerKey}`)
-  } catch (e) {
-    return { error: String(e) }
-  }
-}
-
-// ── State selector + supporting endpoints ────────────────────────────────
-
-export interface StateOption {
-  code: string
-  bbox: [number, number, number, number]
-  duke: boolean
-}
-
-export async function fetchSitingStates(): Promise<{ states: StateOption[]; duke_states: string[] }> {
-  return fetchJsonWithRetry<{ states: StateOption[]; duke_states: string[] }>(
-    `${BASE}/api/siting/states`,
-    'siting/states',
-  )
-}
-
-export interface MoratoriumCounty {
-  state: string
-  county: string
-  status: string
-  url: string
-}
-
-export async function fetchSitingMoratoriums(): Promise<{ counties: MoratoriumCounty[] }> {
-  return fetchJsonWithRetry<{ counties: MoratoriumCounty[] }>(
-    `${BASE}/api/siting/moratoriums`,
-    'siting/moratoriums',
-  )
-}
-
-export interface ParcelDetailResult {
-  layer: string
-  label: string
-  distance_mi: number | null
-  properties: Record<string, unknown>
-}
-
-export interface ParcelDetail {
-  lat: number
-  lon: number
-  radius_mi: number
-  results: ParcelDetailResult[]
-}
-
-export async function fetchParcelDetail(
-  lat: number,
-  lon: number,
-  radius_mi = 5,
-): Promise<ParcelDetail | { error: string }> {
-  const params = new URLSearchParams()
-  params.set('lat', String(lat))
-  params.set('lon', String(lon))
-  params.set('radius_mi', String(radius_mi))
-  const url = `${BASE}/api/siting/parcel_detail?${params.toString()}`
-  try {
-    const r = await fetch(url)
-    if (!r.ok) {
-      let j: { error?: string } = {}
-      try { j = await r.json() } catch { /* ignore */ }
-      return { error: j.error ?? `HTTP ${r.status}` }
-    }
-    return await parseJsonOrThrow<ParcelDetail>(r, 'siting/parcel_detail')
-  } catch (e) {
-    return { error: String(e) }
-  }
 }
