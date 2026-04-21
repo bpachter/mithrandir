@@ -294,9 +294,10 @@ body::after {
 
 .doc-cat-tabs {
   display: flex; overflow-x: auto; border-bottom: 1px solid var(--border);
-  scrollbar-width: none;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
 }
-.doc-cat-tabs::-webkit-scrollbar { display: none; }
+.doc-cat-tabs::-webkit-scrollbar { height: 4px; }
+.doc-cat-tabs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .doc-cat-tab {
   flex-shrink: 0; background: none; border: none; border-bottom: 2px solid transparent;
   color: var(--white-dim); font-family: var(--font-mono); font-size: 9px;
@@ -307,8 +308,11 @@ body::after {
 .doc-cat-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
 
 .doc-list {
-  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0;
+  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
 }
+.doc-list::-webkit-scrollbar { width: 4px; }
+.doc-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .doc-card {
   border-left: 2px solid var(--border); border-bottom: 1px solid var(--border);
   padding: 8px 10px; transition: background var(--transition);
