@@ -84,7 +84,7 @@ async def proxy_http(request: Request, path: str):
     url = f"{GPU_URL}/api/{path}{qs}"
     headers = {
         k: v for k, v in request.headers.items()
-        if k.lower() not in {"host", "connection", "transfer-encoding"}
+        if k.lower() not in {"host", "connection", "transfer-encoding", "accept-encoding"}
     }
 
     try:

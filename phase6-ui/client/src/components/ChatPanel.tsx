@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useStore } from '../store'
-import { createChatSocket } from '../api'
+import { createChatSocket, API_BASE, wsBase } from '../api'
 
 // ── Chat WebSocket (module-level singleton) ───────────────────────────────
 
@@ -466,7 +466,7 @@ export default function ChatPanel() {
   // ── Voice profiles ────────────────────────────────────────────────────
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/voices')
+    fetch(`${API_BASE}/api/voices`)
       .then((r) => r.json())
       .then((d) => {
         if (d.voices?.length) setVoiceProfiles(d.voices)
@@ -477,7 +477,7 @@ export default function ChatPanel() {
 
   const handleVoiceChange = (profile: string) => {
     setSelectedVoice(profile)
-    fetch('http://localhost:8000/api/voice', {
+    fetch(`${API_BASE}/api/voice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ profile }),
@@ -488,7 +488,7 @@ export default function ChatPanel() {
 
   const connectVoiceWs = useCallback(() => {
     if (voiceWsRef.current && voiceWsRef.current.readyState <= WebSocket.OPEN) return
-    const ws = new WebSocket('ws://localhost:8000/ws/voice')
+    const ws = new WebSocket(`${wsBase()}/ws/voice`)
 
     ws.onopen = () => setMicError('')   // clear any stale error from a previous disconnect
 

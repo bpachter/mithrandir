@@ -3,9 +3,9 @@
 // In dev: empty string — vite proxies /api/* and /ws/* to localhost:8000
 // In production: set VITE_API_BASE to the Railway gateway URL
 const _raw = (import.meta.env.VITE_API_BASE ?? '').trim()
-const API_BASE = _raw && !_raw.startsWith('http') ? `https://${_raw}` : _raw
+export const API_BASE = _raw && !_raw.startsWith('http') ? `https://${_raw}` : _raw
 
-function wsBase(): string {
+export function wsBase(): string {
   if (API_BASE) {
     return API_BASE.replace('https://', 'wss://').replace('http://', 'ws://')
   }
