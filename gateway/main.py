@@ -107,6 +107,14 @@ def _fallback_api(path: str) -> tuple[dict, int] | None:
     return None
 
 
+def _generic_fallback_api(path: str) -> tuple[dict, int]:
+    return {
+        "gateway_fallback": True,
+        "error": "upstream unavailable (gateway fallback)",
+        "path": path.strip("/"),
+    }, 200
+
+
 @app.get("/")
 def root():
     """Open a browser-friendly landing target for the gateway base URL."""
@@ -172,6 +180,8 @@ async def proxy_http(request: Request, path: str):
             if fb is not None:
                 body, code = fb
                 return JSONResponse(body, status_code=code)
+            body, code = _generic_fallback_api(path)
+            return JSONResponse(body, status_code=code)
 
         return Response(
             content=resp.content,
@@ -185,6 +195,8 @@ async def proxy_http(request: Request, path: str):
             if fb is not None:
                 body, code = fb
                 return JSONResponse(body, status_code=code)
+            body, code = _generic_fallback_api(path)
+            return JSONResponse(body, status_code=code)
         return Response(content=_OFFLINE_BODY, status_code=503, media_type="application/json")
 
 
