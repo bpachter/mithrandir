@@ -1201,6 +1201,170 @@ def siting_score(body: SitingScoreRequest):
 
 
 # ---------------------------------------------------------------------------
+# Dev orchestration — task queue, file tools, Claude delegation
+# ---------------------------------------------------------------------------
+
+import importlib.util as _ilu
+
+def _import_dev_tools():
+    try:
+        spec = _ilu.spec_from_file_location("dev_tools", Path(__file__).parent / "dev_tools.py")
+        mod = _ilu.module_from_spec(spec)
+        import sys as _sys
+        _sys.modules["dev_tools"] = mod   # required: @dataclass resolves cls.__module__ via sys.modules
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception as e:
+        logger.warning(f"dev_tools unavailable: {e}")
+        return None
+
+_dev = _import_dev_tools()
+
+# Wire the asyncio event loop into dev_tools so it can broadcast WS events
+# from background threads. Done once at first request rather than at import
+# time to ensure the loop is running.
+_dev_loop_wired = False
+
+def _wire_dev_loop():
+    global _dev_loop_wired
+    if _dev and not _dev_loop_wired:
+        try:
+            _dev.set_event_loop(asyncio.get_event_loop())
+            _dev_loop_wired = True
+        except Exception:
+            pass
+
+
+class _DevTaskRequest(BaseModel):
+    goal: str
+    project: str
+    context_files: list[str] = []
+
+
+class _ApplyPatchRequest(BaseModel):
+    project: str
+    path: str
+    proposed: str
+    task_id: str = ""
+
+
+@app.get("/api/dev/projects")
+def dev_projects():
+    """List configured project names and whether their roots exist."""
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    return {
+        "projects": [
+            {"name": k, "exists": v.exists()}
+            for k, v in _dev.PROJECT_ROOTS.items()
+        ]
+    }
+
+
+@app.get("/api/dev/tasks")
+def dev_list_tasks(project: str = ""):
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    tasks = _dev.list_tasks(project or None)
+    return {"tasks": [t.to_dict() for t in tasks]}
+
+
+@app.post("/api/dev/tasks")
+async def dev_create_task(body: _DevTaskRequest):
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    if not body.goal.strip():
+        return JSONResponse({"error": "goal is required"}, status_code=400)
+    task = _dev.create_task(
+        goal=body.goal.strip(),
+        project=body.project,
+        context_files=body.context_files,
+    )
+    # Run in background thread — non-blocking
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, _dev.run_task_sync, task.id)
+    return {"task_id": task.id, "status": task.status}
+
+
+@app.get("/api/dev/tasks/{task_id}")
+def dev_get_task(task_id: str):
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    task = _dev.get_task(task_id)
+    if not task:
+        return JSONResponse({"error": "task not found"}, status_code=404)
+    return task.to_dict()
+
+
+@app.get("/api/dev/diff")
+def dev_git_diff(project: str):
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    return _dev.get_git_diff(project)
+
+
+@app.get("/api/dev/files")
+def dev_file_tree(project: str, path: str = ""):
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    return _dev.get_file_tree(project, path)
+
+
+@app.get("/api/dev/file")
+def dev_read_file(project: str, path: str):
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    return _dev.read_file_contents(project, path)
+
+
+@app.post("/api/dev/apply")
+def dev_apply_patch(body: _ApplyPatchRequest):
+    """Apply an approved patch to disk."""
+    _wire_dev_loop()
+    if not _dev:
+        return JSONResponse({"error": "dev_tools unavailable"}, status_code=503)
+    result = _dev.apply_patch(body.project, body.path, body.proposed)
+    if body.task_id:
+        # Mark the patch as accepted in the task record
+        task = _dev.get_task(body.task_id)
+        if task:
+            for p in task.patches:
+                if p["path"] == body.path:
+                    p["status"] = "accepted"
+    return result
+
+
+@app.websocket("/ws/dev")
+async def ws_dev(ws: WebSocket):
+    """Stream DevTask events to the DevPanel in real time."""
+    await ws.accept()
+    _wire_dev_loop()
+    if not _dev:
+        await ws.send_json({"kind": "error", "message": "dev_tools unavailable"})
+        return
+
+    q = _dev.subscribe_ws()
+    try:
+        while True:
+            try:
+                event = await asyncio.wait_for(q.get(), timeout=20.0)
+                await ws.send_json(event)
+            except asyncio.TimeoutError:
+                await ws.send_json({"kind": "ping"})
+    except (WebSocketDisconnect, Exception):
+        pass
+    finally:
+        _dev.unsubscribe_ws(q)
+
+
+# ---------------------------------------------------------------------------
 # Serve compiled React SPA (production)
 # ---------------------------------------------------------------------------
 

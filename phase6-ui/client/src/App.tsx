@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Map as MapIcon, Settings2, BookText } from 'lucide-react'
+import { Map as MapIcon, Settings2, BookText, Code2 } from 'lucide-react'
 import Header           from './components/Header'
 import ChatPanel        from './components/ChatPanel'
 import GpuHistoryPanel  from './components/GpuHistoryPanel'
@@ -9,11 +9,12 @@ import MarketPanel      from './components/MarketPanel'
 import MemoryPanel      from './components/MemoryPanel'
 import DocsPanel        from './components/DocsPanel'
 import SitingPanel      from './components/SitingPanel'
+import DevPanel         from './components/DevPanel'
 import { useStore }     from './store'
 import { createGpuSocket } from './api'
 
 type LeftTab = 'params' | 'docs'
-type AppMode = 'terminal' | 'avalon'
+type AppMode = 'terminal' | 'avalon' | 'dev'
 
 export default function App() {
   const setGpuStats          = useStore((s) => s.setGpuStats)
@@ -45,6 +46,10 @@ export default function App() {
     return <SitingPanel onClose={() => setMode('terminal')} />
   }
 
+  if (mode === 'dev') {
+    return <DevPanel onClose={() => setMode('terminal')} />
+  }
+
   return (
     <div className="app-grid">
       <Header />
@@ -64,6 +69,23 @@ export default function App() {
       >
         <MapIcon className="h-3 w-3" strokeWidth={2.4} />
         Avalon
+      </button>
+
+      {/* Dev panel launch button */}
+      <button
+        onClick={() => setMode('dev')}
+        title="Open Enkidu Dev — AI-driven code orchestration"
+        className="
+          group fixed top-2 right-[320px] z-50
+          inline-flex items-center gap-2 rounded-sm border border-violet-800/50 bg-violet-900/20
+          px-3 py-1 font-display text-[10.5px] font-semibold uppercase tracking-[0.22em]
+          text-violet-400 transition-all duration-150
+          hover:border-violet-500 hover:bg-violet-900/40 hover:shadow-[0_0_14px_-4px_rgba(139,92,246,0.5)]
+          focus-visible:outline focus-visible:outline-1 focus-visible:outline-violet-500 focus-visible:outline-offset-2
+        "
+      >
+        <Code2 className="h-3 w-3" strokeWidth={2.4} />
+        Dev
       </button>
 
       {/* Hardware monitoring strip */}

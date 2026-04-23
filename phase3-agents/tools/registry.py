@@ -849,3 +849,66 @@ register(
     },
     fn=lambda query="": _claude_subagent_stats(query),
 )
+
+# ---------------------------------------------------------------------------
+# dev_delegate — kick off a code-writing task in the Enkidu Dev system
+# ---------------------------------------------------------------------------
+
+def _dev_delegate(goal: str, project: str, context_files: str = "") -> str:
+    """
+    Create a dev task that delegates code writing to Claude and streams
+    progress to the Enkidu DevPanel. Returns the task ID for tracking.
+    """
+    try:
+        import importlib.util as _ilu
+        import sys as _sys
+        _dev_path = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "phase6-ui", "server", "dev_tools.py")
+        )
+        spec = _ilu.spec_from_file_location("dev_tools", _dev_path)
+        mod = _ilu.module_from_spec(spec)
+        _sys.modules["dev_tools"] = mod   # required: @dataclass resolves cls.__module__ via sys.modules
+        spec.loader.exec_module(mod)
+    except Exception as e:
+        return f"dev_delegate unavailable: {e}"
+
+    files = [f.strip() for f in context_files.split(",") if f.strip()] if context_files else []
+
+    known = list(mod.PROJECT_ROOTS.keys())
+    if project.lower() not in known:
+        return (
+            f"Unknown project '{project}'. Known projects: {', '.join(known)}. "
+            "Use one of these exact names."
+        )
+
+    task = mod.create_task(goal=goal, project=project.lower(), context_files=files)
+
+    # Fire and forget in a background thread — non-blocking so the agent can continue
+    import threading
+    t = threading.Thread(target=mod.run_task_sync, args=(task.id,), daemon=True)
+    t.start()
+
+    return (
+        f"Dev task created (id={task.id}). "
+        f"Project: {project}. Status: queued → running.\n"
+        f"I will narrate progress here as Claude works. "
+        f"Open the Dev panel in Enkidu's UI to see live changes and approve patches."
+    )
+
+
+register(
+    name="dev_delegate",
+    description=(
+        "Delegate a software development task to Claude. Claude will write or modify code "
+        "for the specified project (Enkidu, Orator, Avalon, Longinus, Zeus, Babylon, Aristotle). "
+        "Results stream live to the Enkidu DevPanel where you can review and approve file changes. "
+        "Use this when the user asks to build a feature, fix a bug, create a new component, "
+        "refactor code, write tests, or start building a new application in the portfolio."
+    ),
+    parameters={
+        "goal": "str — clear description of what to build or fix",
+        "project": "str — target project name, e.g. 'orator', 'avalon', 'enkidu'",
+        "context_files": "str — optional comma-separated relative file paths to include as context, e.g. 'src/App.tsx,server/main.py'",
+    },
+    fn=_dev_delegate,
+)

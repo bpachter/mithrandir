@@ -774,8 +774,8 @@ def _strip_markdown(text: str) -> str:
     # Collapse duplicate periods (e.g. end-of-sentence + inserted '.')
     text = re.sub(r'\.[ .]+', '. ', text)
     # Remove punctuation/symbol clusters that TTS engines may read aloud literally.
-    # Keep sentence punctuation and apostrophes inside words.
-    text = re.sub(r'[,;:]+', ' ', text)
+    # Keep sentence punctuation, commas (prosody/pause cues), and apostrophes.
+    text = re.sub(r'[;:]+', ' ', text)
     text = re.sub(r'[\[\]{}<>|/\\~`^*_#@+=]+', ' ', text)
     text = re.sub(r'\s+([.!?])', r'\1', text)
     # Collapse multiple spaces
