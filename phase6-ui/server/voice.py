@@ -937,7 +937,8 @@ def _start_f5_worker() -> bool:
             text=True, bufsize=1, env=_f5_env,
         )
         import time as _time
-        deadline = _time.time() + 60
+        _startup_timeout = int(os.environ.get("ENKIDU_F5_STARTUP_TIMEOUT", "180"))
+        deadline = _time.time() + _startup_timeout
         while _time.time() < deadline:
             line = _f5_proc.stdout.readline().strip()
             if line == "READY":
@@ -946,7 +947,7 @@ def _start_f5_worker() -> bool:
                 return True
             if line:
                 logger.debug(f"F5-TTS (startup): {line}")
-        logger.error("F5-TTS worker did not become ready within 60s")
+        logger.error(f"F5-TTS worker did not become ready within {_startup_timeout}s")
         _f5_ready = False
         return False
     except Exception as e:
