@@ -11,6 +11,7 @@ Returns a 503 with a friendly message if the GPU is offline.
 import asyncio
 import logging
 import os
+import time
 
 import httpx
 import websockets
@@ -20,6 +21,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 GPU_URL = os.environ.get("GPU_URL", "").strip().rstrip("/")
 ENKIDU_UI_URL = os.environ.get("ENKIDU_UI_URL", "").strip()
+VOICE_UPSTREAM_COOLDOWN_SEC = int(os.environ.get("VOICE_UPSTREAM_COOLDOWN_SEC", "20"))
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("enkidu.gateway")
@@ -39,6 +41,11 @@ app.add_middleware(
 
 _OFFLINE_BODY = b'{"error":"Home GPU is offline or tunnel is down","online":false}'
 _NO_CONFIG_BODY = b'{"error":"GPU_URL not configured","online":false}'
+
+# When upstream repeatedly rejects /ws/voice (commonly Cloudflare 502 while the
+# home GPU origin is unavailable), clients can reconnect in a tight loop.
+# Use a short cooldown to fast-fail subsequent attempts and reduce log storms.
+_voice_block_until = 0.0
 
 
 @app.get("/")
@@ -107,8 +114,17 @@ async def proxy_http(request: Request, path: str):
 
 @app.websocket("/ws/{path:path}")
 async def proxy_ws(websocket: WebSocket, path: str):
+    global _voice_block_until
+
     if not GPU_URL:
         await websocket.close(code=1011, reason="GPU_URL not configured")
+        return
+
+    now = time.time()
+    if path == "voice" and now < _voice_block_until:
+        remaining = int(max(1, _voice_block_until - now))
+        await websocket.accept()
+        await websocket.close(code=1013, reason=f"Voice upstream cooling down ({remaining}s)")
         return
 
     ws_url = GPU_URL.replace("https://", "wss://").replace("http://", "ws://")
@@ -149,8 +165,10 @@ async def proxy_ws(websocket: WebSocket, path: str):
             await asyncio.gather(client_to_upstream(), upstream_to_client())
 
     except Exception as e:
+        if path == "voice":
+            _voice_block_until = time.time() + max(1, VOICE_UPSTREAM_COOLDOWN_SEC)
         logger.warning("WS upstream unreachable (%s): %s", path, e)
         try:
-            await websocket.close(code=1011, reason="Home GPU offline")
+            await websocket.close(code=1011, reason="Home GPU offline or upstream rejected")
         except Exception:
             pass
