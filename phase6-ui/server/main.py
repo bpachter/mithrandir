@@ -264,7 +264,7 @@ app.add_middleware(
 # Dev panel password gate — protects ALL /api/dev/* endpoints
 # ---------------------------------------------------------------------------
 
-_DEV_PANEL_PASSWORD = os.environ.get("ENKIDU_DEV_PASSWORD", "antifragile")
+_DEV_PANEL_PASSWORD = os.environ.get("ENKIDU_DEV_PASSWORD", "").strip() or "antifragile"
 
 
 @app.middleware("http")

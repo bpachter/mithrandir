@@ -938,7 +938,7 @@ def _dev_read_file(project: str, path: str) -> str:
     except Exception as e:
         return f"dev_read_file unavailable: {e}"
     # Use the dev panel password so sensitive files (.env etc.) are still gated
-    pw = os.environ.get("ENKIDU_DEV_PASSWORD", "antifragile")
+    pw = os.environ.get("ENKIDU_DEV_PASSWORD", "").strip() or "antifragile"
     result = mod.read_file_contents(project.lower(), path, password=pw)
     if "error" in result:
         return f"ERROR: {result['error']}"
