@@ -567,8 +567,6 @@ export default function ChatPanel() {
         setVoiceState('idle')
         setTtsStatus('')
       }
-      // Auto-reconnect after a short delay so the next mic/send works.
-      setTimeout(() => { try { connectVoiceWs() } catch {} }, 400)
     }
     ws.onerror = () => {
       setMicError('Voice WS error — is the server running?')
@@ -587,9 +585,7 @@ export default function ChatPanel() {
   }, [addMessage, setBusy])
 
   useEffect(() => {
-    connectVoiceWs()
     return () => { voiceWsRef.current?.close(); voiceWsRef.current = null }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── VAD ──────────────────────────────────────────────────────────────
