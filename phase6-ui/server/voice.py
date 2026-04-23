@@ -170,8 +170,10 @@ def transcribe(raw_bytes: bytes, sample_rate: int = 16000) -> str:
             if text:
                 return _fix_proper_nouns(text)
             # If Parakeet produced empty output, fall back to Whisper for this call.
+    except ImportError as _e:
+        logger.debug(f"Parakeet not installed: {_e!r}")
     except Exception as _e:
-        logger.debug(f"Parakeet path unavailable, using Whisper: {_e!r}")
+        logger.warning(f"Parakeet transcribe failed, using Whisper: {_e!r}")
 
     model = _load_whisper()
     if model is None:
@@ -709,8 +711,10 @@ def prewarm_chatterbox():
         try:
             import voice_optim  # type: ignore
             voice_optim.enable_tensorcores()
+        except ImportError as _e:
+            logger.debug(f"voice_optim not available: {_e!r}")
         except Exception as _e:
-            logger.debug(f"voice_optim unavailable: {_e!r}")
+            logger.warning(f"voice_optim.enable_tensorcores failed: {_e!r}")
 
         logger.info("Pre-warming Kokoro…")
         # Multi-pass warmup so cuDNN picks the fastest convolution algorithms
@@ -727,14 +731,20 @@ def prewarm_chatterbox():
 
         # Auto-generate reference transcripts for any wav voice profile that
         # is missing its sidecar .txt file. Closes the F5 cold-start hole.
-        if os.environ.get("ENKIDU_AUTO_REF_TEXT", "1") == "1":
+        # DISABLED by default (set ENKIDU_AUTO_REF_TEXT=1 to enable).
+        if os.environ.get("ENKIDU_AUTO_REF_TEXT", "0") == "1":
             try:
                 import auto_ref_text  # type: ignore
                 if _VOICES_DIR.exists():
-                    for wav in _VOICES_DIR.glob("*.wav"):
-                        auto_ref_text.ensure_ref_text(wav)
+                    try:
+                        for wav in _VOICES_DIR.glob("*.wav"):
+                            auto_ref_text.ensure_ref_text(wav)
+                    except Exception as _inner:
+                        logger.warning(f"auto_ref_text error iterating voices: {_inner!r}")
+            except ImportError as _e:
+                logger.debug(f"auto_ref_text module unavailable: {_e!r}")
             except Exception as _e:
-                logger.debug(f"auto_ref_text skipped: {_e!r}")
+                logger.error(f"auto_ref_text failed: {_e!r}")
 
         # Optional F5 prewarm. Off by default because a background startup race
         # can make the first request fall through to non-clone paths.

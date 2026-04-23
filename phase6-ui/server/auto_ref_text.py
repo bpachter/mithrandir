@@ -92,26 +92,30 @@ def _normalise(text: str) -> str:
 def ensure_ref_text(wav_path: Path, force: bool = False) -> Optional[Path]:
     """Generate <stem>.txt next to <stem>.wav if missing.
 
-    Returns the path to the .txt on success, None if no ASR was available.
+    Returns the path to the .txt on success, None if no ASR was available
+    or if the file operations failed.
     """
-    wav_path = Path(wav_path)
-    if not wav_path.exists():
-        return None
-    txt_path = wav_path.with_suffix(".txt")
-    if txt_path.exists() and not force:
-        return txt_path
-
-    text = _transcribe_parakeet(wav_path) or _transcribe_whisper(wav_path)
-    if not text:
-        logger.info(f"No ASR available — cannot auto-generate ref text for {wav_path.name}")
-        return None
-    text = _normalise(text)
-    if not text:
-        return None
     try:
+        wav_path = Path(wav_path)
+        if not wav_path.exists():
+            return None
+        txt_path = wav_path.with_suffix(".txt")
+        if txt_path.exists() and not force:
+            return txt_path
+
+        text = _transcribe_parakeet(wav_path) or _transcribe_whisper(wav_path)
+        if not text:
+            logger.debug(f"No ASR available for {wav_path.name}")
+            return None
+        text = _normalise(text)
+        if not text:
+            return None
         txt_path.write_text(text, encoding="utf-8")
         logger.info(f"Auto-generated ref text for {wav_path.name}: {text[:60]}…")
         return txt_path
     except OSError as e:
-        logger.warning(f"Could not write ref text {txt_path}: {e!r}")
+        logger.warning(f"Could not write ref text for {wav_path.name}: {e!r}")
+        return None
+    except Exception as e:
+        logger.error(f"ensure_ref_text error: {e!r}")
         return None

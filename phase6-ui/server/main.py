@@ -57,8 +57,9 @@ def _get_voice():
         logger.info("Voice module loaded.")
         try:
             mod.prewarm_chatterbox()
-        except Exception:
-            pass
+            logger.info("Voice pre-warm started (background thread).")
+        except Exception as e:
+            logger.error(f"Voice pre-warm failed: {e}", exc_info=True)
     except Exception as e:
         logger.warning(f"Voice module unavailable: {e}")
     return _voice
