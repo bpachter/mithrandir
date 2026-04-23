@@ -214,7 +214,33 @@ async def proxy_ws(websocket: WebSocket, path: str):
     if path == "voice" and now < _voice_block_until:
         remaining = int(max(1, _voice_block_until - now))
         await websocket.accept()
-        await websocket.close(code=1013, reason=f"Voice upstream cooling down ({remaining}s)")
+        # Keep the socket open in fallback mode so clients don't reconnect-loop.
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "error",
+                    "content": f"Voice upstream unavailable (cooldown {remaining}s)",
+                    "gateway_fallback": True,
+                }
+            )
+        )
+        try:
+            while True:
+                await websocket.receive_text()
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "content": "Voice upstream unavailable",
+                            "gateway_fallback": True,
+                        }
+                    )
+                )
+        except Exception:
+            try:
+                await websocket.close(code=1000)
+            except Exception:
+                pass
         return
 
     ws_url = ws_base.replace("https://", "wss://").replace("http://", "ws://")
@@ -257,6 +283,36 @@ async def proxy_ws(websocket: WebSocket, path: str):
     except Exception as e:
         if path == "voice":
             _voice_block_until = time.time() + max(1, VOICE_UPSTREAM_COOLDOWN_SEC)
+            # Degrade gracefully for voice: keep WS open and return explicit errors,
+            # avoiding repeated reconnect storms while upstream is offline.
+            try:
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "content": "Voice upstream unavailable",
+                            "gateway_fallback": True,
+                        }
+                    )
+                )
+                while True:
+                    await websocket.receive_text()
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "type": "error",
+                                "content": "Voice upstream unavailable",
+                                "gateway_fallback": True,
+                            }
+                        )
+                    )
+            except Exception:
+                pass
+            try:
+                await websocket.close(code=1000)
+            except Exception:
+                pass
+            return
         if path == "gpu":
             # Keep UI alive with a lightweight stub stream while upstream is down.
             try:
