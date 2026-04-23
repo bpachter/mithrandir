@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import { fetchMemory, rateMemory, deleteMemory } from '../api'
+import { fetchMemory, fetchHistoryItem, rateMemory, deleteMemory } from '../api'
 
 const PASSWORD = 'antifragile'
 
@@ -10,6 +10,9 @@ export default function MemoryPanel() {
   const setMemory    = useStore((s) => s.setMemory)
   const updateRating = useStore((s) => s.updateMemoryRating)
   const removeEntry  = useStore((s) => s.removeMemoryEntry)
+  const addMessage   = useStore((s) => s.addMessage)
+  const clearMessages = useStore((s) => s.clearMessages)
+  const setActiveId  = useStore((s) => s.setActiveConversationId)
 
   const [expanded,   setExpanded]   = useState<string | null>(null)
   const [unlocked,   setUnlocked]   = useState(false)
@@ -46,6 +49,34 @@ export default function MemoryPanel() {
   async function handleDelete(id: string) {
     removeEntry(id)
     await deleteMemory(id).catch(() => {})
+  }
+
+  async function handleContinue(id: string, timestamp: string, fallbackUser: string, fallbackAssistant: string) {
+    let userText = fallbackUser
+    let assistantText = fallbackAssistant
+    try {
+      const full = await fetchHistoryItem(id)
+      userText = full.user ?? fallbackUser
+      assistantText = full.assistant ?? fallbackAssistant
+    } catch {
+      // If full history lookup fails, continue from truncated memory content.
+    }
+
+    const ts = new Date(timestamp).getTime()
+    clearMessages()
+    addMessage({
+      id: `mem-user-${id}`,
+      role: 'user',
+      content: userText,
+      ts,
+    })
+    addMessage({
+      id: `mem-bot-${id}`,
+      role: 'bot',
+      content: assistantText,
+      ts: ts + 1,
+    })
+    setActiveId(id)
   }
 
   return (
@@ -157,6 +188,24 @@ export default function MemoryPanel() {
                     <div style={{ padding: '0 10px 8px 10px', fontSize: 11 }}>
                       <div style={{ color: 'var(--cyan)', marginBottom: 4, fontSize: 10 }}>
                         {new Date(e.timestamp).toLocaleString('en-US', { hour12: false })}
+                      </div>
+                      <div style={{ marginBottom: 8 }}>
+                        <button
+                          onClick={() => handleContinue(e.id, e.timestamp, e.user, e.assistant)}
+                          style={{
+                            background: 'none',
+                            border: '1px solid var(--cyan-dim)',
+                            color: 'var(--cyan)',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 10,
+                            padding: '2px 8px',
+                            cursor: 'pointer',
+                            letterSpacing: '0.08em',
+                          }}
+                          title="Load into chat and continue this conversation"
+                        >
+                          CONTINUE IN CHAT
+                        </button>
                       </div>
                       <div style={{ color: 'var(--amber)', marginBottom: 6, lineHeight: 1.5 }}>{e.user}</div>
                       <div style={{ color: 'var(--white-dim)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{e.assistant}</div>
