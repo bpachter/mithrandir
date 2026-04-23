@@ -71,7 +71,7 @@ def get_voice_path(profile_id: str) -> Optional[Path]:
 # ENKIDU_DEFAULT_VOICE lets .env pick a .wav profile (e.g. 'bmo') at startup.
 _active_voice: str = os.environ.get(
     "ENKIDU_DEFAULT_VOICE",
-    os.environ.get("KOKORO_VOICE", "af_heart"),
+    os.environ.get("KOKORO_VOICE", "bm_george"),
 )
 
 
@@ -197,9 +197,9 @@ def _fix_proper_nouns(text: str) -> str:
 # TTS — Kokoro  (primary — fast local neural TTS + character FX)
 # ---------------------------------------------------------------------------
 
-_KOKORO_VOICE    = os.environ.get("KOKORO_VOICE",     "af_heart")
-_KOKORO_SPEED    = float(os.environ.get("KOKORO_SPEED",    "0.90"))  # slightly deliberate — BMO's earnest pacing
-_KOKORO_LANG     = os.environ.get("KOKORO_LANG",      "a")       # 'a'=American (af_heart requires this)
+_KOKORO_VOICE    = os.environ.get("KOKORO_VOICE",     "bm_george")
+_KOKORO_SPEED    = float(os.environ.get("KOKORO_SPEED",    "0.90"))  # slightly deliberate
+_KOKORO_LANG     = os.environ.get("KOKORO_LANG",      "b")       # 'b'=British (bm_george requires this)
 _KOKORO_SR       = 24000
 
 # Character FX parameters — tuned for BMO from Adventure Time (voiced by Niki Yang):
@@ -215,7 +215,7 @@ _KOKORO_SR       = 24000
 # → trace vocoder (game-console electronic hum) → short speaker-box comb
 # → light bitcrush (13-bit — subtle digital texture, not 8-bit crunch)
 # → gentle presence peak → tiny room reverb.
-_FX_PITCH        = float(os.environ.get("ENKIDU_PITCH",     "5.5"))    # BMO is distinctly high-pitched
+_FX_PITCH        = float(os.environ.get("ENKIDU_PITCH",     "0.0"))    # bm_george is already deep — no pitch shift needed
 _FX_LOW_BOOST_DB = float(os.environ.get("ENKIDU_LOW_BOOST", "0.0"))    # no bass boost — BMO is a small speaker
 _FX_LOW_CUTOFF   = float(os.environ.get("ENKIDU_LOW_CUTOFF", "220"))   # bass shelf cutoff (Hz)
 _FX_RING_RATE_HZ = float(os.environ.get("ENKIDU_RING_HZ",   "0.0"))    # NO ring mod — BMO is warm, not buzzy

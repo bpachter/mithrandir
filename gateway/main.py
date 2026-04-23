@@ -250,7 +250,7 @@ async def proxy_ws(websocket: WebSocket, path: str):
     logger.info("WS proxy: %s → %s", path, target)
 
     try:
-        async with websockets.connect(target, open_timeout=10) as upstream:
+        async with websockets.connect(target, open_timeout=10, max_size=None) as upstream:
 
             async def client_to_upstream():
                 try:
