@@ -1,6 +1,28 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { X, Play, CheckCircle, XCircle, Clock, FileCode, GitBranch, ChevronRight, ChevronDown, Send, Lock, GitCommit, GitPullRequest, RefreshCw } from 'lucide-react'
+import { X, Play, CheckCircle, XCircle, Clock, FileCode, GitBranch, ChevronRight, ChevronDown, Send, Lock, GitCommit, GitPullRequest, RefreshCw, MessageSquare } from 'lucide-react'
+import { Highlight, themes } from 'prism-react-renderer'
 import { wsBase, API_BASE } from '../api'
+import ChatPanel from './ChatPanel'
+
+// Session-scoped dev password (cleared when tab closes)
+const DEV_PW_KEY = 'enkidu_dev_pw'
+function getDevPw(): string { return sessionStorage.getItem(DEV_PW_KEY) ?? '' }
+function setDevPw(pw: string) { sessionStorage.setItem(DEV_PW_KEY, pw) }
+function clearDevPw() { sessionStorage.removeItem(DEV_PW_KEY) }
+
+// Map file extension → prism language id
+function langFor(rel: string): string {
+  const ext = rel.toLowerCase().split('.').pop() ?? ''
+  const name = rel.toLowerCase().split('/').pop() ?? ''
+  if (name.startsWith('.env')) return 'bash'
+  if (name === '.gitignore' || name === '.dockerignore') return 'bash'
+  return ({
+    py: 'python', ts: 'tsx', tsx: 'tsx', js: 'jsx', jsx: 'jsx',
+    json: 'json', md: 'markdown', yml: 'yaml', yaml: 'yaml',
+    toml: 'toml', sh: 'bash', ps1: 'powershell', css: 'css',
+    html: 'markup', sql: 'sql', csv: 'csv', ini: 'ini', cfg: 'ini',
+  } as Record<string, string>)[ext] ?? 'text'
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -76,7 +98,9 @@ function ts(unix: number) {
 
 async function apiGet<T>(path: string): Promise<T> {
   const base = API_BASE || ''
-  const r = await fetch(`${base}${path}`)
+  const r = await fetch(`${base}${path}`, {
+    headers: { 'X-Dev-Password': getDevPw() },
+  })
   return r.json() as Promise<T>
 }
 
@@ -84,7 +108,7 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const base = API_BASE || ''
   const r = await fetch(`${base}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Dev-Password': getDevPw() },
     body: JSON.stringify(body),
   })
   return r.json() as Promise<T>
@@ -175,6 +199,85 @@ function DiffViewer({ original, proposed }: { original: string; proposed: string
 // ---------------------------------------------------------------------------
 
 export default function DevPanel({ onClose }: Props) {
+  // Full-panel password gate
+  const [unlocked, setUnlocked] = useState<boolean>(!!getDevPw())
+  const [gatePw, setGatePw]     = useState('')
+  const [gateError, setGateError] = useState('')
+
+  async function tryUnlock() {
+    setDevPw(gatePw)
+    try {
+      const r = await fetch(`${API_BASE || ''}/api/dev/projects`, {
+        headers: { 'X-Dev-Password': gatePw },
+      })
+      if (r.status === 401) {
+        clearDevPw()
+        setGateError('Incorrect password')
+        return
+      }
+      setUnlocked(true)
+      setGateError('')
+    } catch {
+      setGateError('Connection failed')
+    }
+  }
+
+  function lockPanel() {
+    clearDevPw()
+    setUnlocked(false)
+    setGatePw('')
+    onClose?.()
+  }
+
+  if (!unlocked) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        style={{ background: '#070d1a', fontFamily: 'Roboto Mono, monospace' }}
+      >
+        <div className="bg-[#0f1729] border border-cyan-800 rounded-lg p-7 w-96 shadow-2xl">
+          <div className="flex items-center gap-3 mb-4">
+            <Lock className="h-5 w-5 text-amber-400" />
+            <span className="text-[14px] font-semibold tracking-widest uppercase text-cyan-400">
+              Enkidu Dev
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 mb-4">
+            This environment exposes source code and git operations across the entire portfolio.
+            Enter the dev password to continue.
+          </p>
+          <input
+            type="password"
+            autoFocus
+            value={gatePw}
+            onChange={e => setGatePw(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && tryUnlock()}
+            placeholder="Dev password…"
+            className="w-full bg-[#070d1a] border border-[#1e2d4a] rounded px-3 py-2 text-[12px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-700 mb-2"
+          />
+          {gateError && (
+            <p className="text-[10.5px] text-red-400 mb-2">{gateError}</p>
+          )}
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={tryUnlock}
+              disabled={!gatePw}
+              className="flex-1 px-3 py-2 rounded bg-cyan-800 text-cyan-200 text-[11px] font-semibold hover:bg-cyan-700 disabled:opacity-40"
+            >
+              Unlock
+            </button>
+            <button
+              onClick={() => onClose?.()}
+              className="px-3 py-2 rounded border border-slate-600 text-slate-400 text-[11px] hover:text-slate-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Project + tasks
   const [projects, setProjects]       = useState<ProjectInfo[]>([])
   const [activeProject, setActiveProject] = useState('enkidu')
@@ -378,7 +481,8 @@ export default function DevPanel({ onClose }: Props) {
   // -------------------------------------------------------------------------
 
   function connectWs() {
-    const url = `${wsBase()}/ws/dev`
+    const pw = encodeURIComponent(getDevPw())
+    const url = `${wsBase()}/ws/dev?password=${pw}`
     const ws = new WebSocket(url)
     wsRef.current = ws
 
@@ -469,8 +573,16 @@ export default function DevPanel({ onClose }: Props) {
             </button>
           ))}
           <button
-            onClick={onClose}
+            onClick={lockPanel}
             className="ml-3 p-1 rounded text-slate-400 hover:text-slate-200"
+            title="Lock dev panel"
+          >
+            <Lock className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1 rounded text-slate-400 hover:text-slate-200"
+            title="Close (stay unlocked this session)"
           >
             <X className="h-4 w-4" />
           </button>
@@ -697,21 +809,63 @@ export default function DevPanel({ onClose }: Props) {
           </div>
         </div>
 
-        {/* RIGHT: Opened file viewer — equal width to center */}
+        {/* RIGHT: File viewer (top) + Chat (bottom) — equal width to center */}
         <div className="flex-1 border-l border-[#1e2d4a] flex flex-col overflow-hidden min-w-0">
-          <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-slate-500 border-b border-[#1e2d4a]">
-            {openedFile ? openedFile.rel : 'File viewer'}
+          {/* File viewer — top half */}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-slate-500 border-b border-[#1e2d4a] flex items-center gap-2">
+              <FileCode className="h-3 w-3" />
+              <span className="truncate normal-case font-mono text-slate-400">
+                {openedFile ? openedFile.rel : 'File viewer'}
+              </span>
+            </div>
+            <div className="flex-1 overflow-auto" style={{ background: '#0a0f1f' }}>
+              {openedFile ? (
+                <Highlight
+                  theme={themes.vsDark}
+                  code={openedFile.contents}
+                  language={langFor(openedFile.rel)}
+                >
+                  {({ className, style, tokens, getLineProps, getTokenProps }) => (
+                    <pre
+                      className={className}
+                      style={{ ...style, background: 'transparent', margin: 0, padding: '8px 10px', fontSize: '10.5px', lineHeight: 1.5 }}
+                    >
+                      {tokens.map((line, i) => (
+                        <div key={i} {...getLineProps({ line })} style={{ display: 'flex' }}>
+                          <span style={{ color: '#3b4a6b', userSelect: 'none', width: '2.5em', textAlign: 'right', paddingRight: '0.8em', flexShrink: 0 }}>
+                            {i + 1}
+                          </span>
+                          <span style={{ flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                            {line.map((token, key) => (
+                              <span key={key} {...getTokenProps({ token })} />
+                            ))}
+                          </span>
+                        </div>
+                      ))}
+                    </pre>
+                  )}
+                </Highlight>
+              ) : (
+                <div className="text-[10px] text-slate-600 pt-2 px-3">
+                  Click a file in the tree to view it here — with syntax highlighting.
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex-1 overflow-auto p-2">
-            {openedFile ? (
-              <pre className="text-[10px] font-mono text-slate-300 leading-relaxed whitespace-pre-wrap break-all">
-                {openedFile.contents}
-              </pre>
-            ) : (
-              <div className="text-[10px] text-slate-600 pt-2 px-1">
-                Click a file in the tree to view it here.
-              </div>
-            )}
+
+          {/* Chat — bottom half (Enkidu agent + voice) */}
+          <div className="h-[42%] border-t border-[#1e2d4a] flex flex-col overflow-hidden">
+            <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-slate-500 border-b border-[#1e2d4a] flex items-center gap-2">
+              <MessageSquare className="h-3 w-3" />
+              Enkidu — ask about code, memory, or delegate work
+              <span className="ml-auto text-[9px] text-slate-600 normal-case">
+                tip: "read orator/server/main.py" → uses dev_read_file tool
+              </span>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ChatPanel />
+            </div>
           </div>
         </div>
       </div>

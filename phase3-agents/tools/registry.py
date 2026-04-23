@@ -912,3 +912,99 @@ register(
     },
     fn=_dev_delegate,
 )
+
+
+# ---------------------------------------------------------------------------
+# dev_read_file / dev_list_files — let the agent inspect any portfolio project
+# ---------------------------------------------------------------------------
+
+def _load_dev_tools_module():
+    import importlib.util as _ilu
+    import sys as _sys
+    _dev_path = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "phase6-ui", "server", "dev_tools.py")
+    )
+    spec = _ilu.spec_from_file_location("dev_tools", _dev_path)
+    mod = _ilu.module_from_spec(spec)
+    _sys.modules["dev_tools"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _dev_read_file(project: str, path: str) -> str:
+    """Read a file from any registered portfolio project. Returns contents or error."""
+    try:
+        mod = _load_dev_tools_module()
+    except Exception as e:
+        return f"dev_read_file unavailable: {e}"
+    # Use the dev panel password so sensitive files (.env etc.) are still gated
+    pw = os.environ.get("ENKIDU_DEV_PASSWORD", "antifragile")
+    result = mod.read_file_contents(project.lower(), path, password=pw)
+    if "error" in result:
+        return f"ERROR: {result['error']}"
+    contents = result.get("contents", "")
+    if len(contents) > 20000:
+        contents = contents[:20000] + f"\n\n... [truncated; file is {len(contents)} chars total]"
+    return f"=== {project}/{path} ===\n{contents}"
+
+
+def _dev_list_files(project: str, sub_path: str = "") -> str:
+    """List files in a portfolio project (or subdirectory)."""
+    try:
+        mod = _load_dev_tools_module()
+    except Exception as e:
+        return f"dev_list_files unavailable: {e}"
+    result = mod.get_file_tree(project.lower(), sub_path)
+    if "error" in result:
+        return f"ERROR: {result['error']}"
+
+    def _flatten(nodes, prefix=""):
+        lines = []
+        for n in nodes:
+            full = f"{prefix}{n['name']}"
+            if n["type"] == "dir":
+                lines.append(f"{full}/")
+                if n.get("children"):
+                    lines.extend(_flatten(n["children"], full + "/"))
+            else:
+                lock = " 🔒" if n.get("sensitive") else ""
+                lines.append(f"{full}{lock}")
+        return lines
+
+    files = _flatten(result.get("tree", []))
+    if not files:
+        return f"(no files found in {project}/{sub_path})"
+    if len(files) > 200:
+        files = files[:200] + [f"... [{len(files)} total — truncated]"]
+    return "\n".join(files)
+
+
+register(
+    name="dev_read_file",
+    description=(
+        "Read the contents of a file from any portfolio project (enkidu, avalon, orator, longinus, "
+        "zeus, babylon, aristotle). Use this when the user asks about code in a specific project "
+        "or you need to understand existing code before delegating with dev_delegate. "
+        "Sensitive files (.env, keys, credentials) are accessible via the configured dev password."
+    ),
+    parameters={
+        "project": "str — project name, e.g. 'orator', 'avalon', 'enkidu'",
+        "path": "str — relative path within the project, e.g. 'server/main.py'",
+    },
+    fn=_dev_read_file,
+)
+
+
+register(
+    name="dev_list_files",
+    description=(
+        "List the files and directories in a portfolio project. Use this to discover what code "
+        "exists in a project before reading specific files with dev_read_file. "
+        "Optional sub_path narrows the listing to a subdirectory."
+    ),
+    parameters={
+        "project": "str — project name, e.g. 'orator', 'avalon', 'enkidu'",
+        "sub_path": "str — optional subdirectory relative to project root",
+    },
+    fn=_dev_list_files,
+)

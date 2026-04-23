@@ -261,6 +261,30 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
+# Dev panel password gate — protects ALL /api/dev/* endpoints
+# ---------------------------------------------------------------------------
+
+_DEV_PANEL_PASSWORD = os.environ.get("ENKIDU_DEV_PASSWORD", "antifragile")
+
+
+@app.middleware("http")
+async def _dev_password_middleware(request, call_next):
+    """Require X-Dev-Password header (or ?password= query) for /api/dev/* routes."""
+    path = request.url.path
+    if path.startswith("/api/dev/"):
+        provided = (
+            request.headers.get("x-dev-password")
+            or request.query_params.get("password")
+            or ""
+        )
+        if provided != _DEV_PANEL_PASSWORD:
+            return JSONResponse(
+                {"error": "dev_password_required", "message": "Dev panel requires authentication."},
+                status_code=401,
+            )
+    return await call_next(request)
+
+# ---------------------------------------------------------------------------
 # REST endpoints
 # ---------------------------------------------------------------------------
 
@@ -1378,6 +1402,11 @@ def dev_git_pull(body: _GitPullRequest):
 @app.websocket("/ws/dev")
 async def ws_dev(ws: WebSocket):
     """Stream DevTask events to the DevPanel in real time."""
+    # Password gate — same as REST middleware
+    provided = ws.query_params.get("password", "")
+    if provided != _DEV_PANEL_PASSWORD:
+        await ws.close(code=4401)
+        return
     await ws.accept()
     _wire_dev_loop()
     if not _dev:
