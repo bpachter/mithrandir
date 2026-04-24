@@ -7,11 +7,11 @@ import { fetchRegime, fetchPortfolio } from '../api'
 
 type View = 'table' | 'quality' | 'value'
 
-const AMBER  = '#ffb13b'
-const CYAN   = '#22d3ee'
-const GREEN  = '#3ddc84'
-const RED    = '#ff4d6d'
-const DIM    = '#1a2138'
+const AMBER  = '#00ff41'
+const CYAN   = '#00ffcc'
+const GREEN  = '#00ff41'
+const RED    = '#ff4444'
+const DIM    = '#0a2a0a'
 
 function scoreColor(s: number) {
   return s >= 70 ? GREEN : s >= 50 ? AMBER : RED

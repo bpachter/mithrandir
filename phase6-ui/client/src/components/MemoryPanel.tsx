@@ -160,7 +160,7 @@ export default function MemoryPanel() {
                       borderRadius: 2,
                       fontFamily: 'var(--font-display)', fontWeight: 600,
                       letterSpacing: '0.06em',
-                      background: e.score !== null ? (e.score >= 7 ? 'rgba(61,220,132,0.12)' : e.score >= 4 ? 'rgba(255,177,59,0.12)' : 'rgba(255,77,109,0.12)') : 'var(--border)',
+                      background: e.score !== null ? (e.score >= 7 ? 'rgba(0,255,65,0.12)' : e.score >= 4 ? 'rgba(0,255,65,0.07)' : 'rgba(255,68,68,0.10)') : 'var(--border)',
                       border: '1px solid ' + (e.score !== null ? (e.score >= 7 ? 'var(--green-dim)' : e.score >= 4 ? 'var(--amber-dim)' : 'var(--red-dim)') : 'var(--border-strong)'),
                       color: e.score !== null ? (e.score >= 7 ? 'var(--green)' : e.score >= 4 ? 'var(--amber)' : 'var(--red)') : 'var(--white-dim)',
                     }}>

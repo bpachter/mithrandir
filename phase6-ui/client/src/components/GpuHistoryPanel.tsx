@@ -10,15 +10,15 @@ import {
 import { useStore } from '../store'
 import type { GpuHistoryPoint } from '../store'
 
-// Palette aligned with v9 operator-console design tokens
+// Palette aligned with v10 Matrix design tokens
 const C = {
-  gpu:      { stroke: '#22d3ee', fill: '#22d3ee18' },
-  vram:     { stroke: '#ffb13b', fill: '#ffb13b18' },
-  temp:     { stroke: '#3ddc84', fill: '#3ddc8418' },
-  power:    { stroke: '#ff4d6d', fill: '#ff4d6d18' },
-  clock_sm: { stroke: '#a78bfa', fill: '#a78bfa15' },
-  clock_mem:{ stroke: '#818cf8', fill: '#818cf815' },
-  cpu:      { stroke: '#7a8499', fill: '#7a849912' },
+  gpu:      { stroke: '#00ffcc', fill: '#00ffcc18' },
+  vram:     { stroke: '#00ff41', fill: '#00ff4118' },
+  temp:     { stroke: '#7fff00', fill: '#7fff0018' },
+  power:    { stroke: '#ff4444', fill: '#ff444418' },
+  clock_sm: { stroke: '#00f5d4', fill: '#00f5d415' },
+  clock_mem:{ stroke: '#00ccaa', fill: '#00ccaa15' },
+  cpu:      { stroke: '#3d7a4a', fill: '#3d7a4a12' },
 }
 
 function threshold(val: number, warn: number, crit: number): string {

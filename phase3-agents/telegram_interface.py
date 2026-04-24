@@ -28,79 +28,28 @@ import threading
 import logging
 from typing import Optional
 
-import ssl
 import subprocess
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from dotenv import load_dotenv
 import requests
-from requests.adapters import HTTPAdapter
 import telebot
 import telebot.apihelper as _apihelper
 from telebot.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 load_dotenv()
 
-# Monkey-patch telebot's session factory to fix WinError 10054 (TLS 1.3 reset on Windows).
-# Forces TLS 1.2, disables cert verification and hostname checking.
-# Safe on a personal home network connecting to api.telegram.org.
-
-class _NoALPNContext:
-    """
-    Wrapper around ssl.SSLContext that silences set_alpn_protocols().
-
-    urllib3 unconditionally calls context.set_alpn_protocols(["http/1.1"])
-    on whatever ssl_context we provide.  On this machine that ALPN header
-    causes api.telegram.org to TCP-reset the TLS 1.2 handshake (WinError
-    10054).  Wrapping the context and no-op'ing set_alpn_protocols is the
-    minimal, targeted fix — all other SSL behaviour is unchanged.
-    """
-    def __init__(self, ctx: ssl.SSLContext):
-        self._ctx = ctx
-
-    def set_alpn_protocols(self, protocols):
-        pass  # intentional no-op — ALPN triggers server reset on TLS 1.2
-
-    def wrap_socket(self, *args, **kwargs):
-        return self._ctx.wrap_socket(*args, **kwargs)
-
-    def __getattr__(self, name):
-        return getattr(self._ctx, name)
-
-
-class _TLSAdapter(HTTPAdapter):
-    """
-    Custom TLS adapter: forces TLS 1.2 and suppresses ALPN negotiation.
-
-    Root cause of WinError 10054 on this machine:
-      1. ssl.create_default_context() negotiates TLS 1.3 — Telegram resets it.
-      2. urllib3 adds ALPN http/1.1 to any context we provide — Telegram also
-         resets TLS 1.2 when ALPN is present.
-    Both are fixed here: TLS 1.2 is pinned, ALPN is suppressed via _NoALPNContext.
-    """
-    def init_poolmanager(self, *args, **kwargs):
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
-        ctx.maximum_version = ssl.TLSVersion.TLSv1_2
-        kwargs["ssl_context"] = _NoALPNContext(ctx)
-        super().init_poolmanager(*args, **kwargs)
-
-_cached_session: Optional[requests.Session] = None
+# Monkey-patch telebot's session factory to fix WinError 10054 on Windows.
+# urllib3 2.x connection pools reuse sockets; Telegram closes idle connections
+# server-side, leaving stale sockets that trigger a reset on the next poll.
+# Returning a fresh session per call bypasses pooling entirely.
 
 def _patched_session(reset=False):
-    global _cached_session
-    if reset or _cached_session is None:
-        s = requests.Session()
-        s.verify = False
-        s.mount("https://", _TLSAdapter())
-        # Disable TCP keep-alive: each request gets its own connection so
-        # there's no stale socket for the server to reset mid-poll.
-        s.headers.update({"Connection": "close"})
-        _cached_session = s
-    return _cached_session
+    s = requests.Session()
+    s.verify = False
+    s.headers.update({"Connection": "close"})
+    return s
 
 _apihelper._get_req_session = _patched_session
 
@@ -686,13 +635,13 @@ def main():
             # long-lived TLS connections (WinError 10054), so we don't keep
             # the getUpdates connection open at all. Telegram responds
             # immediately with any pending updates or an empty list.
-            bot.infinity_polling(timeout=10, long_polling_timeout=0, interval=1, skip_pending=True)
+            bot.infinity_polling(timeout=45, long_polling_timeout=0, interval=2, skip_pending=True)
         except KeyboardInterrupt:
             print("\nBot stopped.")
             break
         except Exception as e:
-            logger.warning(f"Polling crashed ({type(e).__name__}: {e}), restarting in 5s...")
-            time.sleep(2)
+            logger.warning(f"Polling crashed ({type(e).__name__}: {e}), restarting in 10s...")
+            time.sleep(10)
 
 
 if __name__ == "__main__":
