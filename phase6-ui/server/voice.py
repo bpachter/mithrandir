@@ -198,61 +198,56 @@ def _fix_proper_nouns(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 _KOKORO_VOICE    = os.environ.get("KOKORO_VOICE",     "bm_george")
-_KOKORO_SPEED    = float(os.environ.get("KOKORO_SPEED",    "0.90"))  # slightly deliberate
+_KOKORO_SPEED    = float(os.environ.get("KOKORO_SPEED",    "0.82"))  # deliberate, authoritative pace
 _KOKORO_LANG     = os.environ.get("KOKORO_LANG",      "b")       # 'b'=British (bm_george requires this)
 _KOKORO_SR       = 24000
 
-# Character FX parameters — tuned for BMO from Adventure Time (voiced by Niki Yang):
+# Character FX parameters — tuned for Mithrandir / Gandalf (Ian McKellen):
 #
-# Voice signature: high-pitched, warm, innocent — the voice of a small sentient
-# game console. Earnest, slightly sing-song, NOT metallic or aggressive.
-# Think: a child's toy that gained consciousness and is trying its best.
-#
-# Source voice: af_heart (American female, warm) — best Kokoro match for BMO's
-# soft, rounded delivery. Niki Yang's accent/lilt can't be fully cloned but
-# af_heart's warmth gets us close.
-# FX chain: high pitch shift (+5.5st) → slight formant brighten → very soft drive
-# → trace vocoder (game-console electronic hum) → short speaker-box comb
-# → light bitcrush (13-bit — subtle digital texture, not 8-bit crunch)
-# → gentle presence peak → tiny room reverb.
-_FX_PITCH        = float(os.environ.get("MITHRANDIR_PITCH",     "0.0"))    # bm_george is already deep — no pitch shift needed
-_FX_LOW_BOOST_DB = float(os.environ.get("MITHRANDIR_LOW_BOOST", "0.0"))    # no bass boost — BMO is a small speaker
-_FX_LOW_CUTOFF   = float(os.environ.get("MITHRANDIR_LOW_CUTOFF", "220"))   # bass shelf cutoff (Hz)
-_FX_RING_RATE_HZ = float(os.environ.get("MITHRANDIR_RING_HZ",   "0.0"))    # NO ring mod — BMO is warm, not buzzy
+# Voice signature: deep RP British baritone, warm and resonant, aged authority.
+# Strong chest resonance (~230 Hz), darkened formants (smaller ratio = larger
+# perceived vocal tract), slight pitch-down to seat the voice, concert-hall
+# reverb tail. NO robot FX: vocoder/comb/bitcrusher/ring-mod all disabled.
+# FX chain: pitch −1.5st → formant darken (0.93) → chest resonance peak
+#           → upper-mid presence peak → soft tanh warmth
+#           → sibilance shelf → long hall reverb → slight slowdown.
+_FX_PITCH        = float(os.environ.get("MITHRANDIR_PITCH",     "-1.5"))   # seat the voice lower
+_FX_LOW_BOOST_DB = float(os.environ.get("MITHRANDIR_LOW_BOOST", "4.0"))    # chest weight
+_FX_LOW_CUTOFF   = float(os.environ.get("MITHRANDIR_LOW_CUTOFF", "300"))   # bass shelf cutoff (Hz)
+_FX_RING_RATE_HZ = float(os.environ.get("MITHRANDIR_RING_HZ",   "0.0"))    # off — no ring mod
 _FX_RING_DEPTH   = float(os.environ.get("MITHRANDIR_RING_DEPTH", "0.0"))   # off
-_FX_COMB_MS      = float(os.environ.get("MITHRANDIR_COMB_MS",   "2.0"))    # short speaker-box resonance (not metallic plate)
-_FX_COMB_FB      = float(os.environ.get("MITHRANDIR_COMB_FB",   "0.22"))   # light feedback — subtle, not resonant
-_FX_COMB_MIX     = float(os.environ.get("MITHRANDIR_COMB_MIX",  "0.12"))   # wet/dry mix
-_FX_DRIVE        = float(os.environ.get("MITHRANDIR_DRIVE",     "1.8"))    # soft warmth — no aggression
-_FX_FORMANT      = float(os.environ.get("MITHRANDIR_FORMANT",   "1.06"))   # slight brightening — small vocal tract
-_FX_SUB_MIX      = float(os.environ.get("MITHRANDIR_SUB_MIX",   "0.0"))    # no subharmonic
+_FX_COMB_MS      = float(os.environ.get("MITHRANDIR_COMB_MS",   "2.0"))    # (unused — comb mix = 0)
+_FX_COMB_FB      = float(os.environ.get("MITHRANDIR_COMB_FB",   "0.0"))    # off
+_FX_COMB_MIX     = float(os.environ.get("MITHRANDIR_COMB_MIX",  "0.0"))    # off — no metallic comb
+_FX_DRIVE        = float(os.environ.get("MITHRANDIR_DRIVE",     "1.6"))    # warm saturation — aged vocal warmth
+_FX_FORMANT      = float(os.environ.get("MITHRANDIR_FORMANT",   "0.93"))   # darken timbre — large wizard vocal tract
+_FX_SUB_MIX      = float(os.environ.get("MITHRANDIR_SUB_MIX",   "0.0"))    # no sub enhancement
 _FX_SUB_CUTOFF   = float(os.environ.get("MITHRANDIR_SUB_CUTOFF", "120"))   # subharmonic LPF cutoff (Hz)
-_FX_VOC_MIX      = float(os.environ.get("MITHRANDIR_VOC_MIX",   "0.05"))   # trace vocoder — hint of game-console hum
-_FX_VOC_BASE_HZ  = float(os.environ.get("MITHRANDIR_VOC_BASE",  "380"))    # higher carrier = lighter, brighter electronic tone
-# Small-speaker presence peak — brightens the upper midrange of a tiny speaker.
-_FX_CHEST_DB     = float(os.environ.get("MITHRANDIR_CHEST_DB",  "2.5"))    # peak gain (dB)
-_FX_CHEST_HZ     = float(os.environ.get("MITHRANDIR_CHEST_HZ",  "1400"))   # small-speaker box resonance, not chest
+_FX_VOC_MIX      = float(os.environ.get("MITHRANDIR_VOC_MIX",   "0.0"))    # off — no vocoder
+_FX_VOC_BASE_HZ  = float(os.environ.get("MITHRANDIR_VOC_BASE",  "380"))    # (unused)
+# Chest resonance peak — 230 Hz adds the low-body weight of a large chest cavity.
+_FX_CHEST_DB     = float(os.environ.get("MITHRANDIR_CHEST_DB",  "5.0"))    # peak gain (dB)
+_FX_CHEST_HZ     = float(os.environ.get("MITHRANDIR_CHEST_HZ",  "230"))    # chest cavity fundamental
 _FX_CHEST_Q      = float(os.environ.get("MITHRANDIR_CHEST_Q",   "2.0"))    # moderate width
-# Presence peak — warm upper-mid clarity (not aggression).
+# Upper-mid presence peak — crisp British consonant articulation.
 _FX_BITE_DB      = float(os.environ.get("MITHRANDIR_BITE_DB",   "2.5"))
-_FX_BITE_HZ      = float(os.environ.get("MITHRANDIR_BITE_HZ",   "2200"))
+_FX_BITE_HZ      = float(os.environ.get("MITHRANDIR_BITE_HZ",   "3200"))
 _FX_BITE_Q       = float(os.environ.get("MITHRANDIR_BITE_Q",    "1.5"))
-# Sibilance shelf — light, clear consonants without harshness.
+# Sibilance shelf — crisp 's' without harshness.
 _FX_SIB_DB       = float(os.environ.get("MITHRANDIR_SIB_DB",    "2.0"))
-_FX_SIB_HZ       = float(os.environ.get("MITHRANDIR_SIB_HZ",    "6500"))
-# Small-room reverb — tiny speaker in a small box, not a chamber.
-_FX_VERB_MS      = float(os.environ.get("MITHRANDIR_VERB_MS",   "20"))
-_FX_VERB_FB      = float(os.environ.get("MITHRANDIR_VERB_FB",   "0.15"))
-_FX_VERB_MIX     = float(os.environ.get("MITHRANDIR_VERB_MIX",  "0.04"))
-# Post pitch tweak (for cloned voices). Default off.
-_FX_POST_PITCH   = float(os.environ.get("MITHRANDIR_POST_PITCH", "0.0"))
-# Bitcrusher — 13-bit is subtle digital texture (game-console feel without
-# the harsh 8-bit crunch). decim=1 keeps sample rate clean.
-_FX_CRUSH_MIX    = float(os.environ.get("MITHRANDIR_CRUSH_MIX",  "0.06"))
-_FX_CRUSH_BITS   = int(float(os.environ.get("MITHRANDIR_CRUSH_BITS", "13")))
-_FX_CRUSH_DECIM  = int(float(os.environ.get("MITHRANDIR_CRUSH_DECIM", "1")))   # downsample factor
+_FX_SIB_HZ       = float(os.environ.get("MITHRANDIR_SIB_HZ",    "7500"))
+# Concert-hall reverb — long tail, moderate feedback for cinematic authority.
+_FX_VERB_MS      = float(os.environ.get("MITHRANDIR_VERB_MS",   "65"))
+_FX_VERB_FB      = float(os.environ.get("MITHRANDIR_VERB_FB",   "0.32"))
+_FX_VERB_MIX     = float(os.environ.get("MITHRANDIR_VERB_MIX",  "0.10"))
+# Post pitch tweak applied after F5 voice cloning (fine-tune clone pitch).
+_FX_POST_PITCH   = float(os.environ.get("MITHRANDIR_POST_PITCH", "-0.5"))
+# Bitcrusher — disabled for Gandalf (no digital artifacts).
+_FX_CRUSH_MIX    = float(os.environ.get("MITHRANDIR_CRUSH_MIX",  "0.0"))
+_FX_CRUSH_BITS   = int(float(os.environ.get("MITHRANDIR_CRUSH_BITS", "16")))
+_FX_CRUSH_DECIM  = int(float(os.environ.get("MITHRANDIR_CRUSH_DECIM", "1")))
 _FX_MEGATRON     = os.environ.get("MITHRANDIR_MEGATRON", "1") == "1"       # enable extended character FX chain
-_MEGATRON_SLOWDOWN = float(os.environ.get("MITHRANDIR_MEGATRON_SLOWDOWN", "1.00"))
+_MEGATRON_SLOWDOWN = float(os.environ.get("MITHRANDIR_MEGATRON_SLOWDOWN", "1.04"))  # slightly deliberate pace
 
 _kokoro_pipeline = None
 _kokoro_pipeline_lang: Optional[str] = None
@@ -567,15 +562,14 @@ def _apply_character_fx(audio: np.ndarray, voice: Optional[str] = None) -> np.nd
     Base chain (always on for Kokoro output):
         pitch shift → formant warp → low shelf boost
 
-    Extended character chain (adds when MITHRANDIR_MEGATRON=1) — tuned for BMO
-    from Adventure Time (small sentient game console, warm + innocent):
-        → small-speaker presence peak (~1400 Hz) — console body resonance
-        → soft tanh warmth                        — gentle saturation, no aggression
-        → trace vocoder layer                     — subtle game-console electronic hum
-        → short speaker-box comb (2ms)            — tiny speaker resonance
-        → 13-bit bitcrush                         — light digital texture, not crunch
-        → gentle presence high-shelf              — clear consonants
-        → small-room reverb (20ms)                — tiny speaker, not a chamber
+    Extended character chain (adds when MITHRANDIR_MEGATRON=1) — tuned for
+    Mithrandir / Gandalf (Ian McKellen — deep RP British baritone):
+        → chest resonance peak (~230 Hz) — large-body weight
+        → upper-mid presence peak (~3200 Hz) — crisp consonant articulation
+        → soft tanh warmth                   — aged vocal saturation
+        → sibilance high-shelf               — clear 's' without harshness
+        → concert-hall reverb (65ms)         — cinematic authority
+    Robot FX (vocoder / comb / bitcrusher / ring-mod) are all disabled.
     """
     audio = _pitch_shift(audio, _FX_PITCH)
     audio = _formant_warp(audio, _FX_FORMANT)

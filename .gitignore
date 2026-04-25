@@ -46,5 +46,15 @@ test.wav
 # Phase 8 local research outputs (generated artifacts)
 phase8-local-research/output/
 
+# Voice training — large model weights and datasets (download separately)
+voice-training/pretrained/**/*.pth
+voice-training/pretrained/**/*.pt
+voice-training/vctk_data/*.zip
+voice-training/vctk_data/wav48_silence_trimmed/
+voice-training/styletts2_repo/
+voice-training/checkpoints/
+*.pth
+*.ckpt
+
 # Frontend local runtime logs
 phase6-ui/client.log

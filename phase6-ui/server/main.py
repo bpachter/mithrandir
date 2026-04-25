@@ -319,6 +319,7 @@ def health_detailed():
         import importlib.util
         spec = importlib.util.spec_from_file_location("mithrandir_health", _ROOT / "mithrandir_health.py")
         mod = importlib.util.module_from_spec(spec)
+        sys.modules["mithrandir_health"] = mod  # required for @dataclass forward-ref resolution
         spec.loader.exec_module(mod)
         results = mod.run_all(parallel=True, timeout=20.0)
         return mod.summary(results)
@@ -540,6 +541,7 @@ def get_freshness():
         import importlib.util
         spec = importlib.util.spec_from_file_location("data_freshness", Path(__file__).parent / "data_freshness.py")
         mod = importlib.util.module_from_spec(spec)
+        sys.modules["data_freshness"] = mod  # required for @dataclass forward-ref resolution
         spec.loader.exec_module(mod)
         return mod.get_freshness_report()
     except Exception as e:
