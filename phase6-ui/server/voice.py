@@ -896,6 +896,12 @@ def _f5_available() -> bool:
     )
 
 
+def _f5_worker_is_starting() -> bool:
+    """True when the F5 worker process has been launched but hasn't signalled READY yet.
+    Preludes use this to skip synthesis rather than block on a restarting worker."""
+    return _f5_proc is not None and _f5_proc.poll() is None and not _f5_ready
+
+
 def _load_ref_text(voice_path: Optional[Path]) -> str:
     """Load optional reference-transcript sidecar (voices/<stem>.txt).
 

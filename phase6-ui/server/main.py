@@ -851,6 +851,11 @@ async def _synthesize_prelude_strict(voice, text: str, requested_profile: Option
     if not profile:
         return b"", "wav", None
 
+    # Skip immediately if F5 worker is restarting — don't block on it for a prelude.
+    if hasattr(voice, "_f5_worker_is_starting") and voice._f5_worker_is_starting():
+        logger.info("TTS prelude skipped: F5 worker is restarting")
+        return b"", "wav", None
+
     loop = asyncio.get_event_loop()
 
     clone_ref = None
