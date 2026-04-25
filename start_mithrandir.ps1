@@ -5,7 +5,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 
 $root = $PSScriptRoot
 $tunnelName = if ($env:MITHRANDIR_CLOUDFLARE_TUNNEL) { $env:MITHRANDIR_CLOUDFLARE_TUNNEL } else { 'mithrandir' }
-
+$tunnelName = if ($env:MITHRANDIR_CLOUDFLARE_TUNNEL) { $env:MITHRANDIR_CLOUDFLARE_TUNNEL } else { 'enkidu' }
 Start-Process -WindowStyle Minimized -FilePath "cloudflared" -ArgumentList "tunnel run $tunnelName"
 
 Start-Sleep -Seconds 4
