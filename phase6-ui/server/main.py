@@ -815,38 +815,56 @@ def _pick_processing_prelude() -> str:
     return random.choice(_PROCESSING_PRELUDES)
 
 
+def _resolve_prelude_voice_profile(voice, requested_profile: Optional[str]) -> Optional[str]:
+    profile = (requested_profile or "").strip()
+    try:
+        builtin_voices = set(voice.list_voices()) if hasattr(voice, "list_voices") else set()
+    except Exception:
+        builtin_voices = set()
+
+    if profile and profile in builtin_voices:
+        return profile
+
+    forced = os.environ.get("MITHRANDIR_PRELUDE_VOICE", "").strip()
+    if forced:
+        return forced
+
+    default_voice = os.environ.get("KOKORO_VOICE", "bm_george").strip() or "bm_george"
+    return default_voice if default_voice in builtin_voices or not builtin_voices else sorted(builtin_voices)[0]
+
+
 async def _stream_processing_prelude(ws: WebSocket, voice, voice_profile: Optional[str]) -> None:
-    if voice is None or not hasattr(voice, "synthesize_streaming"):
+    if voice is None or not hasattr(voice, "synthesize"):
         return
 
     prelude_text = _pick_processing_prelude()
-    logger.info(f"TTS prelude starting profile={voice_profile!r} text={prelude_text!r}")
+    prelude_profile = _resolve_prelude_voice_profile(voice, voice_profile)
+    logger.info(
+        f"TTS prelude starting requested_profile={voice_profile!r} prelude_profile={prelude_profile!r} text={prelude_text!r}"
+    )
 
-    async def _send_prelude_chunk(audio_bytes: bytes, fmt: str, seq: int) -> None:
-        try:
-            if seq == 0:
-                logger.info(f"TTS prelude first chunk profile={voice_profile!r} format={fmt}")
-            await ws.send_json(
-                {
-                    "type": "tts_prelude_chunk",
-                    "data": base64.b64encode(audio_bytes).decode(),
-                    "format": fmt,
-                    "seq": seq,
-                    "text": prelude_text,
-                }
-            )
-        except Exception as send_exc:
-            raise WebSocketDisconnect() from send_exc
-
-    await asyncio.wait_for(
-        voice.synthesize_streaming(
-            prelude_text,
-            _send_prelude_chunk,
-            voice_profile=voice_profile,
-        ),
+    audio_bytes, fmt = await asyncio.wait_for(
+        voice.synthesize(prelude_text, voice_profile=prelude_profile),
         timeout=12.0,
     )
-    logger.info(f"TTS prelude finished profile={voice_profile!r}")
+    if not audio_bytes:
+        logger.warning(f"TTS prelude returned no audio prelude_profile={prelude_profile!r}")
+        return
+
+    logger.info(f"TTS prelude first chunk profile={prelude_profile!r} format={fmt}")
+    try:
+        await ws.send_json(
+            {
+                "type": "tts_prelude_chunk",
+                "data": base64.b64encode(audio_bytes).decode(),
+                "format": fmt,
+                "seq": 0,
+                "text": prelude_text,
+            }
+        )
+    except Exception as send_exc:
+        raise WebSocketDisconnect() from send_exc
+    logger.info(f"TTS prelude finished profile={prelude_profile!r}")
 
 
 async def _play_processing_prelude(ws: WebSocket, voice, voice_profile: Optional[str]) -> None:
