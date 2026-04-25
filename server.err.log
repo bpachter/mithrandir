@@ -1,4 +1,24 @@
-INFO:     Started server process [50552]
+INFO:     Started server process [6904]
 INFO:     Waiting for application startup.
+2026-04-25 01:54:15,572 INFO mithrandir.ui: Voice module loaded.
+2026-04-25 01:54:15,573 INFO mithrandir.ui: Voice pre-warm started (background thread).
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-04-25 01:54:15,575 INFO mithrandir.ui: Prelude cache warmup starting profile='mithrandir'
+2026-04-25 01:54:15,577 INFO mithrandir.voice: Starting F5-TTS worker process…
+2026-04-25 01:54:17,039 INFO mithrandir.voice.optim: Tensor cores enabled (TF32+cuDNN benchmark) on NVIDIA GeForce RTX 4090
+2026-04-25 01:54:17,040 INFO mithrandir.voice: Pre-warming Kokoro…
+2026-04-25 01:54:23,558 INFO mithrandir.voice: Loading Kokoro pipeline (lang=b)…
+C:\Users\benpa\AppData\Roaming\Python\Python312\site-packages\torch\nn\modules\rnn.py:123: UserWarning: dropout option adds dropout after all but last recurrent layer, so non-zero dropout expects num_layers greater than 1, but got dropout=0.2 and num_layers=1
+  warnings.warn(
+C:\Users\benpa\AppData\Roaming\Python\Python312\site-packages\torch\nn\utils\weight_norm.py:143: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+2026-04-25 01:54:25,400 INFO mithrandir.voice: Kokoro ready.
+2026-04-25 01:54:26,875 INFO mithrandir.voice: Kokoro: 'Online.…' \u2192 79,724 bytes (voice=bm_george)
+2026-04-25 01:54:26,876 INFO mithrandir.voice.optim: Kokoro warmup pass 1/3: ok
+2026-04-25 01:54:27,756 INFO mithrandir.voice: Kokoro: 'Initialising.…' \u2192 97,004 bytes (voice=bm_george)
+2026-04-25 01:54:27,757 INFO mithrandir.voice.optim: Kokoro warmup pass 2/3: ok
+2026-04-25 01:54:28,427 INFO mithrandir.voice: F5-TTS worker ready.
+2026-04-25 01:54:28,632 INFO mithrandir.voice: Kokoro: 'Ready when you are.…' \u2192 114,284 bytes (voice=bm_george)
+2026-04-25 01:54:28,633 INFO mithrandir.voice.optim: Kokoro warmup pass 3/3: ok
+2026-04-25 01:54:38,590 INFO mithrandir.ui: Prelude cache warmup finished profile='mithrandir'

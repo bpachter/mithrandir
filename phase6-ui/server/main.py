@@ -275,6 +275,7 @@ _VOICE_MAX_B64_CHARS = int(os.environ.get("MITHRANDIR_VOICE_MAX_B64_CHARS", "800
 _VOICE_MAX_RAW_BYTES = int(os.environ.get("MITHRANDIR_VOICE_MAX_RAW_BYTES", "5000000"))
 _VOICE_MIN_RATE = int(os.environ.get("MITHRANDIR_VOICE_MIN_SAMPLE_RATE", "8000"))
 _VOICE_MAX_RATE = int(os.environ.get("MITHRANDIR_VOICE_MAX_SAMPLE_RATE", "48000"))
+_PRELUDE_CACHE_LIMIT = int(os.environ.get("MITHRANDIR_PRELUDE_CACHE_LIMIT", "12"))
 
 _PROCESSING_PRELUDES = [
     "Give me a moment to process your query.",
@@ -348,12 +349,25 @@ _PROCESSING_PRELUDES = [
     "A Wizard is never late, nor is he early. He arrives precisely when he means to.",
 ]
 
+_PRELUDE_AUDIO_CACHE: dict[tuple[str, str], tuple[bytes, str]] = {}
+_PRELUDE_CACHE_LOCK = threading.Lock()
+_PRELUDE_WARMED_PROFILES: set[str] = set()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:4173", "http://localhost:8000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def _startup_prelude_warmup() -> None:
+    voice = _get_voice()
+    if voice is None:
+        return
+    startup_profile = _effective_voice_profile(None)
+    _start_prelude_cache_warmup(voice, startup_profile)
 
 # ---------------------------------------------------------------------------
 # Dev panel password gate — protects ALL /api/dev/* endpoints
@@ -815,43 +829,135 @@ def _pick_processing_prelude() -> str:
     return random.choice(_PROCESSING_PRELUDES)
 
 
-def _resolve_prelude_voice_profile(voice, requested_profile: Optional[str]) -> Optional[str]:
-    profile = (requested_profile or "").strip()
+async def _synthesize_prelude_strict(voice, text: str, requested_profile: Optional[str]) -> tuple[bytes, str, Optional[str]]:
+    if voice is None:
+        return b"", "wav", None
+
+    profile = requested_profile
+    if hasattr(voice, "_resolve_voice_profile"):
+        try:
+            profile = voice._resolve_voice_profile(requested_profile)
+        except Exception:
+            profile = requested_profile
+
+    profile = (profile or "").strip()
+    if not profile:
+        return b"", "wav", None
+
+    loop = asyncio.get_event_loop()
+
     try:
         builtin_voices = set(voice.list_voices()) if hasattr(voice, "list_voices") else set()
     except Exception:
         builtin_voices = set()
 
-    if profile and profile in builtin_voices:
-        return profile
+    # If the requested profile is already a Kokoro voice, using it is not a fallback.
+    if profile in builtin_voices and hasattr(voice, "_synth_kokoro"):
+        wav = await loop.run_in_executor(None, lambda: voice._synth_kokoro(text, profile))
+        return (wav or b""), "wav", profile
 
-    forced = os.environ.get("MITHRANDIR_PRELUDE_VOICE", "").strip()
-    if forced:
-        return forced
+    clone_ref = None
+    if hasattr(voice, "get_voice_path"):
+        try:
+            clone_ref = voice.get_voice_path(profile)
+        except Exception:
+            clone_ref = None
 
-    default_voice = os.environ.get("KOKORO_VOICE", "bm_george").strip() or "bm_george"
-    return default_voice if default_voice in builtin_voices or not builtin_voices else sorted(builtin_voices)[0]
+    if hasattr(voice, "_styletts2_available") and hasattr(voice, "_synth_styletts2") and voice._styletts2_available():
+        wav = await loop.run_in_executor(None, lambda: voice._synth_styletts2(text))
+        if wav and hasattr(voice, "_postprocess_wav_bytes"):
+            wav = voice._postprocess_wav_bytes(wav, profile)
+        if wav:
+            return wav, "wav", profile
+
+    if clone_ref and hasattr(voice, "_f5_available") and hasattr(voice, "_synth_f5tts") and voice._f5_available():
+        wav = await loop.run_in_executor(None, lambda: voice._synth_f5tts(text, clone_ref))
+        if wav and hasattr(voice, "_postprocess_wav_bytes"):
+            wav = voice._postprocess_wav_bytes(wav, profile)
+        if wav:
+            return wav, "wav", profile
+
+    return b"", "wav", profile
+
+
+def _pick_cached_preludes() -> list[str]:
+    ranked = sorted(_PROCESSING_PRELUDES, key=len)
+    return ranked[: max(1, min(_PRELUDE_CACHE_LIMIT, len(ranked)))]
+
+
+async def _warm_prelude_cache_async(voice, requested_profile: Optional[str]) -> None:
+    profile = (requested_profile or "").strip()
+    if not profile:
+        return
+
+    with _PRELUDE_CACHE_LOCK:
+        if profile in _PRELUDE_WARMED_PROFILES:
+            return
+        _PRELUDE_WARMED_PROFILES.add(profile)
+
+    logger.info(f"Prelude cache warmup starting profile={profile!r}")
+    for line in _pick_cached_preludes():
+        key = (profile, line)
+        with _PRELUDE_CACHE_LOCK:
+            if key in _PRELUDE_AUDIO_CACHE:
+                continue
+        try:
+            audio_bytes, fmt, actual_profile = await _synthesize_prelude_strict(voice, line, profile)
+            if audio_bytes and actual_profile:
+                with _PRELUDE_CACHE_LOCK:
+                    _PRELUDE_AUDIO_CACHE[(actual_profile, line)] = (audio_bytes, fmt)
+        except Exception as exc:
+            logger.warning(f"Prelude cache warmup failed profile={profile!r} text={line!r}: {exc}")
+    logger.info(f"Prelude cache warmup finished profile={profile!r}")
+
+
+def _start_prelude_cache_warmup(voice, requested_profile: Optional[str]) -> None:
+    profile = (requested_profile or "").strip()
+    if not profile:
+        return
+
+    def _runner() -> None:
+        try:
+            asyncio.run(_warm_prelude_cache_async(voice, profile))
+        except Exception as exc:
+            logger.warning(f"Prelude cache background warmup failed profile={profile!r}: {exc}")
+
+    threading.Thread(target=_runner, daemon=True).start()
 
 
 async def _stream_processing_prelude(ws: WebSocket, voice, voice_profile: Optional[str]) -> None:
-    if voice is None or not hasattr(voice, "synthesize"):
+    if voice is None:
         return
 
     prelude_text = _pick_processing_prelude()
-    prelude_profile = _resolve_prelude_voice_profile(voice, voice_profile)
+    requested_profile = (voice_profile or "").strip() or None
+    cache_key = ((requested_profile or "").strip(), prelude_text)
     logger.info(
-        f"TTS prelude starting requested_profile={voice_profile!r} prelude_profile={prelude_profile!r} text={prelude_text!r}"
+        f"TTS prelude starting requested_profile={requested_profile!r} text={prelude_text!r}"
     )
 
-    audio_bytes, fmt = await asyncio.wait_for(
-        voice.synthesize(prelude_text, voice_profile=prelude_profile),
-        timeout=12.0,
-    )
+    with _PRELUDE_CACHE_LOCK:
+        cached = _PRELUDE_AUDIO_CACHE.get(cache_key)
+
+    if cached:
+        audio_bytes, fmt = cached
+        actual_profile = requested_profile
+        logger.info(f"TTS prelude cache hit profile={actual_profile!r} format={fmt}")
+    else:
+        _start_prelude_cache_warmup(voice, requested_profile)
+        audio_bytes, fmt, actual_profile = await asyncio.wait_for(
+            _synthesize_prelude_strict(voice, prelude_text, requested_profile),
+            timeout=12.0,
+        )
+        if audio_bytes and actual_profile:
+            with _PRELUDE_CACHE_LOCK:
+                _PRELUDE_AUDIO_CACHE[(actual_profile, prelude_text)] = (audio_bytes, fmt)
+
     if not audio_bytes:
-        logger.warning(f"TTS prelude returned no audio prelude_profile={prelude_profile!r}")
+        logger.warning(f"TTS prelude skipped because requested profile produced no audio profile={requested_profile!r}")
         return
 
-    logger.info(f"TTS prelude first chunk profile={prelude_profile!r} format={fmt}")
+    logger.info(f"TTS prelude first chunk profile={actual_profile!r} format={fmt}")
     try:
         await ws.send_json(
             {
@@ -864,7 +970,7 @@ async def _stream_processing_prelude(ws: WebSocket, voice, voice_profile: Option
         )
     except Exception as send_exc:
         raise WebSocketDisconnect() from send_exc
-    logger.info(f"TTS prelude finished profile={prelude_profile!r}")
+    logger.info(f"TTS prelude finished profile={actual_profile!r}")
 
 
 async def _play_processing_prelude(ws: WebSocket, voice, voice_profile: Optional[str]) -> None:
