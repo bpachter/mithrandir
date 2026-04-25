@@ -1483,7 +1483,7 @@ async def synthesize(text: str, voice_profile: Optional[str] = None) -> tuple[by
             wav = _postprocess_wav_bytes(wav, profile)
             logger.info(f"TTS backend=StyleTTS2 profile={profile!r}")
             return wav, "wav"
-        logger.warning("StyleTTS2 failed, falling back to Kokoro…")
+        logger.warning("StyleTTS2 failed, falling back to F5…")
 
     # 2. F5-TTS voice clone from reference file (wav/mp3).
     if clone_ref and _f5_available():
@@ -1493,16 +1493,9 @@ async def synthesize(text: str, voice_profile: Optional[str] = None) -> tuple[by
             wav = _postprocess_wav_bytes(wav, profile)
             logger.info(f"TTS backend=F5 profile={profile!r} success")
             return wav, "wav"
-        logger.warning(f"F5-TTS failed for profile '{profile}', falling back to Kokoro…")
+        logger.warning(f"F5-TTS failed for profile '{profile}', falling back to edge-tts…")
 
-    # 3. Kokoro (primary local fallback path).
-    wav = await loop.run_in_executor(None, lambda: _synth_kokoro(text, profile))
-    if wav:
-        logger.info(f"TTS backend=Kokoro profile={profile!r}")
-        return wav, "wav"
-    logger.warning("Kokoro failed, falling back to edge-tts…")
-
-    # 4. edge-tts (cloud)
+    # 3. edge-tts (cloud fallback — no Kokoro).
     mp3 = await _synth_edge_tts(text)
     if mp3:
         return mp3, "mp3"
@@ -1526,12 +1519,10 @@ async def synthesize_streaming(
     """
     Sentence-split streaming TTS.
 
-    For built-in Kokoro voices, each sentence is synthesised directly with Kokoro
-    (~50-100 ms each) — the client starts playing sentence 0 while the server
-    generates sentence 1.
-
-    Streaming path is Kokoro-first for all profiles to prioritize reliability and
-    low latency.
+    For cloned voice profiles, each sentence is synthesised with F5-TTS (~1-3s
+    per sentence when the worker is warm). The client starts playing sentence 0
+    while the server generates sentence 1. Falls back to edge-tts if F5 fails.
+    No Kokoro path.
     """
     text = _strip_markdown(text)
     if not text.strip():
@@ -1560,11 +1551,6 @@ async def synthesize_streaming(
             if wav:
                 wav = _postprocess_wav_bytes(wav, profile)
                 logger.info(f"TTS stream backend=F5 profile={profile!r} success seq={seq}")
-
-        if not wav:
-            wav = await loop.run_in_executor(None, lambda s=sentence: _synth_kokoro(s, profile))
-            if wav:
-                logger.info(f"TTS stream backend=Kokoro profile={profile!r} seq={seq}")
 
         if wav:
             await on_sentence(wav, "wav", seq)

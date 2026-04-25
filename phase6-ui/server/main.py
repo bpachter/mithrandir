@@ -825,7 +825,14 @@ def _normalize_issue_tags(tags: str | list[str]) -> str:
     return str(tags or "").strip()
 
 
-def _pick_processing_prelude() -> str:
+def _pick_processing_prelude(preferred_profile: Optional[str] = None) -> str:
+    """Pick a prelude phrase, preferring ones that are already cached for this profile."""
+    if preferred_profile:
+        profile_key = preferred_profile.strip()
+        with _PRELUDE_CACHE_LOCK:
+            cached_phrases = [text for (prof, text) in _PRELUDE_AUDIO_CACHE if prof == profile_key]
+        if cached_phrases:
+            return random.choice(cached_phrases)
     return random.choice(_PROCESSING_PRELUDES)
 
 
@@ -845,16 +852,6 @@ async def _synthesize_prelude_strict(voice, text: str, requested_profile: Option
         return b"", "wav", None
 
     loop = asyncio.get_event_loop()
-
-    try:
-        builtin_voices = set(voice.list_voices()) if hasattr(voice, "list_voices") else set()
-    except Exception:
-        builtin_voices = set()
-
-    # If the requested profile is already a Kokoro voice, using it is not a fallback.
-    if profile in builtin_voices and hasattr(voice, "_synth_kokoro"):
-        wav = await loop.run_in_executor(None, lambda: voice._synth_kokoro(text, profile))
-        return (wav or b""), "wav", profile
 
     clone_ref = None
     if hasattr(voice, "get_voice_path"):
@@ -929,7 +926,7 @@ async def _stream_processing_prelude(ws: WebSocket, voice, voice_profile: Option
     if voice is None:
         return
 
-    prelude_text = _pick_processing_prelude()
+    prelude_text = _pick_processing_prelude(preferred_profile=(voice_profile or "").strip() or None)
     requested_profile = (voice_profile or "").strip() or None
     cache_key = ((requested_profile or "").strip(), prelude_text)
     logger.info(
@@ -947,7 +944,7 @@ async def _stream_processing_prelude(ws: WebSocket, voice, voice_profile: Option
         _start_prelude_cache_warmup(voice, requested_profile)
         audio_bytes, fmt, actual_profile = await asyncio.wait_for(
             _synthesize_prelude_strict(voice, prelude_text, requested_profile),
-            timeout=12.0,
+            timeout=30.0,
         )
         if audio_bytes and actual_profile:
             with _PRELUDE_CACHE_LOCK:

@@ -164,3 +164,49 @@ INFO:     connection open
 2026-04-25 02:08:35,155 ERROR mithrandir.voice: F5-TTS timed out for profile: C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav
 2026-04-25 02:08:37,170 INFO mithrandir.voice: Kokoro: 'We can always keep the idea of a multi-m…' \u2192 893,324 bytes (voice=bm_george)
 2026-04-25 02:08:37,172 INFO mithrandir.voice: TTS stream backend=Kokoro profile='mithrandir' seq=5
+INFO:     connection closed
+INFO:     connection closed
+INFO:     connection closed
+2026-04-25 02:10:32,395 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 02:10:32,400 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 02:10:32,431 INFO regime_detector: Feature data refreshed through 2026-04-24
+INFO:     162.220.232.110:0 - "WebSocket /ws/chat" [accepted]
+INFO:     connection open
+INFO:     162.220.232.110:0 - "WebSocket /ws/gpu" [accepted]
+INFO:     connection open
+INFO:     162.220.232.110:0 - "WebSocket /ws/voice" [accepted]
+INFO:     connection open
+2026-04-25 02:10:57,635 INFO faster_whisper: Processing audio with duration 00:12.715
+2026-04-25 02:10:57,669 INFO faster_whisper: VAD filter removed 00:02.635 of audio
+2026-04-25 02:10:58,039 INFO mithrandir.ui: TTS prelude starting requested_profile='mithrandir' text='I am with you. Give me a moment to compute this.'
+2026-04-25 02:10:58,042 INFO mithrandir.voice: Starting F5-TTS worker process…
+2026-04-25 02:11:10,060 WARNING mithrandir.ui: Processing prelude failed: 
+2026-04-25 02:11:12,893 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 02:11:12,894 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 02:11:12,923 INFO regime_detector: Feature data refreshed through 2026-04-24
+2026-04-25 02:11:14,899 INFO mithrandir.voice: F5-TTS worker ready.
+2026-04-25 02:11:45,238 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=0
+2026-04-25 02:11:45,248 WARNING mithrandir.ui: speech_quality unavailable: No module named 'pydantic_settings'
+2026-04-25 02:11:48,385 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=0
+2026-04-25 02:11:48,425 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=1
+2026-04-25 02:11:50,300 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=1
+2026-04-25 02:11:50,337 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=2
+2026-04-25 02:11:52,126 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=2
+2026-04-25 02:11:52,143 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=3
+2026-04-25 02:11:54,318 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=3
+2026-04-25 02:11:54,398 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=4
+2026-04-25 02:11:56,364 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=4
+2026-04-25 02:11:56,403 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=5
+2026-04-25 02:11:58,353 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=5
+2026-04-25 02:11:58,398 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=6
+2026-04-25 02:12:01,677 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=6
+2026-04-25 02:12:01,734 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=7
+2026-04-25 02:12:03,520 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=7
+2026-04-25 02:12:03,539 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=8
+2026-04-25 02:12:05,468 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=8
+2026-04-25 02:12:05,516 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=9
+2026-04-25 02:12:07,575 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=9
+2026-04-25 02:12:07,648 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=10
+2026-04-25 02:12:10,804 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=10
+2026-04-25 02:12:10,858 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=11
+2026-04-25 02:12:14,070 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=11
