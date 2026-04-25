@@ -7,9 +7,9 @@ save_freq: 5
 log_interval: 10
 device: "cuda"
 
-epochs: 50
-batch_size: 8
-max_len: 300
+epochs: 100
+batch_size: 4
+max_len: 200
 
 pretrained_model: "../pretrained/StyleTTS2-LibriTTS/epochs_2nd_00020.pth"
 second_stage_load_pretrained: true
@@ -81,6 +81,8 @@ loss_params:
   lambda_ce: 20.0
   lambda_sty: 1.0
   lambda_diff: 1.0
+  lambda_mono: 0.0
+  lambda_s2s: 0.0
   diff_epoch: 10
   joint_epoch: 30
 
