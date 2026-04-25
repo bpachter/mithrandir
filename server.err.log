@@ -210,3 +210,6 @@ INFO:     connection open
 2026-04-25 02:12:10,804 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=10
 2026-04-25 02:12:10,858 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=11
 2026-04-25 02:12:14,070 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=11
+INFO:     connection closed
+INFO:     connection closed
+INFO:     connection closed

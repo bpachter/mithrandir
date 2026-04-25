@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 # F5_SPEED: >1.0 = faster speech (1.1 = 10% faster). Tunable via env var.
 # F5_CFG_STRENGTH: higher = model adheres more strictly to gen_text, reducing
 #   reference-audio phrase bleed (hallucinations like "ever shown"). Default 2.0.
-_F5_SPEED        = float(os.environ.get("F5_SPEED",        "1.1"))
+_F5_SPEED        = float(os.environ.get("F5_SPEED",        "1.2"))
 _F5_CFG_STRENGTH = float(os.environ.get("F5_CFG_STRENGTH", "2.5"))
 
 # ── Add ffmpeg to PATH so torchaudio / soundfile can find it ─────────────────
