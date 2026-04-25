@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore")
 # F5_CFG_STRENGTH: higher = model adheres more strictly to gen_text, reducing
 #   reference-audio phrase bleed (hallucinations like "ever shown"). Default 2.0.
 _F5_SPEED        = float(os.environ.get("F5_SPEED",        "1.2"))
-_F5_CFG_STRENGTH = float(os.environ.get("F5_CFG_STRENGTH", "2.5"))
+_F5_CFG_STRENGTH = float(os.environ.get("F5_CFG_STRENGTH", "3.0"))
 
 # ── Add ffmpeg to PATH so torchaudio / soundfile can find it ─────────────────
 # Set FFMPEG_DIR in .env to point at the bin/ folder containing ffmpeg.exe.
@@ -86,7 +86,8 @@ for line in sys.stdin:
                 ref_text        =ref_text,  # pass through: "" → auto-transcribe, else use as-is
                 gen_text        =text,
                 seed            =-1,
-                remove_silence  =True,   # VAD-trim trailing artifacts / hallucinated speech
+                remove_silence  =False,  # disabled: F5's VAD clips leading consonants;
+                                         # tail artifacts handled by _vad_trim in voice.py
                 speed           =_F5_SPEED,
                 cfg_strength    =_F5_CFG_STRENGTH,
             )
@@ -95,11 +96,17 @@ for line in sys.stdin:
             sys.stdout = _real_stdout
 
         # wav may be numpy array or tensor — normalise to tensor
+        import numpy as np
         if not isinstance(wav, torch.Tensor):
-            import numpy as np
-            wav = torch.from_numpy(np.array(wav))
+            wav = torch.from_numpy(np.array(wav, dtype=np.float32))
         if wav.dim() == 1:
             wav = wav.unsqueeze(0)
+
+        # Prepend 50 ms of silence so the audio player doesn't clip the first
+        # consonant while buffering/decoding the stream.
+        pad_samples = int(sr * 0.05)
+        silence = torch.zeros(wav.shape[0], pad_samples, dtype=wav.dtype)
+        wav = torch.cat([silence, wav], dim=1)
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
             out_path = f.name
