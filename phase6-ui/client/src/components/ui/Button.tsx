@@ -1,5 +1,5 @@
 /**
- * Gandalf — UI primitives: <Button>, <IconButton>, <Badge>, <StatusDot>
+ * Mithrandir — UI primitives: <Button>, <IconButton>, <Badge>, <StatusDot>
  */
 import { cva, type VariantProps } from 'class-variance-authority'
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react'

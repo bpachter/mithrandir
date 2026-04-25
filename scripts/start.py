@@ -1,5 +1,5 @@
 """
-scripts/start.py — One-command Gandalf launcher with readiness checks.
+scripts/start.py — One-command Mithrandir launcher with readiness checks.
 
 Starts:
   1. FastAPI backend (phase6-ui/server/main.py)
@@ -15,7 +15,7 @@ Usage:
 
 Environment:
     Reads .env from the project root.
-    GANDALF_FORCE_LOCAL_ONLY=1 skips Ollama availability warning.
+    MITHRANDIR_FORCE_LOCAL_ONLY=1 skips Ollama availability warning.
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ _procs: list[subprocess.Popen] = []
 
 
 def _cleanup(*_):
-    print(f"\n  {YELLOW}Shutting down Gandalf...{RESET}")
+    print(f"\n  {YELLOW}Shutting down Mithrandir...{RESET}")
     for p in _procs:
         try:
             p.terminate()
@@ -131,7 +131,7 @@ def _pre_flight():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Start Gandalf")
+    parser = argparse.ArgumentParser(description="Start Mithrandir")
     parser.add_argument("--port", type=int, default=8000, help="Backend port (default: 8000)")
     parser.add_argument("--no-browser", action="store_true", help="Don't auto-open browser")
     parser.add_argument("--backend-only", action="store_true", help="Skip React dev server")
@@ -148,11 +148,11 @@ def main():
     signal.signal(signal.SIGINT,  _cleanup)
     signal.signal(signal.SIGTERM, _cleanup)
 
-    print(f"\n{BOLD}{CYAN}  Gandalf{RESET}  Starting up…\n")
+    print(f"\n{BOLD}{CYAN}  Mithrandir{RESET}  Starting up…\n")
 
     if args.health_check:
         print(f"  Running health check...\n")
-        code = subprocess.call([sys.executable, str(_ROOT / "gandalf_health.py")])
+        code = subprocess.call([sys.executable, str(_ROOT / "mithrandir_health.py")])
         if code != 0:
             print(f"\n  {YELLOW}Health check found issues. Continue anyway? {RESET}", end="")
             if input("[y/N] ").strip().lower() not in ("y", "yes"):
@@ -190,7 +190,7 @@ def main():
     # First-run UX
     print(f"""
   ┌─────────────────────────────────────────────────────┐
-  │  Gandalf is ready                                    │
+  │  Mithrandir is ready                                    │
   │                                                     │
   │  UI:      {frontend_url:<41} │
   │  Backend: http://localhost:{args.port}/api/health{' ' * (14 - len(str(args.port)))} │

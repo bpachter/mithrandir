@@ -1,12 +1,12 @@
 """
-gandalf.py — main entry point
+mithrandir.py — main entry point
 
 An interactive CLI loop that routes queries to local Gemma (via Ollama)
 or Claude API based on complexity, streams the response, and reports
 basic performance stats.
 
 Usage:
-    python gandalf.py
+    python mithrandir.py
 
 Commands (type during the session):
     /local   — force next query to local Gemma
@@ -186,7 +186,7 @@ def main():
     session = SessionStats()
     force_tier = None  # Set by /local or /cloud commands
 
-    print(f"\n{CYAN}Gandalf{RESET} — local AI assistant")
+    print(f"\n{CYAN}Mithrandir{RESET} — local AI assistant")
     print(f"{GREY}Local model:  {OLLAMA_MODEL} via Ollama")
     print(f"Cloud model:  {CLAUDE_MODEL} via Anthropic API")
     print(f"Commands:     /local  /cloud  /stats  /refresh  /exit{RESET}\n")

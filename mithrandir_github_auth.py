@@ -1,21 +1,21 @@
 """
-gandalf_github_auth.py — Generate a GitHub installation token for the Gandalf bot.
+mithrandir_github_auth.py — Generate a GitHub installation token for the Mithrandir bot.
 
-The Gandalf GitHub App authenticates using a private key (RSA JWT) to get a
+The Mithrandir GitHub App authenticates using a private key (RSA JWT) to get a
 short-lived installation access token. This token is used as the git credential
-when Gandalf makes autonomous commits (alert_engine, signal_logger, etc.).
+when Mithrandir makes autonomous commits (alert_engine, signal_logger, etc.).
 
 Usage:
-    python gandalf_github_auth.py          # prints the token
-    python gandalf_github_auth.py --config # writes git config for this repo
+    python mithrandir_github_auth.py          # prints the token
+    python mithrandir_github_auth.py --config # writes git config for this repo
 
 Requirements:
     pip install PyJWT cryptography requests
 
 Environment variables (add to .env):
-    GANDALF_GITHUB_APP_ID=<your app id>
-    GANDALF_GITHUB_INSTALLATION_ID=<your installation id>
-    GANDALF_GITHUB_PRIVATE_KEY_PATH=C:/Users/benpa/.secrets/gandalf-bot.pem
+    MITHRANDIR_GITHUB_APP_ID=<your app id>
+    MITHRANDIR_GITHUB_INSTALLATION_ID=<your installation id>
+    MITHRANDIR_GITHUB_PRIVATE_KEY_PATH=C:/Users/benpa/.secrets/mithrandir-bot.pem
 """
 
 import os
@@ -36,17 +36,17 @@ except ImportError:
 
 load_dotenv(Path(__file__).parent / ".env")
 
-APP_ID             = os.environ.get("GANDALF_GITHUB_APP_ID")
-INSTALLATION_ID    = os.environ.get("GANDALF_GITHUB_INSTALLATION_ID")
-PRIVATE_KEY_PATH   = os.environ.get("GANDALF_GITHUB_PRIVATE_KEY_PATH")
+APP_ID             = os.environ.get("MITHRANDIR_GITHUB_APP_ID")
+INSTALLATION_ID    = os.environ.get("MITHRANDIR_GITHUB_INSTALLATION_ID")
+PRIVATE_KEY_PATH   = os.environ.get("MITHRANDIR_GITHUB_PRIVATE_KEY_PATH")
 
-# Commit identity — GitHub renders this as "gandalf-4090[bot]"
+# Commit identity — GitHub renders this as "mithrandir-4090[bot]"
 # Format: <bot_user_id>+<app_slug>[bot]@users.noreply.github.com
 # Note: bot_user_id (276127226) is NOT the App ID — it's the user ID GitHub
-# assigns to the bot account. Retrieve with: GET /users/gandalf-4090[bot]
-BOT_NAME     = "gandalf-4090[bot]"
+# assigns to the bot account. Retrieve with: GET /users/mithrandir-4090[bot]
+BOT_NAME     = "mithrandir-4090[bot]"
 BOT_USER_ID  = "276127226"
-BOT_SLUG     = "gandalf-4090"
+BOT_SLUG     = "mithrandir-4090"
 
 
 def _bot_email() -> str:
@@ -57,11 +57,11 @@ def _bot_email() -> str:
 def _generate_jwt() -> str:
     """Sign a JWT with the app's private key. Valid for 10 minutes."""
     if not APP_ID:
-        raise ValueError("GANDALF_GITHUB_APP_ID not set in .env")
+        raise ValueError("MITHRANDIR_GITHUB_APP_ID not set in .env")
     if not PRIVATE_KEY_PATH or not Path(PRIVATE_KEY_PATH).exists():
         raise FileNotFoundError(
             f"Private key not found at: {PRIVATE_KEY_PATH}\n"
-            "Set GANDALF_GITHUB_PRIVATE_KEY_PATH in .env"
+            "Set MITHRANDIR_GITHUB_PRIVATE_KEY_PATH in .env"
         )
     private_key = Path(PRIVATE_KEY_PATH).read_text()
     now = int(time.time())
@@ -76,7 +76,7 @@ def _generate_jwt() -> str:
 def get_installation_token() -> str:
     """Exchange the JWT for a short-lived installation access token."""
     if not INSTALLATION_ID:
-        raise ValueError("GANDALF_GITHUB_INSTALLATION_ID not set in .env")
+        raise ValueError("MITHRANDIR_GITHUB_INSTALLATION_ID not set in .env")
 
     app_jwt = _generate_jwt()
     resp = requests.post(
@@ -94,7 +94,7 @@ def get_installation_token() -> str:
 
 def configure_repo_git(repo_path: str = ".") -> None:
     """
-    Write git config for the Gandalf bot identity in the given repo.
+    Write git config for the Mithrandir bot identity in the given repo.
     Also stores the credential helper so pushes use the bot token.
     """
     token = get_installation_token()
@@ -116,15 +116,15 @@ def configure_repo_git(repo_path: str = ".") -> None:
     for cmd in cmds:
         subprocess.run(cmd, check=True)
 
-    print(f"Git configured for Gandalf bot:")
+    print(f"Git configured for Mithrandir bot:")
     print(f"  user.name  = {BOT_NAME}")
     print(f"  user.email = {email}")
     print(f"  token      = {token[:8]}... (valid ~1 hour)")
 
 
-def commit_as_gandalf(repo_path: str, message: str, files: list[str] = None) -> None:
+def commit_as_mithrandir(repo_path: str, message: str, files: list[str] = None) -> None:
     """
-    Stage the given files (or all changes if None) and commit as Gandalf bot.
+    Stage the given files (or all changes if None) and commit as Mithrandir bot.
     Generates a fresh token automatically.
     """
     token = get_installation_token()
@@ -161,7 +161,7 @@ def commit_as_gandalf(repo_path: str, message: str, files: list[str] = None) -> 
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Gandalf GitHub App auth helper")
+    parser = argparse.ArgumentParser(description="Mithrandir GitHub App auth helper")
     parser.add_argument("--token",   action="store_true", help="Print an installation token")
     parser.add_argument("--config",  action="store_true", help="Write git config for this repo")
     parser.add_argument("--email",   action="store_true", help="Print the bot noreply email")

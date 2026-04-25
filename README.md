@@ -1,8 +1,8 @@
-# Gandalf — Building a Local AI Assistant from Scratch
+# Mithrandir — Building a Local AI Assistant from Scratch
 
 > *A public learning journal and working codebase for building a privacy-first, locally-hosted AI assistant on consumer hardware.*
 
-> Visual placeholder: add `assets/hero-gandalf-ui.png` once captured (see [assets/README.md](./assets/README.md)).
+> Visual placeholder: add `assets/hero-mithrandir-ui.png` once captured (see [assets/README.md](./assets/README.md)).
 
 ## In one paragraph (for non-engineers)
 
@@ -25,7 +25,7 @@ Local-first agentic stack: **Gemma 4 26B (MoE, 18 GB VRAM, ~144 tok/s on a 4090)
 |---|---|
 | Can a normal person actually run a frontier LLM at home? | Yes, if you have an NVIDIA GPU with 8 GB+ VRAM. |
 | What does it cost? | $0 in API fees. You pay for electricity. |
-| Is it as good as ChatGPT / Claude? | For most everyday questions, yes. For the hardest reasoning, Claude is still better — so Gandalf uses Claude *only when needed* and keeps everything else local. |
+| Is it as good as ChatGPT / Claude? | For most everyday questions, yes. For the hardest reasoning, Claude is still better — so Mithrandir uses Claude *only when needed* and keeps everything else local. |
 | How fast is it? | ~144 tokens/second on an RTX 4090 — about 4× the speed I get from a typical cloud API. |
 | Does my data leave the machine? | No, unless you explicitly route a query to the Claude fallback. |
 | How long does setup take? | ~1–2 hours, mostly waiting for the model to download. |
@@ -56,7 +56,7 @@ An LLM (Large Language Model) is a trained neural network — billions of mathem
 
 **Why use both?** Gemma handles the everyday queries cheaply and privately. Claude steps in when you need higher reasoning quality — complex analysis, nuanced writing, tasks where getting it right matters more than cost.
 
-**What Gandalf adds on top:** routing logic, tool use, memory, and an interface. The LLMs are the engines. Gandalf is the car.
+**What Mithrandir adds on top:** routing logic, tool use, memory, and an interface. The LLMs are the engines. Mithrandir is the car.
 
 ---
 
@@ -121,7 +121,7 @@ Interfaces
     └── iPhone (Telegram app)
             Telegram Bot API (short-polling, TLS patched for Windows)
     ↓
-gandalf_agent.py — ReAct loop (Reason → Act → Observe)
+mithrandir_agent.py — ReAct loop (Reason → Act → Observe)
     ↓
 Routing: keyword/ticker heuristic
     ├── Gemma 4 26B via Ollama (local GPU, free)    ← everyday queries
@@ -149,7 +149,7 @@ Voice pipeline (Phase 7)
     → VAD auto-stop (AnalyserNode RMS threshold, 900ms silence window)
     → WebSocket /ws/voice (base64 PCM + sample rate)
     → Whisper base.en (CUDA float16, faster-whisper)
-    → gandalf_agent.run_agent()
+    → mithrandir_agent.run_agent()
     → TTS (5-tier fallback chain, sentence-streamed for low latency):
          1. F5-TTS voice cloning (~1-3s/sentence, uses voices/<profile>.wav reference)
          2. Chatterbox voice cloning (~25s, slower fallback for .wav profiles)
@@ -218,8 +218,8 @@ Make sure you have Python, Git, Docker Desktop, and WSL2 (Windows) installed fro
 ### 2. Clone the repo
 
 ```bash
-git clone https://github.com/bpachter/gandalf.git
-cd gandalf
+git clone https://github.com/bpachter/mithrandir.git
+cd mithrandir
 ```
 
 ### 3. Install Python dependencies
@@ -238,7 +238,7 @@ cp .env.example .env
 ### 5. Verify Claude API works (optional)
 
 ```bash
-python test_claude.py  # Should print: Gandalf lives
+python test_claude.py  # Should print: Mithrandir lives
 ```
 
 ### 6. Set up local inference
@@ -266,14 +266,14 @@ Open `http://localhost:5173` in your browser (dev) or `http://localhost:8000` (p
 **Voice setup:**
 - First launch auto-downloads Whisper `base.en` (~145 MB) on first voice query.
 - F5-TTS voice cloning requires model weights in `phase6-ui/server/f5tts_model/` (~1.3 GB). These files are not tracked in git and must be placed manually.
-- The default voice profile is BMO (Adventure Time). To use a different voice, record 5-8s of clean audio, save as `phase6-ui/server/voices/<name>.wav`, and update `GANDALF_DEFAULT_VOICE` in `.env`.
+- The default voice profile is BMO (Adventure Time). To use a different voice, record 5-8s of clean audio, save as `phase6-ui/server/voices/<name>.wav`, and update `MITHRANDIR_DEFAULT_VOICE` in `.env`.
 
-### 7b. Run Gandalf via Telegram (Phase 3)
+### 7b. Run Mithrandir via Telegram (Phase 3)
 
 ```bash
 # In phase3-agents/
 python telegram_interface.py
-# Or use start_gandalf_bot.bat for Windows startup
+# Or use start_mithrandir_bot.bat for Windows startup
 ```
 
 Commands during the session:
@@ -291,9 +291,9 @@ Commands during the session:
 
 > Visual placeholder: add `assets/phase2-edgar-tool.png` after capture (see [assets/README.md](./assets/README.md)).
 
-> **Plain English:** Public companies in the U.S. are required to file their financials with the SEC. Those filings are free. Gandalf downloads them in bulk, computes a quality + value score for every company, and lets you ask plain-English questions like "what's undervalued right now?" The model doesn't *know* the answer — it *looks it up* from real filings before answering.
+> **Plain English:** Public companies in the U.S. are required to file their financials with the SEC. Those filings are free. Mithrandir downloads them in bulk, computes a quality + value score for every company, and lets you ask plain-English questions like "what's undervalued right now?" The model doesn't *know* the answer — it *looks it up* from real filings before answering.
 
-Gandalf includes a quantitative value investment screener built directly into the tool pipeline. When you ask about stocks or financial data, it automatically:
+Mithrandir includes a quantitative value investment screener built directly into the tool pipeline. When you ask about stocks or financial data, it automatically:
 
 1. Detects the query is financial (keyword match or uppercase ticker like `AAPL`)
 2. Fetches the relevant data from the local EDGAR dataset
@@ -332,12 +332,12 @@ Data is stored outside the repo (GB-scale). Set `QV_PATH` in `.env` to point to 
 ## Repo Structure
 
 ```
-gandalf/
+mithrandir/
 ├── README.md                         # You are here
 ├── JOURNEY.md                        # Running log of what was built and broken
 ├── .env.example                      # Secret template — copy to .env and fill in
 ├── requirements.txt                  # Core Python dependencies
-├── gandalf.py                         # Phase 0–2 entry point (REPL)
+├── mithrandir.py                         # Phase 0–2 entry point (REPL)
 ├── test_claude.py                    # Phase 0: Claude API proof of concept
 │
 ├── phase1-local-inference/           # Docker + Ollama + Open WebUI setup
@@ -360,7 +360,7 @@ gandalf/
 │       └── data/                     # NOT in git — GB-scale EDGAR + market data
 │
 ├── phase3-agents/                    # Agentic orchestration
-│   ├── gandalf_agent.py               # ReAct loop — Reason → Act → Observe; Gemma/Claude routing
+│   ├── mithrandir_agent.py               # ReAct loop — Reason → Act → Observe; Gemma/Claude routing
 │   ├── telegram_interface.py         # Telegram bot + TLS fix + lighting hooks + crash isolation
 │   ├── requirements.txt              # pyTelegramBotAPI, pydantic, anthropic, tavily-python, ddgs
 │   └── tools/
@@ -400,7 +400,7 @@ gandalf/
         │   ├── index.css             # Blade Runner design system — CSS variables + grid
         │   └── components/
         │       ├── ChatPanel.tsx     # Unified chat + voice (VAD mic, oscilloscope waveform, audio queue)
-        │       ├── DocsPanel.tsx     # CUDA/GPU docs browser with "Ask Gandalf" integration
+        │       ├── DocsPanel.tsx     # CUDA/GPU docs browser with "Ask Mithrandir" integration
         │       ├── GpuHistoryPanel.tsx # iCUE-style sparkline history charts (Recharts)
         │       ├── MarketPanel.tsx   # Regime badge + QV portfolio picks
         │       ├── ModelParamsPanel.tsx # Gemma parameter sliders
@@ -418,6 +418,6 @@ The honest, unfiltered log of what was actually done (including mistakes) lives 
 
 ---
 
-## Why "Gandalf"?
+## Why "Mithrandir"?
 
-Gandalf is the final persona: local-first, watchful, patient, and authoritative without feeling sterile. The name fits what the system has become: less generic assistant, more resident wizard at the edge of the machine.
+Mithrandir is the final persona: local-first, watchful, patient, and authoritative without feeling sterile. The name fits what the system has become: less generic assistant, more resident wizard at the edge of the machine.

@@ -27,7 +27,7 @@ export default function Header() {
 
   return (
     <header className="app-header panel">
-      <span className="header-logo">GANDALF</span>
+      <span className="header-logo">MITHRANDIR</span>
       <span className="hidden h-5 w-px bg-border md:inline-block" />
       <div className="hidden items-center gap-2 text-2xs uppercase tracking-[0.18em] text-muted md:flex">
         <span className="font-display font-semibold text-fg-strong">v8.0</span>

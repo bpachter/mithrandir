@@ -1,5 +1,5 @@
 """
-startup_lighting.py — Gandalf idle lighting at Windows logon
+startup_lighting.py — Mithrandir idle lighting at Windows logon
 
 Sets the Alienware tower and Corsair keyboard to idle blue and keeps
 them there.  Run at logon via Task Scheduler (see install_startup_lighting.bat).
@@ -8,7 +8,7 @@ them there.  Run at logon via Task Scheduler (see install_startup_lighting.bat).
 - AlienFX:      sets idle blue on the tower; re-applies every 30 s in case
                 Alienware Command Center briefly takes the colors back.
 
-Runs silently in the background.  The Gandalf bot will call
+Runs silently in the background.  The Mithrandir bot will call
 lighting.inference_start() / inference_stop() to override these colors
 during inference — that still works because both processes share the same
 SDK connection state; the bot overrides our colors, then we restore them
@@ -20,7 +20,7 @@ import time
 import signal
 import logging
 
-# ── Point Python at the Gandalf package so we can reuse lighting.py ──────────
+# ── Point Python at the Mithrandir package so we can reuse lighting.py ──────────
 import os
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _TOOLS = os.path.join(_HERE, "phase2-tool-use", "tools")
@@ -84,7 +84,7 @@ def main():
     # Tower: leave entirely to AWCC — no LightFX calls at idle.
 
     # Keyboard: wait for iCUE, then release Corsair SDK control so iCUE
-    # runs its own theme.  The Gandalf bot takes over both devices during
+    # runs its own theme.  The Mithrandir bot takes over both devices during
     # inference and releases them again when it finishes.
     icue_ok = _wait_for_icue(timeout_s=120)
     if icue_ok:

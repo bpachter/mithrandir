@@ -1,5 +1,5 @@
 """
-tests/test_health.py — Fast unit tests for gandalf_health checks.
+tests/test_health.py — Fast unit tests for mithrandir_health checks.
 
 These tests do NOT call LLMs or external services. They verify:
   - Health check module imports cleanly
@@ -18,7 +18,7 @@ from pathlib import Path
 _ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(_ROOT))
 
-import gandalf_health as health
+import mithrandir_health as health
 
 
 def _assert(cond: bool, msg: str):

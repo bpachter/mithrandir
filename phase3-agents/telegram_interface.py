@@ -1,5 +1,5 @@
 """
-telegram_interface.py — Telegram bot for Gandalf (Phase 3)
+telegram_interface.py — Telegram bot for Mithrandir (Phase 3)
 
 Uses pyTelegramBotAPI (telebot) with requests-based HTTP — avoids the
 anyio/Windows TLS incompatibility in python-telegram-bot v21+.
@@ -61,7 +61,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=logging.INFO,
 )
-logger = logging.getLogger("gandalf.telegram")
+logger = logging.getLogger("mithrandir.telegram")
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("TeleBot").setLevel(logging.WARNING)
 
@@ -91,12 +91,12 @@ try:
 except ValueError:
     ALLOWED_USER_ID = 0
 
-# Add phase3-agents/ to path so gandalf_agent can be imported
+# Add phase3-agents/ to path so mithrandir_agent can be imported
 _here = os.path.dirname(os.path.abspath(__file__))
 if _here not in sys.path:
     sys.path.insert(0, _here)
 
-from gandalf_agent import run_agent  # noqa: E402
+from mithrandir_agent import run_agent  # noqa: E402
 
 # Lighting initialize — sets idle blue at startup (optional, no-op if unavailable)
 try:
@@ -233,7 +233,7 @@ def cmd_start(message: Message):
         return
     bot.reply_to(
         message,
-        "Gandalf online.\n\n"
+        "Mithrandir online.\n\n"
         "Ask me anything about stocks, the QV portfolio, or your system.\n"
         "Commands: /help /stats /refresh",
     )
@@ -617,7 +617,7 @@ def main():
         print("Error: TELEGRAM_ALLOWED_USER_ID not set in .env")
         return
 
-    print("Gandalf Telegram bot online")
+    print("Mithrandir Telegram bot online")
     print(f"Authorized user ID: {ALLOWED_USER_ID}")
 
     _wait_for_network()

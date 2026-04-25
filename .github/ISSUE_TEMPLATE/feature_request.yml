@@ -5,14 +5,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Got an idea? We want to hear it — especially if it makes Gandalf wiser, faster, or more useful for local AI work.
+        Got an idea? We want to hear it — especially if it makes Mithrandir wiser, faster, or more useful for local AI work.
 
   - type: textarea
     id: problem
     attributes:
       label: Problem or motivation
       description: What gap are you trying to fill?
-      placeholder: "e.g. I often want to ask Gandalf about a stock while I'm away from my desk. Telegram support would help."
+      placeholder: "e.g. I often want to ask Mithrandir about a stock while I'm away from my desk. Telegram support would help."
     validations:
       required: true
 

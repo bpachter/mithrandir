@@ -1,23 +1,23 @@
-# Gandalf in Open WebUI
+# Mithrandir in Open WebUI
 
-This setup exposes the Phase 3 Gandalf agent inside Open WebUI without using OpenAI or any OpenAI-compatible API.
+This setup exposes the Phase 3 Mithrandir agent inside Open WebUI without using OpenAI or any OpenAI-compatible API.
 
 Architecture:
 
 ```
 Open WebUI function
     -> host.docker.internal:8011/chat
-    -> gandalf_openwebui_bridge.py
-    -> gandalf_agent.py
-    -> existing Gandalf tools + Ollama + Claude fallback + memory
+    -> mithrandir_openwebui_bridge.py
+    -> mithrandir_agent.py
+    -> existing Mithrandir tools + Ollama + Claude fallback + memory
 ```
 
 ## What this is
 
-- `gandalf_openwebui_bridge.py` runs on your Windows host and exposes a small local HTTP endpoint.
-- `openwebui_gandalf_function.py` is a native Open WebUI function you import into the UI.
+- `mithrandir_openwebui_bridge.py` runs on your Windows host and exposes a small local HTTP endpoint.
+- `openwebui_mithrandir_function.py` is a native Open WebUI function you import into the UI.
 - Telegram keeps working unchanged.
-- Open WebUI becomes a second interface to the same Gandalf agent stack.
+- Open WebUI becomes a second interface to the same Mithrandir agent stack.
 
 ## What this is not
 
@@ -30,14 +30,14 @@ Open WebUI function
 From the repo root:
 
 ```powershell
-.\start_gandalf_openwebui_bridge.bat
+.\start_mithrandir_openwebui_bridge.bat
 ```
 
 Or directly:
 
 ```powershell
 cd phase3-agents
-C:\Python312\python.exe gandalf_openwebui_bridge.py
+C:\Python312\python.exe mithrandir_openwebui_bridge.py
 ```
 
 Default address:
@@ -59,10 +59,10 @@ In Open WebUI:
 1. Open `Admin Panel`
 2. Open `Functions`
 3. Create a new function
-4. Paste the contents of `phase3-agents/openwebui_gandalf_function.py`
+4. Paste the contents of `phase3-agents/openwebui_mithrandir_function.py`
 5. Save and enable it
 
-After that, `Gandalf Agent` should appear in the model picker.
+After that, `Mithrandir Agent` should appear in the model picker.
 
 ## 3. Configure the function valves
 
@@ -76,13 +76,13 @@ Open the valves/settings for the function and confirm:
 
 ## 4. Use it
 
-Pick `Gandalf Agent` from the model dropdown in Open WebUI and chat normally.
+Pick `Mithrandir Agent` from the model dropdown in Open WebUI and chat normally.
 
-The function passes your current Open WebUI conversation into the host bridge, which converts recent chat turns into a prompt for `gandalf_agent.py`.
+The function passes your current Open WebUI conversation into the host bridge, which converts recent chat turns into a prompt for `mithrandir_agent.py`.
 
 ## Notes
 
-- Open WebUI chat history and Gandalf Phase 4 memory are separate systems. With `SAVE_MEMORY = true`, Open WebUI conversations will also be stored in Gandalf memory.
+- Open WebUI chat history and Mithrandir Phase 4 memory are separate systems. With `SAVE_MEMORY = true`, Open WebUI conversations will also be stored in Mithrandir memory.
 - The current bridge returns the final answer once the agent finishes. It does not stream tool-by-tool output into Open WebUI.
 - Telegram and Open WebUI can run at the same time.
 
@@ -97,7 +97,7 @@ The function passes your current Open WebUI conversation into the host bridge, w
 ### The agent answers but forgets browser chat context
 
 - The bridge currently compresses recent Open WebUI turns into a single prompt before calling `run_agent()`.
-- If you want full multi-turn agent state later, that would require extending Gandalf from single-message entry to conversation-native state management.
+- If you want full multi-turn agent state later, that would require extending Mithrandir from single-message entry to conversation-native state management.
 
 ### The function imports but does not appear as a model
 

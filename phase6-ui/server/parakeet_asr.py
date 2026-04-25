@@ -1,11 +1,11 @@
 """
 phase6-ui/server/parakeet_asr.py — NVIDIA NeMo Parakeet ASR adapter
 
-Drop-in alternative to faster-whisper for Gandalf. Parakeet-TDT-0.6B-v2 is
+Drop-in alternative to faster-whisper for Mithrandir. Parakeet-TDT-0.6B-v2 is
 NVIDIA's production-grade English ASR model — significantly more accurate
 than Whisper base.en on noisy mics, with native CUDA inference on Ampere/Ada.
 
-Why Parakeet over Whisper for Gandalf
+Why Parakeet over Whisper for Mithrandir
 ------------------------------------
 - ~25 % lower WER than Whisper base.en on common-voice-style audio.
 - Native fp16/bf16 on RTX 4090; uses TensorCores aggressively.
@@ -15,7 +15,7 @@ Why Parakeet over Whisper for Gandalf
 
 Activation
 ----------
-Set GANDALF_USE_PARAKEET=1 in .env. If the import fails (NeMo not installed),
+Set MITHRANDIR_USE_PARAKEET=1 in .env. If the import fails (NeMo not installed),
 voice.transcribe() silently falls back to faster-whisper — nothing breaks.
 
 Install (one-time, opt-in):
@@ -32,7 +32,7 @@ from typing import Optional
 
 import numpy as np
 
-logger = logging.getLogger("gandalf.voice.parakeet")
+logger = logging.getLogger("mithrandir.voice.parakeet")
 
 _MODEL_NAME = os.environ.get("PARAKEET_MODEL", "nvidia/parakeet-tdt-0.6b-v2")
 _PARAKEET_DEVICE = os.environ.get("PARAKEET_DEVICE", "cuda")
@@ -44,7 +44,7 @@ _load_failed = False
 
 def is_enabled() -> bool:
     """Return True if Parakeet is enabled via env flag."""
-    return os.environ.get("GANDALF_USE_PARAKEET", "0") == "1"
+    return os.environ.get("MITHRANDIR_USE_PARAKEET", "0") == "1"
 
 
 def is_available() -> bool:
@@ -122,7 +122,7 @@ def transcribe(audio_f32: np.ndarray, sample_rate: int = 16000) -> str:
     try:
         audio = _resample_to_16k(audio_f32, sample_rate)
         # NeMo's transcribe API accepts a list of numpy arrays (or filepaths).
-        # batch_size=1 keeps memory bounded for the single-mic Gandalf use case.
+        # batch_size=1 keeps memory bounded for the single-mic Mithrandir use case.
         result = model.transcribe([audio], batch_size=1, verbose=False)
         # Newer NeMo returns Hypothesis objects with .text; older returns plain strings.
         if not result:

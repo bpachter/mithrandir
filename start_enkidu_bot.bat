@@ -1,2 +1,2 @@
 @echo off
-call "%~dp0start_gandalf_bot.bat" %*
+call "%~dp0start_mithrandir_bot.bat" %*

@@ -5,9 +5,9 @@
 ![Memory recall across sessions](../assets/phase4-memory-recall.gif)
 <!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 4” -->
 
-> **Plain English:** Out of the box, an LLM forgets *everything* the moment you close the window. This phase gives Gandalf a memory — a small local database that stores every conversation and lets the agent re-read past chats by *meaning*, not keyword. It also indexes the project's own source code, so when you ask "why did we build X?" it can quote the exact file and decision instead of making something up.
+> **Plain English:** Out of the box, an LLM forgets *everything* the moment you close the window. This phase gives Mithrandir a memory — a small local database that stores every conversation and lets the agent re-read past chats by *meaning*, not keyword. It also indexes the project's own source code, so when you ask "why did we build X?" it can quote the exact file and decision instead of making something up.
 
-Gives Gandalf two complementary memory systems: conversation memory across sessions (semantic retrieval + structured history), and document/codebase RAG (index your repo and knowledge base so the agent can cite its own prior work).
+Gives Mithrandir two complementary memory systems: conversation memory across sessions (semantic retrieval + structured history), and document/codebase RAG (index your repo and knowledge base so the agent can cite its own prior work).
 
 ---
 
@@ -17,7 +17,7 @@ Gives Gandalf two complementary memory systems: conversation memory across sessi
 User query
     │
     ▼
-gandalf_agent.py
+mithrandir_agent.py
     │
     ├── memory_bridge.py retrieve <query>   ← semantic search over past conversations
     │       └── memory_store.py            ← ChromaDB conversations + SQLite history
@@ -71,7 +71,7 @@ Ollama must be running when memory calls are made (`ollama serve` or via the Oll
 .venv/Scripts/python document_indexer.py
 ```
 
-This recursively indexes the entire Gandalf repo (~712 chunks from 49 files on first run).
+This recursively indexes the entire Mithrandir repo (~712 chunks from 49 files on first run).
 Re-running is safe — chunk IDs are SHA256 hashes of `(source_path, char_offset)`, so already-indexed chunks are skipped.
 
 ---

@@ -1,5 +1,5 @@
 """
-memory_store.py — Persistent conversation memory for Gandalf (Phase 4)
+memory_store.py — Persistent conversation memory for Mithrandir (Phase 4)
 
 Two-layer storage:
   1. SQLite  — structured log of every exchange (timestamp, user msg, assistant msg)

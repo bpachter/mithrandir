@@ -25,7 +25,7 @@ async function parseJsonOrThrow<T>(r: Response, endpointLabel: string): Promise<
   if (trimmed.startsWith('<!doctype') || trimmed.startsWith('<html')) {
     throw new Error(
       `${endpointLabel} returned HTML instead of JSON. ` +
-      'Ensure Gandalf backend is running and refresh.',
+      'Ensure Mithrandir backend is running and refresh.',
     )
   }
 

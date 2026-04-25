@@ -24,7 +24,7 @@ for planning, extraction, and synthesis.
 ## Execution model
 
 - Planner/executor: local Gemma via Ollama.
-- Tooling: existing Gandalf registry + domain-specific fetch/parse utilities.
+- Tooling: existing Mithrandir registry + domain-specific fetch/parse utilities.
 - No external planning model required.
 
 ## Runner (now available)

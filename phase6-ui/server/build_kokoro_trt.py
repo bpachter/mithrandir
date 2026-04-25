@@ -38,7 +38,7 @@ import logging
 import sys
 from pathlib import Path
 
-logger = logging.getLogger("gandalf.voice.build_trt")
+logger = logging.getLogger("mithrandir.voice.build_trt")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 

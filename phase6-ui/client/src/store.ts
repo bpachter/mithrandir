@@ -103,7 +103,7 @@ interface AppState {
   rightTab: 'gpu' | 'params' | 'market' | 'memory' | 'voice'
   bottomTab: 'history'
   activeConversationId: string | null
-  pendingChatInput: string | null   // set by DocsPanel "Ask Gandalf" button
+  pendingChatInput: string | null   // set by DocsPanel "Ask Mithrandir" button
 
   addMessage: (m: Message) => void
   appendStep: (id: string, step: string) => void

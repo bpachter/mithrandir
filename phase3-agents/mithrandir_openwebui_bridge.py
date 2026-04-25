@@ -1,7 +1,7 @@
 """
-gandalf_openwebui_bridge.py — local HTTP bridge for Open WebUI
+mithrandir_openwebui_bridge.py — local HTTP bridge for Open WebUI
 
-Exposes the Gandalf Phase 3 agent over a small local HTTP API so Open WebUI can
+Exposes the Mithrandir Phase 3 agent over a small local HTTP API so Open WebUI can
 call it as a native custom function without using any OpenAI-compatible API.
 
 Endpoints:
@@ -18,7 +18,7 @@ Example response:
     {
       "response": "...",
       "steps": ["🔧 Calling `edgar_screener`..."],
-      "model": "gandalf"
+      "model": "mithrandir"
     }
 """
 
@@ -36,19 +36,19 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 if _HERE not in sys.path:
     sys.path.insert(0, _HERE)
 
-from gandalf_agent import run_agent  # noqa: E402
+from mithrandir_agent import run_agent  # noqa: E402
 
 
-HOST = os.environ.get("GANDALF_OPENWEBUI_HOST", "127.0.0.1")
-PORT = int(os.environ.get("GANDALF_OPENWEBUI_PORT", "8011"))
-MAX_CONTEXT_MESSAGES = int(os.environ.get("GANDALF_OPENWEBUI_MAX_CONTEXT_MESSAGES", "10"))
+HOST = os.environ.get("MITHRANDIR_OPENWEBUI_HOST", "127.0.0.1")
+PORT = int(os.environ.get("MITHRANDIR_OPENWEBUI_PORT", "8011"))
+MAX_CONTEXT_MESSAGES = int(os.environ.get("MITHRANDIR_OPENWEBUI_MAX_CONTEXT_MESSAGES", "10"))
 
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=logging.INFO,
 )
-logger = logging.getLogger("gandalf.openwebui")
+logger = logging.getLogger("mithrandir.openwebui")
 
 
 def _extract_text(content) -> str:
@@ -120,7 +120,7 @@ def _build_agent_input(messages, fallback_message: str = "") -> str:
 
 
 class _Handler(BaseHTTPRequestHandler):
-    server_version = "GandalfOpenWebUI/0.1"
+    server_version = "MithrandirOpenWebUI/0.1"
 
     def _send_json(self, status: int, payload: dict) -> None:
         data = json.dumps(payload).encode("utf-8")
@@ -135,7 +135,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/health":
-            self._send_json(200, {"ok": True, "service": "gandalf-openwebui-bridge"})
+            self._send_json(200, {"ok": True, "service": "mithrandir-openwebui-bridge"})
             return
         self._send_json(404, {"error": "not_found"})
 
@@ -179,14 +179,14 @@ class _Handler(BaseHTTPRequestHandler):
             {
                 "response": response,
                 "steps": steps,
-                "model": "gandalf",
+                "model": "mithrandir",
             },
         )
 
 
 def main() -> None:
     server = ThreadingHTTPServer((HOST, PORT), _Handler)
-    logger.info("Gandalf Open WebUI bridge listening on http://%s:%s", HOST, PORT)
+    logger.info("Mithrandir Open WebUI bridge listening on http://%s:%s", HOST, PORT)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

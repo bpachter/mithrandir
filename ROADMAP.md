@@ -1,4 +1,4 @@
-# Gandalf Roadmap
+# Mithrandir Roadmap
 
 Personal local AI assistant for Ben — RTX 4090, Ollama + Claude, quantitative value investing.
 
@@ -44,7 +44,7 @@ Personal local AI assistant for Ben — RTX 4090, Ollama + Claude, quantitative 
 
 ### Phase 7 — Reliability, Eval, and Productization (shipped 2026-04-18)
 - [x] Unified health checks for all subsystems
-- [x] Startup self-test command (`python gandalf_health.py`)
+- [x] Startup self-test command (`python mithrandir_health.py`)
 - [x] Tool-call retry with exponential backoff
 - [x] In-memory telemetry ring buffer
 - [x] Golden benchmark suite (15 prompts, 6 categories)
@@ -91,13 +91,13 @@ See [phase7-datacenter-siting/README.md](phase7-datacenter-siting/README.md) for
 ### Phase 10 — Voice 2.0
 - [ ] **Sub-second TTS** via speculative decoding or streaming synthesis
 - [ ] **Speaker diarization** — attribute multi-speaker recordings correctly
-- [ ] **Wake word** — "Hey Gandalf" without pressing Space
+- [ ] **Wake word** — "Hey Mithrandir" without pressing Space
 - [ ] **Voice-to-chart** — "Show me NUE's EV/EBIT over 5 years" → chart
 
 ### Phase 11 — Agent Autonomy
 - [ ] **Autonomous morning brief** — proactive Telegram message at 7am with regime, picks, and news
 - [ ] **Portfolio monitoring daemon** — alert on material ranking changes
-- [ ] **Self-improving benchmarks** — Gandalf suggests new golden prompts based on failure patterns
+- [ ] **Self-improving benchmarks** — Mithrandir suggests new golden prompts based on failure patterns
 - [ ] **GitHub App commit** — autonomous changelog and signal log commits via bot identity
 
 ### Phase 12 — Community and Distribution

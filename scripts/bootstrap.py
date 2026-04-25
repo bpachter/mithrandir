@@ -1,5 +1,5 @@
 """
-scripts/bootstrap.py — Gandalf guided setup for Windows.
+scripts/bootstrap.py — Mithrandir guided setup for Windows.
 
 Checks and fixes the environment step by step so a fresh machine can
 reach "first message" in under 30 minutes. Run once before first launch.
@@ -66,7 +66,7 @@ def check_python(check_only: bool, auto_yes: bool) -> bool:
     header("Step 1 — Python version")
     ver = sys.version_info
     if ver < (3, 10):
-        fail(f"Python {ver.major}.{ver.minor} detected — Gandalf requires Python 3.10+")
+        fail(f"Python {ver.major}.{ver.minor} detected — Mithrandir requires Python 3.10+")
         info("Download Python 3.11+ from https://python.org/downloads")
         return False
     ok(f"Python {ver.major}.{ver.minor}.{ver.micro}")
@@ -222,7 +222,7 @@ def check_node(check_only: bool, auto_yes: bool) -> bool:
 def check_ollama(check_only: bool, auto_yes: bool, skip: bool) -> bool:
     header("Step 6 — Ollama (local inference)")
     if skip:
-        note("Skipped (--skip-ollama). Gandalf will use Claude cloud fallback.")
+        note("Skipped (--skip-ollama). Mithrandir will use Claude cloud fallback.")
         return True
 
     import requests as req
@@ -254,7 +254,7 @@ def check_ollama(check_only: bool, auto_yes: bool, skip: bool) -> bool:
     else:
         info("Install Docker Desktop: https://docker.com/products/docker-desktop")
         info("Then run: cd phase1-local-inference && docker compose up -d")
-        note("Gandalf will fall back to Claude cloud API without local inference.")
+        note("Mithrandir will fall back to Claude cloud API without local inference.")
 
     return True  # non-critical — Claude fallback exists
 
@@ -290,20 +290,20 @@ def check_memory(check_only: bool, auto_yes: bool) -> bool:
 # ── Step 8: Run health check ──────────────────────────────────────────────────
 def run_final_health():
     header("Step 8 — Final health check")
-    code, out = _run([sys.executable, str(_ROOT / "gandalf_health.py"), "--no-parallel"])
+    code, out = _run([sys.executable, str(_ROOT / "mithrandir_health.py"), "--no-parallel"])
     print(out)
     return code == 0
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Gandalf bootstrap setup for Windows")
+    parser = argparse.ArgumentParser(description="Mithrandir bootstrap setup for Windows")
     parser.add_argument("--check", action="store_true", help="Check only, no installs")
     parser.add_argument("--yes", action="store_true", help="Auto-confirm all prompts")
     parser.add_argument("--skip-ollama", action="store_true", help="Skip Docker/Ollama setup")
     args = parser.parse_args()
 
-    print(f"\n{BOLD}{CYAN}  Gandalf Bootstrap Setup{RESET}")
+    print(f"\n{BOLD}{CYAN}  Mithrandir Bootstrap Setup{RESET}")
     print(f"  Python: {sys.executable}")
     print(f"  Root:   {_ROOT}")
     if args.check:
@@ -338,7 +338,7 @@ def main():
     print(f"\n{'─' * 54}")
     if all_ok:
         print(f"\n  {GREEN}{BOLD}Setup complete!{RESET}")
-        print(f"\n  Start Gandalf:  {CYAN}python scripts\\start.py{RESET}")
+        print(f"\n  Start Mithrandir:  {CYAN}python scripts\\start.py{RESET}")
         print(f"  Or via batch:  {CYAN}scripts\\start.bat{RESET}\n")
     else:
         print(f"\n  {YELLOW}Setup finished with warnings.{RESET}")

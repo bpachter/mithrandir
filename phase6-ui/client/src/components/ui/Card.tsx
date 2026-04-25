@@ -1,5 +1,5 @@
 /**
- * Gandalf — UI primitive: <Card>
+ * Mithrandir — UI primitive: <Card>
  * Operator-console panel with optional title row, status indicator, and
  * elevation. Use for any new bordered surface; legacy `.panel` class still
  * works for existing components.

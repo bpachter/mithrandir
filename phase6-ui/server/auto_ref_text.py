@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-logger = logging.getLogger("gandalf.voice.auto_ref")
+logger = logging.getLogger("mithrandir.voice.auto_ref")
 
 # Hard cap so a long source clip can't produce a 200-word ref transcript that
 # F5 then leaks into generated audio. Keep ref text short and neutral.

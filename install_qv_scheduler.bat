@@ -3,7 +3,7 @@
 :: Runs at 6:30 PM weekdays (after US market close).
 :: Requires elevated (Administrator) prompt.
 
-set TASK_NAME=Gandalf QV Daily Refresh
+set TASK_NAME=Mithrandir QV Daily Refresh
 set SCRIPT=%~dp0phase2-tool-use\quant-value\daily_refresh.py
 set PYTHON=C:\Users\benpa\AppData\Local\Programs\Python\Python312\pythonw.exe
 

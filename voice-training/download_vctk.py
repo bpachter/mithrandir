@@ -8,7 +8,7 @@ VCTK is the University of Edinburgh Voice Cloning Toolkit corpus:
 
 We filter for English male speakers with Southern/RP British accents —
 the group most likely to approximate the deep, authoritative RP baritone
-we want for Gandalf's voice.
+we want for Mithrandir's voice.
 
 Usage:
     python download_vctk.py [--out-dir ./vctk_data]

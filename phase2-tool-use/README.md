@@ -5,7 +5,7 @@
 ![Routing decision in the REPL](../assets/phase2-routing-decision.gif)
 <!-- ⤴ Capture: docs/MEDIA_GUIDE.md “Phase 2” -->
 
-> **Plain English:** A language model is just a text predictor — it doesn't actually *know* what your GPU temperature is or what stocks are cheap today. This phase teaches Gandalf to **look things up first, then answer.** It also adds a traffic cop ("the router") that decides which model handles each question — the free local Gemma for most things, paid Claude only when the question really needs the extra horsepower.
+> **Plain English:** A language model is just a text predictor — it doesn't actually *know* what your GPU temperature is or what stocks are cheap today. This phase teaches Mithrandir to **look things up first, then answer.** It also adds a traffic cop ("the router") that decides which model handles each question — the free local Gemma for most things, paid Claude only when the question really needs the extra horsepower.
 
 A Python orchestrator that routes queries between local Gemma and Claude API, and runs tools that inject real context — financial data, system stats, RGB lighting — before sending to the model.
 
@@ -16,7 +16,7 @@ A Python orchestrator that routes queries between local Gemma and Claude API, an
 ```
 User query
     ↓
-gandalf.py REPL
+mithrandir.py REPL
     ↓
 router.py — LOCAL or CLOUD?
     ↓
@@ -107,7 +107,7 @@ Runs a rainbow sweep across the keyboard (OpenRGB) while local GPU inference is 
 
 ### `quant-value/` — Quantitative Value Pipeline
 
-A full quant value stock screening pipeline bundled with Gandalf. Fetches EDGAR filings for ~9,867 companies, computes financial metrics, and scores them on quality + value.
+A full quant value stock screening pipeline bundled with Mithrandir. Fetches EDGAR filings for ~9,867 companies, computes financial metrics, and scores them on quality + value.
 
 See [quant-value/README.md](./quant-value/README.md) for the full guide.
 

@@ -5,7 +5,7 @@ import { wsBase, API_BASE } from '../api'
 import ChatPanel from './ChatPanel'
 
 // Session-scoped dev password (cleared when tab closes)
-const DEV_PW_KEY = 'gandalf_dev_pw'
+const DEV_PW_KEY = 'mithrandir_dev_pw'
 function getDevPw(): string { return sessionStorage.getItem(DEV_PW_KEY) ?? '' }
 function setDevPw(pw: string) { sessionStorage.setItem(DEV_PW_KEY, pw) }
 function clearDevPw() { sessionStorage.removeItem(DEV_PW_KEY) }
@@ -239,7 +239,7 @@ export default function DevPanel({ onClose }: Props) {
           <div className="flex items-center gap-3 mb-4">
             <Lock className="h-5 w-5 text-amber-400" />
             <span className="text-[14px] font-semibold tracking-widest uppercase text-cyan-400">
-              Gandalf Dev
+              Mithrandir Dev
             </span>
           </div>
           <p className="text-[11px] text-slate-400 mb-4">
@@ -280,7 +280,7 @@ export default function DevPanel({ onClose }: Props) {
 
   // Project + tasks
   const [projects, setProjects]       = useState<ProjectInfo[]>([])
-  const [activeProject, setActiveProject] = useState('gandalf')
+  const [activeProject, setActiveProject] = useState('mithrandir')
   const [tasks, setTasks]             = useState<DevTask[]>([])
   const [activeTask, setActiveTask]   = useState<DevTask | null>(null)
 
@@ -549,7 +549,7 @@ export default function DevPanel({ onClose }: Props) {
         <div className="flex items-center gap-3">
           <FileCode className="h-4 w-4 text-cyan-400" />
           <span className="text-[13px] font-semibold tracking-widest uppercase text-cyan-400">
-            Gandalf Dev
+            Mithrandir Dev
           </span>
           <span className="text-[10px] text-slate-500">AI-driven code orchestration</span>
         </div>
@@ -854,11 +854,11 @@ export default function DevPanel({ onClose }: Props) {
             </div>
           </div>
 
-          {/* Chat — bottom half (Gandalf agent + voice) */}
+          {/* Chat — bottom half (Mithrandir agent + voice) */}
           <div className="h-[42%] border-t border-[#1e2d4a] flex flex-col overflow-hidden">
             <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-slate-500 border-b border-[#1e2d4a] flex items-center gap-2">
               <MessageSquare className="h-3 w-3" />
-              Gandalf — ask about code, memory, or delegate work
+              Mithrandir — ask about code, memory, or delegate work
               <span className="ml-auto text-[9px] text-slate-600 normal-case">
                 tip: "read orator/server/main.py" → uses dev_read_file tool
               </span>

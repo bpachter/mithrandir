@@ -1,7 +1,7 @@
 """
-gandalf_agent.py — ReAct agent loop (Phase 3 core)
+mithrandir_agent.py — ReAct agent loop (Phase 3 core)
 
-Replaces the single-shot prompt injection of gandalf.py with a multi-step
+Replaces the single-shot prompt injection of mithrandir.py with a multi-step
 Reason → Act → Observe loop. The LLM reasons about which tools to call,
 calls them, observes the results, and loops until it produces a final answer.
 
@@ -27,7 +27,7 @@ When the LLM outputs malformed JSON or an unknown tool name, the validation
 error is fed back as a user turn so the agent can self-correct before giving up.
 
 Usage:
-    from gandalf_agent import run_agent
+    from mithrandir_agent import run_agent
 
     answer = run_agent(
         "Compare NUE and CLF on EV/EBIT",
@@ -48,7 +48,7 @@ load_dotenv()
 
 # Lighting can crash some environments due native SDK/DLL interactions.
 # Keep it opt-in so chat reliability is never blocked by RGB control.
-_ENABLE_LIGHTING = os.environ.get("GANDALF_ENABLE_LIGHTING", "0").strip().lower() in {
+_ENABLE_LIGHTING = os.environ.get("MITHRANDIR_ENABLE_LIGHTING", "0").strip().lower() in {
     "1", "true", "yes", "on"
 }
 
@@ -60,7 +60,7 @@ if _tools_path not in sys.path:
 from registry import TOOLS, dispatch, tool_descriptions, get_regime, _call_memory_bridge  # noqa: E402
 
 # Optional RGB lighting — phase2-tool-use/tools/lighting.py
-# Disabled by default for stability; enable with GANDALF_ENABLE_LIGHTING=1.
+# Disabled by default for stability; enable with MITHRANDIR_ENABLE_LIGHTING=1.
 if _ENABLE_LIGHTING:
     _lighting_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "phase2-tool-use", "tools"))
     if _lighting_path not in sys.path:
@@ -94,10 +94,10 @@ CLAUDE_MODEL = "claude-sonnet-4-6"
 # Backward compatible with older .env files that use OLLAMA_HOST.
 OLLAMA_URL = os.environ.get("OLLAMA_URL") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:26b")
-_FORCE_LOCAL_ONLY = os.environ.get("GANDALF_FORCE_LOCAL_ONLY", "0").strip().lower() in {
+_FORCE_LOCAL_ONLY = os.environ.get("MITHRANDIR_FORCE_LOCAL_ONLY", "0").strip().lower() in {
     "1", "true", "yes", "on"
 }
-_AGENT_MODE = os.environ.get("GANDALF_AGENT_MODE", "local_react").strip().lower()
+_AGENT_MODE = os.environ.get("MITHRANDIR_AGENT_MODE", "local_react").strip().lower()
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ class AgentStep(BaseModel):
 # ---------------------------------------------------------------------------
 
 _SYSTEM_TEMPLATE = """\
-You are Gandalf, an AI assistant with access to financial data tools, a Python sandbox, \
+You are Mithrandir, an AI assistant with access to financial data tools, a Python sandbox, \
 and a CUDA/hardware reference database.
 
 You run on Ben Pachter's personal machine: an NVIDIA RTX 4090 (128 SMs, 24 GB GDDR6X, \
@@ -211,7 +211,7 @@ _SELF_REF_PATTERNS = [
 
 
 def _is_self_reference(query: str) -> bool:
-    """True when the user is asking Gandalf to recall its own prior output."""
+    """True when the user is asking Mithrandir to recall its own prior output."""
     lower = query.lower()
     return any(p in lower for p in _SELF_REF_PATTERNS)
 
@@ -241,7 +241,7 @@ def _build_system_prompt(user_message: str = "") -> str:
         "Never address him by any other name under any circumstances."
     )
 
-    # Last exchange — always inject so Gandalf can recall its own prior output
+    # Last exchange — always inject so Mithrandir can recall its own prior output
     last_exchange_block = ""
     last_exchange = _get_last_exchange()
     if last_exchange:
@@ -254,7 +254,7 @@ def _build_system_prompt(user_message: str = "") -> str:
         else:
             last_exchange_block = (
                 f"Most recent exchange (for continuity):\n"
-                f"User: {prev_user}\nGandalf: {prev_asst}"
+                f"User: {prev_user}\nMithrandir: {prev_asst}"
             )
 
     extra = "\n\n".join(filter(None, [identity_block, last_exchange_block, memory_block]))
@@ -454,11 +454,11 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         else:
             last_exchange_block = (
                 f"Most recent exchange (for continuity):\n"
-                f"User: {prev_user}\nGandalf: {prev_asst}"
+                f"User: {prev_user}\nMithrandir: {prev_asst}"
             )
 
     parts = [
-        "You are Gandalf, a personal AI assistant built by Ben and running locally on his machine. "
+        "You are Mithrandir, a personal AI assistant built by Ben and running locally on his machine. "
         "Hardware: NVIDIA RTX 4090 (128 SMs, 16,384 CUDA cores, 512 Tensor Cores, "
         "24 GB GDDR6X VRAM at 1,008 GB/s bandwidth, 82.6 TFLOP/s BF16, 72 MB L2 cache), "
         "running Windows 11. "
@@ -609,7 +609,7 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
 
     except Exception as e:
         import logging
-        logging.getLogger("gandalf.agent").warning(f"Ollama unavailable: {e}")
+        logging.getLogger("mithrandir.agent").warning(f"Ollama unavailable: {e}")
         return None
 
 
@@ -805,7 +805,7 @@ def _run_agent_inner(
             return result
         return (
             "Error: local mode is forced but Ollama is unavailable. "
-            "Start Ollama or disable GANDALF_FORCE_LOCAL_ONLY."
+            "Start Ollama or disable MITHRANDIR_FORCE_LOCAL_ONLY."
         )
 
     if not _needs_tools(user_message):

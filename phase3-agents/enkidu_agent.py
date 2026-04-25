@@ -5,7 +5,7 @@ from typing import Any
 
 
 def _impl():
-    return import_module("gandalf_agent")
+    return import_module("mithrandir_agent")
 
 
 def run_agent(*args: Any, **kwargs: Any):

@@ -1,5 +1,5 @@
 """
-cuda_docs.py — Curated CUDA + Gemma4 reference data for Gandalf.
+cuda_docs.py — Curated CUDA + Gemma4 reference data for Mithrandir.
 
 Structured so the /api/docs endpoint can serve it to the UI, and the
 search_docs agent tool can query it inline during conversations.
@@ -713,7 +713,7 @@ DOCS: list[dict] = [
             "- Factual QA: temperature 0.1–0.3, top_p 0.9 (near-deterministic)\n"
             "- Creative writing: temperature 0.8–1.2, top_p 0.95\n"
             "- Code generation: temperature 0.2–0.4, top_p 0.95\n"
-            "- Balanced chat (Gandalf default): temperature 0.7, top_p 0.9, top_k 40"
+            "- Balanced chat (Mithrandir default): temperature 0.7, top_p 0.9, top_k 40"
         ),
         "specs": [
             ("Vocabulary size", "~256,000 tokens"),

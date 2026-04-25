@@ -2,7 +2,7 @@
 phase6-ui/server/data_freshness.py — Data freshness audit surface.
 
 Tracks when each data source was last updated and flags stale data.
-Every financial answer in Gandalf can be traced to a source + timestamp.
+Every financial answer in Mithrandir can be traced to a source + timestamp.
 
 Freshness categories:
   fresh  — updated within the expected refresh window
@@ -137,7 +137,7 @@ def _get_sources() -> list[DataSource]:
         DataSource(
             name="memory_db",
             path=_ROOT / "phase4-memory" / "memory.db",
-            fallback_path=_ROOT / "phase4-memory" / "gandalf_memory.db",
+            fallback_path=_ROOT / "phase4-memory" / "mithrandir_memory.db",
             max_age_hours=720,  # memory grows over time; no hard staleness
             description="Conversation memory (SQLite exchange log)",
         ),

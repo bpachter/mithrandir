@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Gandalf are documented here.  
+All notable changes to Mithrandir are documented here.  
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)  
 Versioning: `<phase>.<feature>.<patch>` — major version tracks completed phase.
 
@@ -46,7 +46,7 @@ Versioning: `<phase>.<feature>.<patch>` — major version tracks completed phase
 ### Added
 
 **Phase 1 — Reliability Hardening**
-- `gandalf_health.py`: unified health checker for all subsystems (Ollama, Anthropic API, memory bridge, voice workers, Telegram, QV data, Python deps). Runs in parallel, exits 1 on critical failure.
+- `mithrandir_health.py`: unified health checker for all subsystems (Ollama, Anthropic API, memory bridge, voice workers, Telegram, QV data, Python deps). Runs in parallel, exits 1 on critical failure.
 - `GET /api/health/detailed`: full diagnostic report via FastAPI.
 - `GET /api/telemetry`: per-tool call latency and error rate from in-memory ring buffer.
 - Tool dispatch retry logic: automatic exponential backoff (up to 2 retries) for transient errors in `registry.dispatch()`.

@@ -22,7 +22,7 @@ body:
       label: Steps to reproduce
       description: How can we reliably reproduce this?
       placeholder: |
-        1. Start Gandalf with `scripts/start.bat`
+        1. Start Mithrandir with `scripts/start.bat`
         2. Ask "Explain CUDA memory hierarchy in detail"
         3. Voice output crashes after ~200 words
     validations:

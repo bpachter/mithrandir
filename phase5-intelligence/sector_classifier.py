@@ -59,11 +59,11 @@ def _get_processed_path() -> Optional[Path]:
         return fallback if fallback.exists() else None
 
 EDGAR_API = "https://data.sec.gov/submissions/CIK{cik}.json"
-EDGAR_HEADERS = {"User-Agent": "Gandalf-Research ben@gandalf.local"}
+EDGAR_HEADERS = {"User-Agent": "Mithrandir-Research ben@mithrandir.local"}
 REQUEST_DELAY = 0.12   # ~8 req/sec — well under SEC's 10/sec rate limit
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
-logger = logging.getLogger("gandalf.sector")
+logger = logging.getLogger("mithrandir.sector")
 
 # ---------------------------------------------------------------------------
 # SIC → Sector mapping

@@ -1,5 +1,5 @@
 """
-web_search.py — Web search for Gandalf
+web_search.py — Web search for Mithrandir
 
 Primary:  Tavily API (purpose-built for LLM agents — returns full extracted
           page content, not just snippets). Requires TAVILY_API_KEY in .env.
@@ -19,7 +19,7 @@ Two public functions:
 import os
 import logging
 
-logger = logging.getLogger("gandalf.web_search")
+logger = logging.getLogger("mithrandir.web_search")
 
 _MAX_CONTENT_CHARS = 600   # per-result content cap for Tavily full-text
 _MAX_SNIPPET_CHARS = 300   # per-result cap for DDG snippets

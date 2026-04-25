@@ -9,8 +9,8 @@ from typing import Literal
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
-GANDALF_ROOT = ROOT.parent
-load_dotenv(GANDALF_ROOT / ".env", override=False)
+MITHRANDIR_ROOT = ROOT.parent
+load_dotenv(MITHRANDIR_ROOT / ".env", override=False)
 
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = Path(os.environ.get("DCSITE_DATA", ROOT / "data")).resolve()

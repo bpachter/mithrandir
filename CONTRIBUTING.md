@@ -1,6 +1,6 @@
-# Contributing to Gandalf
+# Contributing to Mithrandir
 
-Thanks for your interest. Gandalf is a personal project — contributions are welcome but this isn't a large open-source org. Expect quick feedback on small, focused PRs.
+Thanks for your interest. Mithrandir is a personal project — contributions are welcome but this isn't a large open-source org. Expect quick feedback on small, focused PRs.
 
 ---
 
@@ -15,8 +15,8 @@ Thanks for your interest. Gandalf is a personal project — contributions are we
 ### First-time setup
 
 ```bash
-git clone https://github.com/bpachter/Gandalf.git
-cd Gandalf
+git clone https://github.com/bpachter/Mithrandir.git
+cd Mithrandir
 
 # Guided setup (installs deps, copies .env, checks Ollama)
 python scripts/bootstrap.py
@@ -31,7 +31,7 @@ python scripts/start.py
 ### Run health checks before you start coding
 
 ```bash
-python gandalf_health.py
+python mithrandir_health.py
 ```
 
 ---
@@ -62,7 +62,7 @@ cd phase6-ui/server && python -m uvicorn main:app --reload
 ### Project structure
 
 ```
-gandalf_health.py          Unified health checker (run first)
+mithrandir_health.py          Unified health checker (run first)
 scripts/                  Setup and launch scripts
 tests/                    Benchmark runner + golden prompts
 phase1-local-inference/   Ollama + Docker
@@ -70,7 +70,7 @@ phase2-tool-use/          EDGAR screener, routing, lighting
   tools/edgar_screener.py  Financial data tool
   quant-value/            QV pipeline (data not in git)
 phase3-agents/            ReAct agent, Telegram, tool registry
-  gandalf_agent.py         Main agent loop
+  mithrandir_agent.py         Main agent loop
   tools/registry.py       Tool dispatch + telemetry
 phase4-memory/            ChromaDB + SQLite memory
 phase5-intelligence/      Signal logger, backtesting, alerts
@@ -99,7 +99,7 @@ These are typically:
 
 1. Write the tool function in `phase3-agents/tools/` or `phase2-tool-use/tools/`
 2. Register it in `phase3-agents/tools/registry.py` with `register()`
-3. Add keywords to `_TOOL_KEYWORDS` in `phase3-agents/gandalf_agent.py` so the router knows when to use it
+3. Add keywords to `_TOOL_KEYWORDS` in `phase3-agents/mithrandir_agent.py` so the router knows when to use it
 4. Add a golden prompt in `tests/golden_prompts.json` with `must_contain_any` constraints
 5. Run `python tests/benchmark.py --id your_new_id` to verify
 

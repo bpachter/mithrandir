@@ -74,7 +74,7 @@ export default function App() {
       {/* Dev panel launch button */}
       <button
         onClick={() => setMode('dev')}
-        title="Open Gandalf Forge — code orchestration and review"
+        title="Open Mithrandir Forge — code orchestration and review"
         className="
           group fixed top-2 right-[320px] z-50
           inline-flex items-center gap-2 rounded-sm border border-violet-800/50 bg-violet-900/20
@@ -123,7 +123,7 @@ export default function App() {
             >
               {leftTab === 'params' && <ModelParamsPanel />}
               {leftTab === 'docs'   && (
-                <DocsPanel onAskGandalf={(q) => setPendingChatInput(q)} />
+                <DocsPanel onAskMithrandir={(q) => setPendingChatInput(q)} />
               )}
             </motion.div>
           </AnimatePresence>

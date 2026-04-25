@@ -1,6 +1,6 @@
 """Legacy health-check alias for backward compatibility."""
 
-from gandalf_health import *  # noqa: F401,F403
+from mithrandir_health import *  # noqa: F401,F403
 
 
 if __name__ == "__main__":

@@ -1,1 +1,1 @@
-from openwebui_gandalf_function import Pipe
+from openwebui_mithrandir_function import Pipe

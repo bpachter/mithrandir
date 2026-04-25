@@ -1,7 +1,7 @@
 """
-title: Gandalf Agent
+title: Mithrandir Agent
 author: benpa
-author_url: https://github.com/bpachter/gandalf
+author_url: https://github.com/bpachter/mithrandir
 version: 0.1.0
 required_open_webui_version: 0.6.0
 """
@@ -17,24 +17,24 @@ class Pipe:
     class Valves(BaseModel):
         BRIDGE_URL: str = Field(
             default="http://host.docker.internal:8011/chat",
-            description="URL of the local Gandalf bridge endpoint",
+            description="URL of the local Mithrandir bridge endpoint",
         )
         REQUEST_TIMEOUT_SECONDS: int = Field(
             default=600,
-            description="HTTP timeout for Gandalf agent requests",
+            description="HTTP timeout for Mithrandir agent requests",
         )
         SAVE_MEMORY: bool = Field(
             default=True,
-            description="Persist Open WebUI chats into Gandalf's Phase 4 memory store",
+            description="Persist Open WebUI chats into Mithrandir's Phase 4 memory store",
         )
 
     def __init__(self):
         self.type = "pipe"
-        self.name = "Gandalf Agent"
+        self.name = "Mithrandir Agent"
         self.valves = self.Valves()
 
     def _make_title(self, body: dict) -> str:
-        prompt = get_last_user_message(body.get("messages", [])) or "Gandalf Chat"
+        prompt = get_last_user_message(body.get("messages", [])) or "Mithrandir Chat"
         prompt = " ".join(prompt.split())
         if len(prompt) <= 60:
             return prompt
@@ -58,7 +58,7 @@ class Pipe:
             return data["response"]
         if "error" in data:
             return f"Error: {data['error']}"
-        return "Error: malformed response from Gandalf bridge"
+        return "Error: malformed response from Mithrandir bridge"
 
     def pipe(self, body: dict, __user__: Optional[dict] = None) -> Union[str, Generator, Iterator]:
         if body.get("title", False):
@@ -70,7 +70,7 @@ class Pipe:
                     "event": {
                         "type": "status",
                         "data": {
-                            "description": "Gandalf agent running...",
+                            "description": "Mithrandir agent running...",
                             "done": False,
                         },
                     }
@@ -79,8 +79,8 @@ class Pipe:
                     yield self._call_bridge(body)
                 except Exception as e:
                     yield (
-                        "Error: could not reach the local Gandalf bridge. "
-                        "Start gandalf_openwebui_bridge.py on the host machine. "
+                        "Error: could not reach the local Mithrandir bridge. "
+                        "Start mithrandir_openwebui_bridge.py on the host machine. "
                         f"Details: {e}"
                     )
                 yield {
@@ -99,7 +99,7 @@ class Pipe:
             return self._call_bridge(body)
         except Exception as e:
             return (
-                "Error: could not reach the local Gandalf bridge. "
-                "Start gandalf_openwebui_bridge.py on the host machine. "
+                "Error: could not reach the local Mithrandir bridge. "
+                "Start mithrandir_openwebui_bridge.py on the host machine. "
                 f"Details: {e}"
             )

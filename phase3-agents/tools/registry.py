@@ -21,7 +21,7 @@ import subprocess
 import importlib.util
 from typing import Callable
 
-_telem_logger = logging.getLogger("gandalf.telemetry")
+_telem_logger = logging.getLogger("mithrandir.telemetry")
 
 # In-memory telemetry ring buffer (last 200 tool call records)
 _TELEMETRY: list[dict] = []
@@ -37,14 +37,14 @@ def _estimate_tokens(text: str) -> int:
 
 def _claude_subagent_allowlist() -> list[str]:
     raw = os.environ.get(
-        "GANDALF_CLAUDE_SUBAGENT_ALLOWLIST",
+        "MITHRANDIR_CLAUDE_SUBAGENT_ALLOWLIST",
         "long context,document analysis,multi-file,codebase synthesis,second opinion,validation,refactor",
     )
     return [p.strip().lower() for p in raw.split(",") if p.strip()]
 
 
 def _claude_subagent_threshold() -> int:
-    raw = os.environ.get("GANDALF_CLAUDE_SUBAGENT_TOKEN_THRESHOLD", "9000")
+    raw = os.environ.get("MITHRANDIR_CLAUDE_SUBAGENT_TOKEN_THRESHOLD", "9000")
     try:
         return max(1000, int(raw))
     except Exception:
@@ -52,7 +52,7 @@ def _claude_subagent_threshold() -> int:
 
 
 def _claude_subagent_rate_window_sec() -> int:
-    raw = os.environ.get("GANDALF_CLAUDE_SUBAGENT_WINDOW_SEC", "60")
+    raw = os.environ.get("MITHRANDIR_CLAUDE_SUBAGENT_WINDOW_SEC", "60")
     try:
         return max(10, int(raw))
     except Exception:
@@ -60,7 +60,7 @@ def _claude_subagent_rate_window_sec() -> int:
 
 
 def _claude_subagent_rate_max_calls() -> int:
-    raw = os.environ.get("GANDALF_CLAUDE_SUBAGENT_MAX_CALLS", "6")
+    raw = os.environ.get("MITHRANDIR_CLAUDE_SUBAGENT_MAX_CALLS", "6")
     try:
         return max(1, int(raw))
     except Exception:
@@ -71,7 +71,7 @@ def _claude_subagent_audit_path() -> str:
     default_path = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "..", "claude_subagent_audit.jsonl")
     )
-    return os.environ.get("GANDALF_CLAUDE_SUBAGENT_AUDIT_LOG", default_path)
+    return os.environ.get("MITHRANDIR_CLAUDE_SUBAGENT_AUDIT_LOG", default_path)
 
 
 def _audit_claude_subagent(event: dict) -> None:
@@ -100,7 +100,7 @@ def _claude_subagent_gate(task: str, context: str) -> tuple[bool, str, dict]:
         "token_threshold": _claude_subagent_threshold(),
     }
 
-    force = os.environ.get("GANDALF_CLAUDE_SUBAGENT_FORCE", "0").strip().lower() in {
+    force = os.environ.get("MITHRANDIR_CLAUDE_SUBAGENT_FORCE", "0").strip().lower() in {
         "1", "true", "yes", "on"
     }
     if force:
@@ -303,7 +303,7 @@ register(
     name="system_info",
     description=(
         "Get real-time GPU temperature, VRAM usage, CPU load, and RAM stats "
-        "from the local machine running Gandalf."
+        "from the local machine running Mithrandir."
     ),
     parameters={
         "query": "str — optional context string, e.g. 'gpu temperature'"
@@ -522,7 +522,7 @@ register(
 register(
     name="search_docs",
     description=(
-        "Search the indexed local knowledge base (JOURNEY.md, Gandalf codebase, research notes) "
+        "Search the indexed local knowledge base (JOURNEY.md, Mithrandir codebase, research notes) "
         "for relevant context. Use when the user asks about how something was built, why a "
         "decision was made, or references project history or documentation."
     ),
@@ -599,11 +599,11 @@ register(
 
 def _claude_subagent(task: str, context: str = "", max_tokens: int = 1200) -> str:
     """
-    Delegate a narrowly scoped heavy task to Claude while Gandalf remains orchestrator.
+    Delegate a narrowly scoped heavy task to Claude while Mithrandir remains orchestrator.
 
     This is intentionally synchronous and stateless: one task in, one result out.
     """
-    enabled = os.environ.get("GANDALF_CLAUDE_SUBAGENT_ENABLED", "1").strip().lower() in {
+    enabled = os.environ.get("MITHRANDIR_CLAUDE_SUBAGENT_ENABLED", "1").strip().lower() in {
         "1", "true", "yes", "on"
     }
     if not enabled:
@@ -614,7 +614,7 @@ def _claude_subagent(task: str, context: str = "", max_tokens: int = 1200) -> st
             "reason": "disabled",
             "task_head": (task or "")[:240],
         })
-        return "claude_subagent disabled by GANDALF_CLAUDE_SUBAGENT_ENABLED"
+        return "claude_subagent disabled by MITHRANDIR_CLAUDE_SUBAGENT_ENABLED"
 
     allowed, reason, gate_meta = _claude_subagent_gate(task, context)
     if not allowed:
@@ -665,7 +665,7 @@ def _claude_subagent(task: str, context: str = "", max_tokens: int = 1200) -> st
     mt = max(200, min(mt, 4096))
 
     sys_prompt = (
-        "You are a specialist subagent called by Gandalf. "
+        "You are a specialist subagent called by Mithrandir. "
         "Return concise, factual output for the requested task only. "
         "Do not roleplay as the top-level assistant."
     )
@@ -719,7 +719,7 @@ def _claude_subagent(task: str, context: str = "", max_tokens: int = 1200) -> st
 register(
     name="claude_subagent",
     description=(
-        "Delegate a heavy or long-context subtask to Claude while Gandalf remains the primary "
+        "Delegate a heavy or long-context subtask to Claude while Mithrandir remains the primary "
         "local orchestrator. Use ONLY when local reasoning is likely insufficient, such as: "
         "very long documents, dense multi-file synthesis, or high-precision second-opinion tasks. "
         "Keep delegated tasks narrow and include only necessary context."
@@ -851,13 +851,13 @@ register(
 )
 
 # ---------------------------------------------------------------------------
-# dev_delegate — kick off a code-writing task in the Gandalf Dev system
+# dev_delegate — kick off a code-writing task in the Mithrandir Dev system
 # ---------------------------------------------------------------------------
 
 def _dev_delegate(goal: str, project: str, context_files: str = "") -> str:
     """
     Create a dev task that delegates code writing to Claude and streams
-    progress to the Gandalf DevPanel. Returns the task ID for tracking.
+    progress to the Mithrandir DevPanel. Returns the task ID for tracking.
     """
     try:
         import importlib.util as _ilu
@@ -892,7 +892,7 @@ def _dev_delegate(goal: str, project: str, context_files: str = "") -> str:
         f"Dev task created (id={task.id}). "
         f"Project: {project}. Status: queued → running.\n"
         f"I will narrate progress here as Claude works. "
-        f"Open the Dev panel in Gandalf's UI to see live changes and approve patches."
+        f"Open the Dev panel in Mithrandir's UI to see live changes and approve patches."
     )
 
 
@@ -900,14 +900,14 @@ register(
     name="dev_delegate",
     description=(
         "Delegate a software development task to Claude. Claude will write or modify code "
-        "for the specified project (Gandalf, Orator, Avalon, Longinus, Zeus, Babylon, Aristotle). "
-        "Results stream live to the Gandalf DevPanel where you can review and approve file changes. "
+        "for the specified project (Mithrandir, Orator, Avalon, Longinus, Zeus, Babylon, Aristotle). "
+        "Results stream live to the Mithrandir DevPanel where you can review and approve file changes. "
         "Use this when the user asks to build a feature, fix a bug, create a new component, "
         "refactor code, write tests, or start building a new application in the portfolio."
     ),
     parameters={
         "goal": "str — clear description of what to build or fix",
-        "project": "str — target project name, e.g. 'orator', 'avalon', 'gandalf'",
+        "project": "str — target project name, e.g. 'orator', 'avalon', 'mithrandir'",
         "context_files": "str — optional comma-separated relative file paths to include as context, e.g. 'src/App.tsx,server/main.py'",
     },
     fn=_dev_delegate,
@@ -938,7 +938,7 @@ def _dev_read_file(project: str, path: str) -> str:
     except Exception as e:
         return f"dev_read_file unavailable: {e}"
     # Use the dev panel password so sensitive files (.env etc.) are still gated
-    pw = os.environ.get("GANDALF_DEV_PASSWORD", "").strip() or "antifragile"
+    pw = os.environ.get("MITHRANDIR_DEV_PASSWORD", "").strip() or "antifragile"
     result = mod.read_file_contents(project.lower(), path, password=pw)
     if "error" in result:
         return f"ERROR: {result['error']}"
@@ -982,13 +982,13 @@ def _dev_list_files(project: str, sub_path: str = "") -> str:
 register(
     name="dev_read_file",
     description=(
-        "Read the contents of a file from any portfolio project (gandalf, avalon, orator, longinus, "
+        "Read the contents of a file from any portfolio project (mithrandir, avalon, orator, longinus, "
         "zeus, babylon, aristotle). Use this when the user asks about code in a specific project "
         "or you need to understand existing code before delegating with dev_delegate. "
         "Sensitive files (.env, keys, credentials) are accessible via the configured dev password."
     ),
     parameters={
-        "project": "str — project name, e.g. 'orator', 'avalon', 'gandalf'",
+        "project": "str — project name, e.g. 'orator', 'avalon', 'mithrandir'",
         "path": "str — relative path within the project, e.g. 'server/main.py'",
     },
     fn=_dev_read_file,
@@ -1003,7 +1003,7 @@ register(
         "Optional sub_path narrows the listing to a subdirectory."
     ),
     parameters={
-        "project": "str — project name, e.g. 'orator', 'avalon', 'gandalf'",
+        "project": "str — project name, e.g. 'orator', 'avalon', 'mithrandir'",
         "sub_path": "str — optional subdirectory relative to project root",
     },
     fn=_dev_list_files,

@@ -1,5 +1,5 @@
 """
-gandalf_health.py — Unified health checker for all Gandalf subsystems.
+mithrandir_health.py — Unified health checker for all Mithrandir subsystems.
 
 Checks:
   - Ollama (local inference)
@@ -12,7 +12,7 @@ Checks:
 
 Each check returns a HealthResult with status, latency, and optional fix hint.
 Used by:
-  - `python gandalf_check.py`           (startup self-test CLI)
+  - `python mithrandir_check.py`           (startup self-test CLI)
   - GET /api/health/detailed            (FastAPI endpoint)
   - CI benchmark suite                 (non-zero exit on critical failure)
 
@@ -548,7 +548,7 @@ def summary(results: list[HealthResult]) -> dict:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Gandalf startup health check")
+    parser = argparse.ArgumentParser(description="Mithrandir startup health check")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--no-parallel", action="store_true", help="Run checks sequentially")
     parser.add_argument("--check", help="Run a single check by name (e.g. ollama, memory_bridge)")
@@ -578,7 +578,7 @@ if __name__ == "__main__":
         "reset": "\033[0m",
     }
 
-    print("\n  Gandalf Health Check\n  " + "─" * 38)
+    print("\n  Mithrandir Health Check\n  " + "─" * 38)
     for r in results:
         icon = icons.get(r.status, "?")
         color = colors.get(r.status, "")
@@ -592,7 +592,7 @@ if __name__ == "__main__":
     print(f"\n  {s['counts']['ok']} ok  {s['counts']['warn']} warn  {s['counts']['fail']} fail  {s['counts']['skip']} skip\n")
 
     if s["critical_failures"] > 0:
-        print(f"  {colors['fail']}✗ {s['critical_failures']} critical failure(s) — Gandalf may not start correctly.{colors['reset']}\n")
+        print(f"  {colors['fail']}✗ {s['critical_failures']} critical failure(s) — Mithrandir may not start correctly.{colors['reset']}\n")
         sys.exit(1)
     elif s["counts"]["fail"] + s["counts"]["warn"] > 0:
         print(f"  {colors['warn']}⚠ Some optional subsystems are degraded. Core features work.{colors['reset']}\n")

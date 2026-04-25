@@ -28,7 +28,7 @@ import logging
 import os
 from typing import Callable, Optional
 
-logger = logging.getLogger("gandalf.voice.optim")
+logger = logging.getLogger("mithrandir.voice.optim")
 
 _TC_ENABLED = False
 
@@ -74,7 +74,7 @@ def warmup_kokoro(synth_fn: Callable[[str], Optional[bytes]], n_passes: int = 3)
     JIT/cache compilation paths. Subsequent calls then hit the steady-state
     latency floor immediately.
     """
-    if os.environ.get("GANDALF_KOKORO_WARMUP", "1") != "1":
+    if os.environ.get("MITHRANDIR_KOKORO_WARMUP", "1") != "1":
         return
     enable_tensorcores()
     primer = [

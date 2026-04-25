@@ -1,4 +1,4 @@
-name: Gandalf Benchmark CI
+name: Mithrandir Benchmark CI
 
 on:
   push:
@@ -67,7 +67,7 @@ jobs:
         run: |
           cp .env.example .env
           echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env
-          echo "GANDALF_FORCE_LOCAL_ONLY=0" >> .env
+          echo "MITHRANDIR_FORCE_LOCAL_ONLY=0" >> .env
 
       - name: Run benchmark (identity + routing + safety categories)
         run: |

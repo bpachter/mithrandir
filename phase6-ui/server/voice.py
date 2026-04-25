@@ -1,5 +1,5 @@
 """
-phase6-ui/server/voice.py — Speech-to-text + text-to-speech for Gandalf
+phase6-ui/server/voice.py — Speech-to-text + text-to-speech for Mithrandir
 
 STT: faster-whisper (base.en CUDA float16 -> CPU int8 fallback)
 
@@ -28,7 +28,7 @@ from typing import Callable, Coroutine, Optional
 
 import numpy as np
 
-logger = logging.getLogger("gandalf.voice")
+logger = logging.getLogger("mithrandir.voice")
 
 # ---------------------------------------------------------------------------
 # Voice profile directory  (reference wavs used by F5-TTS / future Fish Speech)
@@ -68,9 +68,9 @@ def get_voice_path(profile_id: str) -> Optional[Path]:
 
 
 # Active voice (Kokoro voice ID or wav profile name).
-# GANDALF_DEFAULT_VOICE lets .env pick a .wav profile (e.g. 'bmo') at startup.
+# MITHRANDIR_DEFAULT_VOICE lets .env pick a .wav profile (e.g. 'bmo') at startup.
 _active_voice: str = os.environ.get(
-    "GANDALF_DEFAULT_VOICE",
+    "MITHRANDIR_DEFAULT_VOICE",
     os.environ.get("KOKORO_VOICE", "bm_george"),
 )
 
@@ -101,7 +101,7 @@ def set_active_voice(profile_id: str) -> bool:
 
 _WHISPER_MODEL_SIZE = os.environ.get("WHISPER_MODEL", "base.en")
 _WHISPER_PROMPT = (
-    "Gandalf is an AI assistant built by Ben Pachter. "
+    "Mithrandir is an AI assistant built by Ben Pachter. "
     "He runs locally on an NVIDIA RTX 4090 GPU."
 )
 _whisper: Optional[object] = None
@@ -142,7 +142,7 @@ def _resample(audio: np.ndarray, orig_rate: int, target_rate: int = 16000) -> np
 
 
 def transcribe(raw_bytes: bytes, sample_rate: int = 16000) -> str:
-    # Optional NVIDIA NeMo Parakeet path. Activated by GANDALF_USE_PARAKEET=1.
+    # Optional NVIDIA NeMo Parakeet path. Activated by MITHRANDIR_USE_PARAKEET=1.
     # Falls through to Whisper on any failure so deployments without NeMo work.
     try:
         import parakeet_asr  # type: ignore
@@ -179,7 +179,7 @@ def transcribe(raw_bytes: bytes, sample_rate: int = 16000) -> str:
         return ""
 
 
-_GANDALF_ALIASES = [
+_MITHRANDIR_ALIASES = [
     "and kidu", "and kiddo", "inkido", "inkidu", "en kidu", "en-kidu",
     "enkido", "enkidoo", "and cue do", "and queue do", "kidu", "unkidu",
 ]
@@ -187,9 +187,9 @@ _GANDALF_ALIASES = [
 
 def _fix_proper_nouns(text: str) -> str:
     lower = text.lower()
-    for alias in _GANDALF_ALIASES:
+    for alias in _MITHRANDIR_ALIASES:
         if alias in lower:
-            text = re.sub(re.escape(alias), "Gandalf", text, flags=re.IGNORECASE)
+            text = re.sub(re.escape(alias), "Mithrandir", text, flags=re.IGNORECASE)
     return text
 
 
@@ -215,44 +215,44 @@ _KOKORO_SR       = 24000
 # → trace vocoder (game-console electronic hum) → short speaker-box comb
 # → light bitcrush (13-bit — subtle digital texture, not 8-bit crunch)
 # → gentle presence peak → tiny room reverb.
-_FX_PITCH        = float(os.environ.get("GANDALF_PITCH",     "0.0"))    # bm_george is already deep — no pitch shift needed
-_FX_LOW_BOOST_DB = float(os.environ.get("GANDALF_LOW_BOOST", "0.0"))    # no bass boost — BMO is a small speaker
-_FX_LOW_CUTOFF   = float(os.environ.get("GANDALF_LOW_CUTOFF", "220"))   # bass shelf cutoff (Hz)
-_FX_RING_RATE_HZ = float(os.environ.get("GANDALF_RING_HZ",   "0.0"))    # NO ring mod — BMO is warm, not buzzy
-_FX_RING_DEPTH   = float(os.environ.get("GANDALF_RING_DEPTH", "0.0"))   # off
-_FX_COMB_MS      = float(os.environ.get("GANDALF_COMB_MS",   "2.0"))    # short speaker-box resonance (not metallic plate)
-_FX_COMB_FB      = float(os.environ.get("GANDALF_COMB_FB",   "0.22"))   # light feedback — subtle, not resonant
-_FX_COMB_MIX     = float(os.environ.get("GANDALF_COMB_MIX",  "0.12"))   # wet/dry mix
-_FX_DRIVE        = float(os.environ.get("GANDALF_DRIVE",     "1.8"))    # soft warmth — no aggression
-_FX_FORMANT      = float(os.environ.get("GANDALF_FORMANT",   "1.06"))   # slight brightening — small vocal tract
-_FX_SUB_MIX      = float(os.environ.get("GANDALF_SUB_MIX",   "0.0"))    # no subharmonic
-_FX_SUB_CUTOFF   = float(os.environ.get("GANDALF_SUB_CUTOFF", "120"))   # subharmonic LPF cutoff (Hz)
-_FX_VOC_MIX      = float(os.environ.get("GANDALF_VOC_MIX",   "0.05"))   # trace vocoder — hint of game-console hum
-_FX_VOC_BASE_HZ  = float(os.environ.get("GANDALF_VOC_BASE",  "380"))    # higher carrier = lighter, brighter electronic tone
+_FX_PITCH        = float(os.environ.get("MITHRANDIR_PITCH",     "0.0"))    # bm_george is already deep — no pitch shift needed
+_FX_LOW_BOOST_DB = float(os.environ.get("MITHRANDIR_LOW_BOOST", "0.0"))    # no bass boost — BMO is a small speaker
+_FX_LOW_CUTOFF   = float(os.environ.get("MITHRANDIR_LOW_CUTOFF", "220"))   # bass shelf cutoff (Hz)
+_FX_RING_RATE_HZ = float(os.environ.get("MITHRANDIR_RING_HZ",   "0.0"))    # NO ring mod — BMO is warm, not buzzy
+_FX_RING_DEPTH   = float(os.environ.get("MITHRANDIR_RING_DEPTH", "0.0"))   # off
+_FX_COMB_MS      = float(os.environ.get("MITHRANDIR_COMB_MS",   "2.0"))    # short speaker-box resonance (not metallic plate)
+_FX_COMB_FB      = float(os.environ.get("MITHRANDIR_COMB_FB",   "0.22"))   # light feedback — subtle, not resonant
+_FX_COMB_MIX     = float(os.environ.get("MITHRANDIR_COMB_MIX",  "0.12"))   # wet/dry mix
+_FX_DRIVE        = float(os.environ.get("MITHRANDIR_DRIVE",     "1.8"))    # soft warmth — no aggression
+_FX_FORMANT      = float(os.environ.get("MITHRANDIR_FORMANT",   "1.06"))   # slight brightening — small vocal tract
+_FX_SUB_MIX      = float(os.environ.get("MITHRANDIR_SUB_MIX",   "0.0"))    # no subharmonic
+_FX_SUB_CUTOFF   = float(os.environ.get("MITHRANDIR_SUB_CUTOFF", "120"))   # subharmonic LPF cutoff (Hz)
+_FX_VOC_MIX      = float(os.environ.get("MITHRANDIR_VOC_MIX",   "0.05"))   # trace vocoder — hint of game-console hum
+_FX_VOC_BASE_HZ  = float(os.environ.get("MITHRANDIR_VOC_BASE",  "380"))    # higher carrier = lighter, brighter electronic tone
 # Small-speaker presence peak — brightens the upper midrange of a tiny speaker.
-_FX_CHEST_DB     = float(os.environ.get("GANDALF_CHEST_DB",  "2.5"))    # peak gain (dB)
-_FX_CHEST_HZ     = float(os.environ.get("GANDALF_CHEST_HZ",  "1400"))   # small-speaker box resonance, not chest
-_FX_CHEST_Q      = float(os.environ.get("GANDALF_CHEST_Q",   "2.0"))    # moderate width
+_FX_CHEST_DB     = float(os.environ.get("MITHRANDIR_CHEST_DB",  "2.5"))    # peak gain (dB)
+_FX_CHEST_HZ     = float(os.environ.get("MITHRANDIR_CHEST_HZ",  "1400"))   # small-speaker box resonance, not chest
+_FX_CHEST_Q      = float(os.environ.get("MITHRANDIR_CHEST_Q",   "2.0"))    # moderate width
 # Presence peak — warm upper-mid clarity (not aggression).
-_FX_BITE_DB      = float(os.environ.get("GANDALF_BITE_DB",   "2.5"))
-_FX_BITE_HZ      = float(os.environ.get("GANDALF_BITE_HZ",   "2200"))
-_FX_BITE_Q       = float(os.environ.get("GANDALF_BITE_Q",    "1.5"))
+_FX_BITE_DB      = float(os.environ.get("MITHRANDIR_BITE_DB",   "2.5"))
+_FX_BITE_HZ      = float(os.environ.get("MITHRANDIR_BITE_HZ",   "2200"))
+_FX_BITE_Q       = float(os.environ.get("MITHRANDIR_BITE_Q",    "1.5"))
 # Sibilance shelf — light, clear consonants without harshness.
-_FX_SIB_DB       = float(os.environ.get("GANDALF_SIB_DB",    "2.0"))
-_FX_SIB_HZ       = float(os.environ.get("GANDALF_SIB_HZ",    "6500"))
+_FX_SIB_DB       = float(os.environ.get("MITHRANDIR_SIB_DB",    "2.0"))
+_FX_SIB_HZ       = float(os.environ.get("MITHRANDIR_SIB_HZ",    "6500"))
 # Small-room reverb — tiny speaker in a small box, not a chamber.
-_FX_VERB_MS      = float(os.environ.get("GANDALF_VERB_MS",   "20"))
-_FX_VERB_FB      = float(os.environ.get("GANDALF_VERB_FB",   "0.15"))
-_FX_VERB_MIX     = float(os.environ.get("GANDALF_VERB_MIX",  "0.04"))
+_FX_VERB_MS      = float(os.environ.get("MITHRANDIR_VERB_MS",   "20"))
+_FX_VERB_FB      = float(os.environ.get("MITHRANDIR_VERB_FB",   "0.15"))
+_FX_VERB_MIX     = float(os.environ.get("MITHRANDIR_VERB_MIX",  "0.04"))
 # Post pitch tweak (for cloned voices). Default off.
-_FX_POST_PITCH   = float(os.environ.get("GANDALF_POST_PITCH", "0.0"))
+_FX_POST_PITCH   = float(os.environ.get("MITHRANDIR_POST_PITCH", "0.0"))
 # Bitcrusher — 13-bit is subtle digital texture (game-console feel without
 # the harsh 8-bit crunch). decim=1 keeps sample rate clean.
-_FX_CRUSH_MIX    = float(os.environ.get("GANDALF_CRUSH_MIX",  "0.06"))
-_FX_CRUSH_BITS   = int(float(os.environ.get("GANDALF_CRUSH_BITS", "13")))
-_FX_CRUSH_DECIM  = int(float(os.environ.get("GANDALF_CRUSH_DECIM", "1")))   # downsample factor
-_FX_MEGATRON     = os.environ.get("GANDALF_MEGATRON", "1") == "1"       # enable extended character FX chain
-_MEGATRON_SLOWDOWN = float(os.environ.get("GANDALF_MEGATRON_SLOWDOWN", "1.00"))
+_FX_CRUSH_MIX    = float(os.environ.get("MITHRANDIR_CRUSH_MIX",  "0.06"))
+_FX_CRUSH_BITS   = int(float(os.environ.get("MITHRANDIR_CRUSH_BITS", "13")))
+_FX_CRUSH_DECIM  = int(float(os.environ.get("MITHRANDIR_CRUSH_DECIM", "1")))   # downsample factor
+_FX_MEGATRON     = os.environ.get("MITHRANDIR_MEGATRON", "1") == "1"       # enable extended character FX chain
+_MEGATRON_SLOWDOWN = float(os.environ.get("MITHRANDIR_MEGATRON_SLOWDOWN", "1.00"))
 
 _kokoro_pipeline = None
 _kokoro_pipeline_lang: Optional[str] = None
@@ -567,7 +567,7 @@ def _apply_character_fx(audio: np.ndarray, voice: Optional[str] = None) -> np.nd
     Base chain (always on for Kokoro output):
         pitch shift → formant warp → low shelf boost
 
-    Extended character chain (adds when GANDALF_MEGATRON=1) — tuned for BMO
+    Extended character chain (adds when MITHRANDIR_MEGATRON=1) — tuned for BMO
     from Adventure Time (small sentient game console, warm + innocent):
         → small-speaker presence peak (~1400 Hz) — console body resonance
         → soft tanh warmth                        — gentle saturation, no aggression
@@ -705,7 +705,7 @@ def prewarm_tts():
             import voice_optim  # type: ignore
             voice_optim.warmup_kokoro(lambda t: _synth_kokoro(t))
         except Exception:
-            result = _synth_kokoro("Gandalf online.")
+            result = _synth_kokoro("Mithrandir online.")
             if result:
                 logger.info(f"Kokoro pre-warm complete ({len(result):,} bytes).")
             else:
@@ -713,8 +713,8 @@ def prewarm_tts():
 
         # Auto-generate reference transcripts for any wav voice profile that
         # is missing its sidecar .txt file. Closes the F5 cold-start hole.
-        # DISABLED by default (set GANDALF_AUTO_REF_TEXT=1 to enable).
-        if os.environ.get("GANDALF_AUTO_REF_TEXT", "0") == "1":
+        # DISABLED by default (set MITHRANDIR_AUTO_REF_TEXT=1 to enable).
+        if os.environ.get("MITHRANDIR_AUTO_REF_TEXT", "0") == "1":
             try:
                 import auto_ref_text  # type: ignore
                 if _VOICES_DIR.exists():
@@ -847,17 +847,17 @@ _f5_ready = False
 # Kill-switch strategy: infrastructure failures (worker crash, write error) count
 # against the global session limit and can disable F5 entirely.  Per-profile
 # timeouts / synthesis errors are tracked per voice_path key so a single bad
-# .wav profile doesn't stall other profiles. Tunable via GANDALF_F5_MAX_FAILS.
-_F5_MAX_FAILS = int(os.environ.get("GANDALF_F5_MAX_FAILS", "2"))
+# .wav profile doesn't stall other profiles. Tunable via MITHRANDIR_F5_MAX_FAILS.
+_F5_MAX_FAILS = int(os.environ.get("MITHRANDIR_F5_MAX_FAILS", "2"))
 _f5_fail_count = 0          # infrastructure failures (worker crash / write error)
 _f5_disabled_session = False  # True → skip F5 for entire session
 _f5_profile_fails: dict[str, int] = {}    # per voice_path failure counts
 _f5_profiles_disabled: set[str]   = set() # profiles disabled after repeated failure
-_AUTO_REF_TEXT = os.environ.get("GANDALF_AUTO_REF_TEXT", "1") == "1"
+_AUTO_REF_TEXT = os.environ.get("MITHRANDIR_AUTO_REF_TEXT", "1") == "1"
 _ref_text_cache: dict[str, str] = {}
 # Pre-warm F5-TTS in background at startup so it's ready if clone mode is used later.
 # Takes ~40s — runs as a daemon thread and doesn't block the server.
-_F5_PREWARM = os.environ.get("GANDALF_PREWARM_F5", "1") == "1"
+_F5_PREWARM = os.environ.get("MITHRANDIR_PREWARM_F5", "1") == "1"
 
 
 def _f5_available() -> bool:
@@ -967,7 +967,7 @@ def _start_f5_worker() -> bool:
             text=True, bufsize=1, env=_f5_env,
         )
         import time as _time
-        _startup_timeout = int(os.environ.get("GANDALF_F5_STARTUP_TIMEOUT", "180"))
+        _startup_timeout = int(os.environ.get("MITHRANDIR_F5_STARTUP_TIMEOUT", "180"))
         deadline = _time.time() + _startup_timeout
         while _time.time() < deadline:
             line = _f5_proc.stdout.readline().strip()
@@ -995,9 +995,9 @@ def _synth_f5tts(text: str, voice_path: Optional[Path], timeout: Optional[int] =
         logger.debug(f"F5-TTS skipped for disabled profile: {profile_key}")
         return None
     # 20s is plenty when ref_text is supplied (~1-3s actual inference). Tunable
-    # via GANDALF_F5_TIMEOUT for longer reference clips.
+    # via MITHRANDIR_F5_TIMEOUT for longer reference clips.
     if timeout is None:
-        timeout = int(os.environ.get("GANDALF_F5_TIMEOUT", "20"))
+        timeout = int(os.environ.get("MITHRANDIR_F5_TIMEOUT", "20"))
     with _f5_lock:
         if not _start_f5_worker():
             return None
@@ -1081,14 +1081,14 @@ def _synth_f5tts(text: str, voice_path: Optional[Path], timeout: Optional[int] =
 
 
 # ---------------------------------------------------------------------------
-# TTS — StyleTTS2  (fine-tuned Gandalf voice — long-term home base)
+# TTS — StyleTTS2  (fine-tuned Mithrandir voice — long-term home base)
 # ---------------------------------------------------------------------------
 
 _STT2_WORKER_SCRIPT = Path(__file__).parent / "styletts2_worker.py"
 _stt2_proc:   Optional[subprocess.Popen] = None
 _stt2_lock  = threading.Lock()
 _stt2_ready = False
-_STT2_MAX_FAILS = int(os.environ.get("GANDALF_STT2_MAX_FAILS", "1"))
+_STT2_MAX_FAILS = int(os.environ.get("MITHRANDIR_STT2_MAX_FAILS", "1"))
 _stt2_fail_count = 0
 _stt2_disabled_session = False
 
@@ -1098,7 +1098,7 @@ def _styletts2_available() -> bool:
     if _stt2_disabled_session or not _STT2_WORKER_SCRIPT.exists():
         return False
     # Check that at least one fine-tuned checkpoint exists
-    logs_dir = Path(__file__).parent.parent.parent / "voice-training" / "logs" / "gandalf_voice"
+    logs_dir = Path(__file__).parent.parent.parent / "voice-training" / "logs" / "mithrandir_voice"
     return logs_dir.exists() and any(logs_dir.glob("epoch_*.pth"))
 
 
@@ -1210,7 +1210,7 @@ _worker_lock  = threading.Lock()
 _worker_ready = False
 # Same session-level kill-switch as F5 \u2014 Chatterbox takes ~25s even on a good
 # run; if it's broken we must not stall every sentence for 30s.
-_CHATTERBOX_MAX_FAILS = int(os.environ.get("GANDALF_CHATTERBOX_MAX_FAILS", "1"))
+_CHATTERBOX_MAX_FAILS = int(os.environ.get("MITHRANDIR_CHATTERBOX_MAX_FAILS", "1"))
 _chatterbox_fail_count = 0
 _chatterbox_disabled_session = False
 
@@ -1257,8 +1257,8 @@ def _synth_chatterbox(text: str, voice_path: Optional[Path], timeout: Optional[i
         return None
     if timeout is None:
         # Keep well under the 60s outer TTS wall clock so Kokoro+FX gets a turn
-        # if Chatterbox stalls. Override with GANDALF_CHATTERBOX_TIMEOUT if needed.
-        timeout = int(os.environ.get("GANDALF_CHATTERBOX_TIMEOUT", "20"))
+        # if Chatterbox stalls. Override with MITHRANDIR_CHATTERBOX_TIMEOUT if needed.
+        timeout = int(os.environ.get("MITHRANDIR_CHATTERBOX_TIMEOUT", "20"))
 
     def _mark_fail(reason: str) -> None:
         global _chatterbox_fail_count, _chatterbox_disabled_session
@@ -1435,7 +1435,7 @@ async def synthesize(text: str, voice_profile: Optional[str] = None) -> tuple[by
     Full-text synthesis. Returns (audio_bytes, format_str).
 
     Priority:
-        1. StyleTTS2 fine-tuned Gandalf voice (once training is complete)
+        1. StyleTTS2 fine-tuned Mithrandir voice (once training is complete)
         2. Kokoro bm_george + FX chain (fast local — always available)
         3. edge-tts (cloud fallback)
         4. pyttsx3 SAPI5 (offline last resort)

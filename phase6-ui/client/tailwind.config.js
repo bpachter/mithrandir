@@ -1,5 +1,5 @@
 /**
- * Gandalf — Ancient Gold & Mithril Silver design tokens
+ * Mithrandir — Ancient Gold & Mithril Silver design tokens
  * Dark stone base, antique gold primary, mithril silver secondary.
  */
 /** @type {import('tailwindcss').Config} */

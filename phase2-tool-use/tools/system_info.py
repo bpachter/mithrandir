@@ -4,7 +4,7 @@ system_info.py — local hardware context tool
 Fetches real-time system stats (GPU, CPU, RAM) and returns them as a
 formatted string that can be prepended to a prompt as context.
 
-This is the pattern for all Gandalf tools:
+This is the pattern for all Mithrandir tools:
     1. Python fetches real data from the environment
     2. Data is injected into the prompt as [SYSTEM CONTEXT]
     3. The LLM reasons over the provided data — it never touches hardware directly
@@ -103,7 +103,7 @@ def get_context() -> str:
     return "\n".join(lines)
 
 
-# Keywords that signal a system info query — used by gandalf.py to decide whether to call this tool
+# Keywords that signal a system info query — used by mithrandir.py to decide whether to call this tool
 TRIGGER_KEYWORDS = [
     "gpu", "vram", "temperature", "temp", "cpu", "ram", "memory",
     "system", "hardware", "performance", "utilization", "watt",

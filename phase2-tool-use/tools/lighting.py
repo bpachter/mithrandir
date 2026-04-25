@@ -1,5 +1,5 @@
 """
-lighting.py — RGB lighting effects for Gandalf
+lighting.py — RGB lighting effects for Mithrandir
 
 Controls two separate lighting systems:
 
@@ -7,7 +7,7 @@ Controls two separate lighting systems:
    Strategy: hold exclusive SDK control during idle (showing soft blue);
    RELEASE control during inference so iCUE resumes its active preset
    (set "Rain" as your active iCUE theme — it plays automatically while
-   Gandalf is thinking, then our idle blue returns when it's done).
+   Mithrandir is thinking, then our idle blue returns when it's done).
 
    Requirements:
        pip install cuesdk
@@ -17,7 +17,7 @@ Controls two separate lighting systems:
 
 2. Alienware LightFX (AlienFX) — Aurora R15 chassis lights.
    Sets idle blue on inference_stop(); leaves the ACC theme running
-   during inference (ACC manages the tower while Gandalf is thinking).
+   during inference (ACC manages the tower while Mithrandir is thinking).
 
    Requirements:
        LightFX.dll present (installed by Alienware Command Center;
@@ -39,12 +39,12 @@ import threading
 import logging
 from typing import Optional
 
-logger = logging.getLogger("gandalf.lighting")
+logger = logging.getLogger("mithrandir.lighting")
 
-_USE_CORSAIR = os.environ.get("GANDALF_LIGHTING_CORSAIR", "0").strip().lower() in {
+_USE_CORSAIR = os.environ.get("MITHRANDIR_LIGHTING_CORSAIR", "0").strip().lower() in {
     "1", "true", "yes", "on"
 }
-_USE_ALIENFX = os.environ.get("GANDALF_LIGHTING_ALIENFX", "1").strip().lower() in {
+_USE_ALIENFX = os.environ.get("MITHRANDIR_LIGHTING_ALIENFX", "1").strip().lower() in {
     "1", "true", "yes", "on"
 }
 
@@ -259,8 +259,8 @@ def _corsair_release_control() -> None:
 # Idle color + animation constants
 # ---------------------------------------------------------------------------
 
-_IDLE_COLOR      = (0, 60, 180)    # soft blue  — Gandalf idle
-_THINKING_COLOR  = (120, 0, 200)   # deep purple — Gandalf thinking
+_IDLE_COLOR      = (0, 60, 180)    # soft blue  — Mithrandir idle
+_THINKING_COLOR  = (120, 0, 200)   # deep purple — Mithrandir thinking
 _ANIM_SPEED  = 300             # hue degrees per second
 _ANIM_DELAY  = 0.04            # seconds per frame (~25 fps)
 
@@ -404,7 +404,7 @@ def initialize() -> None:
 
 def inference_start() -> None:
     """
-    Signal that Gandalf is thinking.
+    Signal that Mithrandir is thinking.
     - Keyboard: takes iCUE exclusive control → deep purple
     - Tower:    galaxy swirl animation via LightFX (overrides AWCC)
     """
@@ -419,7 +419,7 @@ def inference_start() -> None:
             target=_tower_rainbow_loop,
             args=(_tower_stop,),
             daemon=True,
-            name="gandalf-tower-rainbow",
+            name="mithrandir-tower-rainbow",
         )
         _tower_thread.start()
 
@@ -451,7 +451,7 @@ def inference_stop() -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
-    print("=== Gandalf lighting self-test ===")
+    print("=== Mithrandir lighting self-test ===")
     print(f"cuesdk      : {'installed' if _CUESDK_AVAILABLE else 'not installed'}")
     _ = _alienfw.ready
     print(f"AlienFX     : {'ready (' + str(_alienfw._num_lights) + ' lights)' if _alienfw._ready else 'not available'}")

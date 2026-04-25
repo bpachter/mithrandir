@@ -122,7 +122,7 @@ export default function ModelParamsPanel() {
       <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
 
         <div style={{ fontSize: 9, color: 'var(--white-dim)', marginBottom: 4, lineHeight: 1.5 }}>
-          Each slider shapes Gandalf&apos;s tone, caution, and memory span.
+          Each slider shapes Mithrandir&apos;s tone, caution, and memory span.
           Values are forwarded directly to Gemma 4 through Ollama.
         </div>
 

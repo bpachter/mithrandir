@@ -6,9 +6,9 @@ On deployment, the backend started returning 502 Bad Gateway on all `/api/*` end
 ## Defensive Fixes Applied ✓
 
 1. **Auto-ref-text generation disabled by default** (`phase6-ui/server/voice.py`)
-   - Changed: `GANDALF_AUTO_REF_TEXT=1` → `GANDALF_AUTO_REF_TEXT=0`
+   - Changed: `MITHRANDIR_AUTO_REF_TEXT=1` → `MITHRANDIR_AUTO_REF_TEXT=0`
    - Reason: File iteration on startup could fail on Railway if voices/ directory has issues
-   - To enable: Set `GANDALF_AUTO_REF_TEXT=1` in Railway .env only after confirming server is stable
+   - To enable: Set `MITHRANDIR_AUTO_REF_TEXT=1` in Railway .env only after confirming server is stable
 
 2. **Better error logging in main.py**
    - Added `exc_info=True` to prewarm_chatterbox() error logging
@@ -39,7 +39,7 @@ Railway will auto-redeploy. Check logs in 2-3 minutes.
 ## If Still Getting 502s
 
 1. **Check Railway Logs:**
-   - Railway dashboard → pachter-gandalf → Deployments → View Logs
+   - Railway dashboard → pachter-mithrandir → Deployments → View Logs
    - Look for lines containing "ERROR", "Voice pre-warm failed", or Python tracebacks
    - Post the last 100 lines to diagnose
 
@@ -78,9 +78,9 @@ This takes you back to the last stable state before the voice upgrades.
 To re-enable voice optimizations:
 ```bash
 # .env on Railway:
-GANDALF_AUTO_REF_TEXT=0              # Keep disabled until you confirm stability
-GANDALF_KOKORO_WARMUP=1              # Safe — just cuDNN tuning
-GANDALF_USE_PARAKEET=0               # Off by default — only enable if nemo installed
+MITHRANDIR_AUTO_REF_TEXT=0              # Keep disabled until you confirm stability
+MITHRANDIR_KOKORO_WARMUP=1              # Safe — just cuDNN tuning
+MITHRANDIR_USE_PARAKEET=0               # Off by default — only enable if nemo installed
 ```
 
 ## Summary of Changes for Reference

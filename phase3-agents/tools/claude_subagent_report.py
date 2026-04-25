@@ -19,7 +19,7 @@ def _default_log_path() -> Path:
     here = Path(__file__).resolve()
     # phase3-agents/tools -> phase3-agents/claude_subagent_audit.jsonl
     default = here.parent.parent / "claude_subagent_audit.jsonl"
-    configured = os.environ.get("GANDALF_CLAUDE_SUBAGENT_AUDIT_LOG", "").strip()
+    configured = os.environ.get("MITHRANDIR_CLAUDE_SUBAGENT_AUDIT_LOG", "").strip()
     return Path(configured) if configured else default
 
 

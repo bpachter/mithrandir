@@ -3,7 +3,7 @@
 
 set -e
 
-echo "=== Gandalf Voice Module Deployment Fixes ==="
+echo "=== Mithrandir Voice Module Deployment Fixes ==="
 echo ""
 echo "Verifying local state..."
 git status --short
@@ -20,7 +20,7 @@ echo ""
 echo "✓ Pushed successfully!"
 echo ""
 echo "Railway will auto-redeploy in 2-3 minutes."
-echo "Monitor at: Railway → your Gandalf service → Deployments → View Logs"
+echo "Monitor at: Railway → your Mithrandir service → Deployments → View Logs"
 echo ""
 echo "What to look for in logs:"
 echo "  ✓ 'Voice module loaded'"

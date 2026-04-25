@@ -800,7 +800,7 @@ def main():
         max_value_composite=30      # Cheapest 30% by value
     )
 
-    # Save CSV for Gandalf edgar_screener.py (must be in data/processed/)
+    # Save CSV for Mithrandir edgar_screener.py (must be in data/processed/)
     csv_path = Path('data/processed/quantitative_value_portfolio.csv')
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     final_portfolio.to_csv(csv_path, index=False)

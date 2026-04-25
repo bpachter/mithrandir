@@ -1,4 +1,4 @@
-# Gandalf — Visual Assets
+# Mithrandir — Visual Assets
 
 Drop GIFs and short clips here. Filenames are referenced from the project READMEs and `LINKEDIN_POST.md`.
 

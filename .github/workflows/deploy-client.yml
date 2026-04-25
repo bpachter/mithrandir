@@ -1,4 +1,4 @@
-name: Deploy Gandalf Client
+name: Deploy Mithrandir Client
 
 on:
   push:
@@ -31,7 +31,7 @@ jobs:
         working-directory: phase6-ui/client
         env:
           VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
-          VITE_BASE_PATH: /gandalf/
+          VITE_BASE_PATH: /mithrandir/
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4

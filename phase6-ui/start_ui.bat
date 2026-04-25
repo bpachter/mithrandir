@@ -1,5 +1,5 @@
 @echo off
-echo Starting Gandalf Phase 6 UI...
+echo Starting Mithrandir Phase 6 UI...
 
 :: Start FastAPI backend
 :: --reload is intentionally OFF: the server writes server.log, test_tts.wav and
@@ -7,13 +7,13 @@ echo Starting Gandalf Phase 6 UI...
 :: killing in-flight WebSocket TTS chunks before the browser plays them.
 :: (The /api/test-audio path still works under --reload because it's a single
 :: fast HTTP response, which is why that one was hearable and chat TTS wasn't.)
-start "Gandalf Backend" cmd /k "cd /d %~dp0server && python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+start "Mithrandir Backend" cmd /k "cd /d %~dp0server && python -m uvicorn main:app --host 0.0.0.0 --port 8000"
 
 :: Brief pause to let backend initialize
 timeout /t 2 /nobreak >nul
 
 :: Start Vite dev server
-start "Gandalf Frontend" cmd /k "cd /d %~dp0client && npm run dev"
+start "Mithrandir Frontend" cmd /k "cd /d %~dp0client && npm run dev"
 
 echo.
 echo Backend:  http://localhost:8000

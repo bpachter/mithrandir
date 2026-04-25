@@ -307,7 +307,7 @@ def main() -> None:
         print(f"\nBest candidate #{best_idx+1} saved as voices/{args.out}.wav")
         print(f"  All {len(candidate_wavs)} candidates saved as voices/{args.out}_candidate_*.wav")
         print(f"\nRestart the server and switch to the '{args.out}' voice profile to use it.")
-        print("To enable F5-TTS cloning in .env: GANDALF_STREAM_CLONE=1 (slower but more accurate)")
+        print("To enable F5-TTS cloning in .env: MITHRANDIR_STREAM_CLONE=1 (slower but more accurate)")
 
 
 if __name__ == "__main__":

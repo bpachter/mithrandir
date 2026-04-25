@@ -1,5 +1,5 @@
 """
-phase6-ui/server/main.py — Gandalf UI backend (FastAPI)
+phase6-ui/server/main.py — Mithrandir UI backend (FastAPI)
 
 Endpoints:
   GET  /api/health
@@ -39,7 +39,7 @@ from pydantic import BaseModel
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env", override=True)
 
-_FORCED_VOICE_PROFILE = os.environ.get("GANDALF_FORCE_VOICE_PROFILE", "").strip()
+_FORCED_VOICE_PROFILE = os.environ.get("MITHRANDIR_FORCE_VOICE_PROFILE", "").strip()
 
 # Voice module (STT + TTS) — imported lazily so missing deps don't crash startup
 _voice = None
@@ -76,7 +76,7 @@ def _effective_voice_profile(requested: Optional[str]) -> Optional[str]:
     return requested
 
 # ---------------------------------------------------------------------------
-# Paths — reach back into the Gandalf monorepo
+# Paths — reach back into the Mithrandir monorepo
 # ---------------------------------------------------------------------------
 
 _ROOT     = Path(__file__).parent.parent.parent
@@ -101,7 +101,7 @@ _file_handler = _RFH(
 )
 _file_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
 logging.getLogger().addHandler(_file_handler)
-logger = logging.getLogger("gandalf.ui")
+logger = logging.getLogger("mithrandir.ui")
 
 # ---------------------------------------------------------------------------
 # Lazy imports (don't crash if a subsystem is unavailable)
@@ -109,10 +109,10 @@ logger = logging.getLogger("gandalf.ui")
 
 def _import_agent():
     try:
-        from gandalf_agent import run_agent
+        from mithrandir_agent import run_agent
         return run_agent
     except Exception as e:
-        logger.warning(f"gandalf_agent unavailable: {e}")
+        logger.warning(f"mithrandir_agent unavailable: {e}")
         return None
 
 def _import_system_info():
@@ -246,12 +246,12 @@ _gemma_params = _load_params()
 # FastAPI app
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="Gandalf UI", version="7.0.0")
+app = FastAPI(title="Mithrandir UI", version="7.0.0")
 
-_VOICE_MAX_B64_CHARS = int(os.environ.get("GANDALF_VOICE_MAX_B64_CHARS", "8000000"))
-_VOICE_MAX_RAW_BYTES = int(os.environ.get("GANDALF_VOICE_MAX_RAW_BYTES", "5000000"))
-_VOICE_MIN_RATE = int(os.environ.get("GANDALF_VOICE_MIN_SAMPLE_RATE", "8000"))
-_VOICE_MAX_RATE = int(os.environ.get("GANDALF_VOICE_MAX_SAMPLE_RATE", "48000"))
+_VOICE_MAX_B64_CHARS = int(os.environ.get("MITHRANDIR_VOICE_MAX_B64_CHARS", "8000000"))
+_VOICE_MAX_RAW_BYTES = int(os.environ.get("MITHRANDIR_VOICE_MAX_RAW_BYTES", "5000000"))
+_VOICE_MIN_RATE = int(os.environ.get("MITHRANDIR_VOICE_MIN_SAMPLE_RATE", "8000"))
+_VOICE_MAX_RATE = int(os.environ.get("MITHRANDIR_VOICE_MAX_SAMPLE_RATE", "48000"))
 
 app.add_middleware(
     CORSMiddleware,
@@ -264,7 +264,7 @@ app.add_middleware(
 # Dev panel password gate — protects ALL /api/dev/* endpoints
 # ---------------------------------------------------------------------------
 
-_DEV_PANEL_PASSWORD = os.environ.get("GANDALF_DEV_PASSWORD", "").strip() or "antifragile"
+_DEV_PANEL_PASSWORD = os.environ.get("MITHRANDIR_DEV_PASSWORD", "").strip() or "antifragile"
 
 
 @app.middleware("http")
@@ -295,11 +295,11 @@ def root():
     if index.exists():
         return FileResponse(str(index))
 
-    ui_url = os.environ.get("GANDALF_UI_URL", "").strip()
+    ui_url = os.environ.get("MITHRANDIR_UI_URL", "").strip()
     return JSONResponse(
         {
             "ok": True,
-            "service": "Gandalf API",
+            "service": "Mithrandir API",
             "ui": ui_url or "not configured",
             "health": "/api/health",
             "docs": "/docs",
@@ -317,7 +317,7 @@ def health_detailed():
     """Run all subsystem health checks and return a full diagnostic report."""
     try:
         import importlib.util
-        spec = importlib.util.spec_from_file_location("gandalf_health", _ROOT / "gandalf_health.py")
+        spec = importlib.util.spec_from_file_location("mithrandir_health", _ROOT / "mithrandir_health.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         results = mod.run_all(parallel=True, timeout=20.0)
@@ -409,7 +409,7 @@ def get_portfolio():
 
 def _get_db_path():
     candidates = [
-        _ROOT / "phase4-memory" / "gandalf_memory.db",
+        _ROOT / "phase4-memory" / "mithrandir_memory.db",
         _ROOT / "phase4-memory" / "memory.db",
     ]
     return next((p for p in candidates if p.exists()), None)
@@ -535,7 +535,7 @@ async def delete_memory(exchange_id: str):
 
 @app.get("/api/freshness")
 def get_freshness():
-    """Return a data freshness audit for all Gandalf data sources."""
+    """Return a data freshness audit for all Mithrandir data sources."""
     try:
         import importlib.util
         spec = importlib.util.spec_from_file_location("data_freshness", Path(__file__).parent / "data_freshness.py")
@@ -645,7 +645,7 @@ async def test_audio():
         return JSONResponse({"error": "voice unavailable"}, status_code=503)
     test_profile = _effective_voice_profile(None)
     data, fmt = await voice.synthesize(
-        "Gandalf online. Audio system is working.",
+        "Mithrandir online. Audio system is working.",
         voice_profile=test_profile,
     )
     mime = "audio/wav" if fmt == "wav" else "audio/mpeg"

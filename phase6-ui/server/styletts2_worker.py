@@ -1,5 +1,5 @@
 """
-styletts2_worker.py — StyleTTS2 inference worker for Gandalf's fine-tuned voice.
+styletts2_worker.py — StyleTTS2 inference worker for Mithrandir's fine-tuned voice.
 
 Protocol (same as f5tts_worker.py):
   stdin:  {"text": "...", "voice_path": "/path/to/ref.wav"}
@@ -10,11 +10,11 @@ Protocol (same as f5tts_worker.py):
 Requires:
   - voice-training/styletts2_repo/ (cloned StyleTTS2 repo)
   - voice-training/pretrained/StyleTTS2-LibriTTS/epochs_2nd_00020.pth (base checkpoint)
-  - voice-training/logs/gandalf_voice/epoch_*.pth (fine-tuned checkpoint, preferred)
-  - A reference WAV at voice-training/reference_gandalf.wav (or passed via voice_path)
+  - voice-training/logs/mithrandir_voice/epoch_*.pth (fine-tuned checkpoint, preferred)
+  - A reference WAV at voice-training/reference_mithrandir.wav (or passed via voice_path)
 
 Reference audio must be 24 kHz mono WAV from a British RP male VCTK speaker.
-Run: python install_gandalf_voice.py <clip.wav> to set up the reference.
+Run: python install_mithrandir_voice.py <clip.wav> to set up the reference.
 """
 
 import io
@@ -28,8 +28,8 @@ _HERE       = Path(__file__).parent
 _TRAINING   = _HERE.parent.parent / "voice-training"
 _REPO       = _TRAINING / "styletts2_repo"
 _PRETRAINED = _TRAINING / "pretrained" / "StyleTTS2-LibriTTS"
-_LOGS       = _TRAINING / "logs" / "gandalf_voice"
-_DEFAULT_REF = _TRAINING / "reference_gandalf.wav"
+_LOGS       = _TRAINING / "logs" / "mithrandir_voice"
+_DEFAULT_REF = _TRAINING / "reference_mithrandir.wav"
 
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
@@ -220,7 +220,7 @@ def _synthesize(
 
 
 def _find_default_ref() -> str | None:
-    """Find a usable reference audio: explicit > reference_gandalf.wav > first training wav."""
+    """Find a usable reference audio: explicit > reference_mithrandir.wav > first training wav."""
     if _DEFAULT_REF.exists():
         return str(_DEFAULT_REF)
     wav_dir = _TRAINING / "training_data" / "wavs"

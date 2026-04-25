@@ -1,5 +1,5 @@
 """
-regime_detector.py — HMM market regime detection for Gandalf
+regime_detector.py — HMM market regime detection for Mithrandir
 
 Trains a Gaussian HMM on SPY features (weekly return, rolling volatility,
 price/200MA ratio) to identify 4 hidden market states, then labels each state

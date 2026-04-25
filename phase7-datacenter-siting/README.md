@@ -166,4 +166,4 @@ phase7-datacenter-siting/
 - [ ] Add Canada (CAISO/AESO + BC Hydro + Quebec) for cold-climate cohort
 - [ ] Add behind-the-meter generation overlay (gas turbines, SMR queue)
 
-See [../ROADMAP.md](../ROADMAP.md) for the full Gandalf roadmap.
+See [../ROADMAP.md](../ROADMAP.md) for the full Mithrandir roadmap.

@@ -1,5 +1,5 @@
 @echo off
-:: Gandalf guided setup script for Windows
+:: Mithrandir guided setup script for Windows
 :: Run this ONCE before first launch on a fresh machine.
 :: Usage: scripts\bootstrap.bat [--check] [--yes] [--skip-ollama]
 
@@ -10,7 +10,7 @@ cd /d "%~dp0.."
 
 echo.
 echo   =============================================
-echo    Gandalf Bootstrap — First-Time Setup
+echo    Mithrandir Bootstrap — First-Time Setup
 echo   =============================================
 echo.
 

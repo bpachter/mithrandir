@@ -1,5 +1,5 @@
 """
-tests/benchmark.py — Gandalf evaluation + regression benchmark runner.
+tests/benchmark.py — Mithrandir evaluation + regression benchmark runner.
 
 Usage:
     # Full benchmark (all categories)
@@ -85,9 +85,9 @@ def _run_prompt(prompt_def: dict, latency_only: bool = False) -> dict:
     }
 
     try:
-        from gandalf_agent import run_agent
+        from mithrandir_agent import run_agent
     except Exception as e:
-        result["error"] = f"Could not import gandalf_agent: {e}"
+        result["error"] = f"Could not import mithrandir_agent: {e}"
         result["failures"].append("import_error")
         return result
 
@@ -167,7 +167,7 @@ def run_benchmark(
     }
 
     if not as_json:
-        print(f"\n  Gandalf Benchmark  run={run_id}  {timestamp}")
+        print(f"\n  Mithrandir Benchmark  run={run_id}  {timestamp}")
         print("  " + "─" * 60)
 
     for i, p in enumerate(prompts):
@@ -257,7 +257,7 @@ def show_trendline(n: int = 10):
     if not files:
         print("No scorecards yet.")
         return
-    print(f"\n  Gandalf Score Trendline (last {len(files)} runs)")
+    print(f"\n  Mithrandir Score Trendline (last {len(files)} runs)")
     print("  " + "─" * 60)
     print(f"  {'Timestamp':<22} {'Score':>7} {'Pass':>5} {'Total':>6} {'p50ms':>7} {'p95ms':>7}")
     for f in reversed(files):
@@ -274,7 +274,7 @@ def show_trendline(n: int = 10):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Gandalf benchmark runner")
+    parser = argparse.ArgumentParser(description="Mithrandir benchmark runner")
     parser.add_argument("--category", help="Filter by category (routing, identity, tool_use, ...)")
     parser.add_argument("--id", dest="prompt_id", help="Run a single prompt by ID")
     parser.add_argument("--fail-fast", action="store_true", help="Stop on first failure")

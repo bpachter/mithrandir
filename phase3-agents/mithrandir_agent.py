@@ -1,6 +1,6 @@
-"""Public Gandalf agent entrypoint.
+"""Public Mithrandir agent entrypoint.
 
-Keep this module import-light so callers can resolve `gandalf_agent` even when
+Keep this module import-light so callers can resolve `mithrandir_agent` even when
 optional heavy dependencies for the full agent stack are not installed.
 """
 
@@ -9,7 +9,7 @@ from typing import Any
 
 
 def _impl():
-    return import_module("gandalf_agent_impl")
+    return import_module("mithrandir_agent_impl")
 
 
 def run_agent(*args: Any, **kwargs: Any):

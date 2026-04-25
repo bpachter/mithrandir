@@ -1,5 +1,5 @@
 @echo off
-:: Gandalf one-command launcher
+:: Mithrandir one-command launcher
 :: Usage: scripts\start.bat [--no-browser] [--backend-only] [--port 8080]
 ::
 :: This batch file is a thin wrapper around scripts/start.py.

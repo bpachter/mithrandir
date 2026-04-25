@@ -1,5 +1,5 @@
 @echo off
-title Gandalf Telegram Bot
+title Mithrandir Telegram Bot
 set "ROOT=%~dp0"
 cd /d "%ROOT%phase3-agents"
 if exist "%ROOT%.venv\Scripts\python.exe" (

@@ -3,14 +3,14 @@
 
 param(
     [string]$GpuHost = "gpu.bpachter.dev",
-    [string]$RemotePath = "/home/gandalf/phase6-ui/server",
-    [string]$User = "gandalf",
-    [string]$ServiceName = "gandalf"
+    [string]$RemotePath = "/home/mithrandir/phase6-ui/server",
+    [string]$User = "mithrandir",
+    [string]$ServiceName = "mithrandir"
 )
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== Gandalf Voice Module GPU Deployment ===" -ForegroundColor Cyan
+Write-Host "=== Mithrandir Voice Module GPU Deployment ===" -ForegroundColor Cyan
 Write-Host ""
 
 $localDir = "phase6-ui/server"

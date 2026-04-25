@@ -1,8 +1,8 @@
-# StyleTTS2 fine-tuning config — Gandalf voice (VCTK British RP male speakers)
+# StyleTTS2 fine-tuning config — Mithrandir voice (VCTK British RP male speakers)
 # Run from styletts2_repo/:
 #   python train_finetune_accelerate.py --config ../finetune_config.yml
 
-log_dir: "../logs/gandalf_voice"
+log_dir: "../logs/mithrandir_voice"
 save_freq: 5
 log_interval: 10
 device: "cuda"
@@ -99,7 +99,7 @@ slmadv_params:
   sig: 1.5
 
 test_sentences:
-  - "Gandalf is online. All systems are operational."
+  - "Mithrandir is online. All systems are operational."
   - "The analysis is complete. I have identified three key considerations."
   - "Very well. Let us proceed with the assessment."
   - "I understand completely. Allow me to think on this for a moment."

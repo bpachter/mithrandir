@@ -42,10 +42,10 @@ const CAT_COLORS: Record<string, string> = {
 
 interface CardProps {
   entry: DocEntry
-  onAskGandalf: (query: string) => void
+  onAskMithrandir: (query: string) => void
 }
 
-function DocCard({ entry, onAskGandalf }: CardProps) {
+function DocCard({ entry, onAskMithrandir }: CardProps) {
   const [expanded, setExpanded] = useState(false)
   const accentColor = CAT_COLORS[entry.category] ?? 'var(--cyan)'
 
@@ -100,7 +100,7 @@ function DocCard({ entry, onAskGandalf }: CardProps) {
             <pre className="doc-example">{entry.example}</pre>
           )}
 
-          {/* Tags + Ask Gandalf */}
+          {/* Tags + Ask Mithrandir */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {entry.tags.slice(0, 6).map((t) => (
@@ -111,7 +111,7 @@ function DocCard({ entry, onAskGandalf }: CardProps) {
               className="doc-ask-btn"
               onClick={(e) => {
                 e.stopPropagation()
-                onAskGandalf(`Explain ${entry.title} in the context of my RTX 4090 setup`)
+                onAskMithrandir(`Explain ${entry.title} in the context of my RTX 4090 setup`)
               }}
             >
               SEEK COUNSEL ▸
@@ -126,10 +126,10 @@ function DocCard({ entry, onAskGandalf }: CardProps) {
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 interface DocsPanelProps {
-  onAskGandalf: (query: string) => void
+  onAskMithrandir: (query: string) => void
 }
 
-export default function DocsPanel({ onAskGandalf }: DocsPanelProps) {
+export default function DocsPanel({ onAskMithrandir }: DocsPanelProps) {
   const [docs, setDocs]         = useState<DocEntry[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [activeTab, setActiveTab]   = useState('all')
@@ -210,7 +210,7 @@ export default function DocsPanel({ onAskGandalf }: DocsPanelProps) {
           </div>
         )}
         {filtered.map((entry) => (
-          <DocCard key={entry.id} entry={entry} onAskGandalf={onAskGandalf} />
+          <DocCard key={entry.id} entry={entry} onAskMithrandir={onAskMithrandir} />
         ))}
       </div>
     </div>

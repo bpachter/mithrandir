@@ -25,19 +25,19 @@ from pathlib import Path
 from typing import Optional
 
 _HERE = Path(__file__).parent
-_GANDALF = _HERE.parent
-_TOOLS_PATH = _GANDALF / "phase2-tool-use" / "tools"
-_PHASE4 = _GANDALF / "phase4-memory"
+_MITHRANDIR = _HERE.parent
+_TOOLS_PATH = _MITHRANDIR / "phase2-tool-use" / "tools"
+_PHASE4 = _MITHRANDIR / "phase4-memory"
 
 for p in [str(_TOOLS_PATH), str(_HERE)]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
 from dotenv import load_dotenv
-load_dotenv(str(_GANDALF / ".env"))
+load_dotenv(str(_MITHRANDIR / ".env"))
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.INFO)
-logger = logging.getLogger("gandalf.alerts")
+logger = logging.getLogger("mithrandir.alerts")
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 ALLOWED_USER_ID = os.environ.get("TELEGRAM_ALLOWED_USER_ID", "")
@@ -47,7 +47,7 @@ ALLOWED_USER_ID = os.environ.get("TELEGRAM_ALLOWED_USER_ID", "")
 # ---------------------------------------------------------------------------
 
 def _send_telegram(text: str) -> bool:
-    """Send a message to the authorized user via the Gandalf bot."""
+    """Send a message to the authorized user via the Mithrandir bot."""
     if not BOT_TOKEN or not ALLOWED_USER_ID:
         logger.warning("TELEGRAM_BOT_TOKEN or TELEGRAM_ALLOWED_USER_ID not set")
         return False

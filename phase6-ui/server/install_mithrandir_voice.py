@@ -1,18 +1,18 @@
 """
-install_gandalf_voice.py — Install the ElevenLabs reference clip as the Gandalf F5-TTS voice.
+install_mithrandir_voice.py — Install the ElevenLabs reference clip as the Mithrandir F5-TTS voice.
 
 Usage:
-    python install_gandalf_voice.py <path_to_clip.mp3_or_wav>
+    python install_mithrandir_voice.py <path_to_clip.mp3_or_wav>
 
 What it does:
     1. Converts and resamples to 24 kHz mono WAV (F5-TTS requirement)
-    2. Saves to voices/gandalf.wav
-    3. Runs Whisper to transcribe → voices/gandalf.txt (prevents F5 stalls)
+    2. Saves to voices/mithrandir.wav
+    3. Runs Whisper to transcribe → voices/mithrandir.txt (prevents F5 stalls)
     4. Prints instructions to activate the voice
 
 Then update .env:
-    GANDALF_DEFAULT_VOICE=gandalf
-    GANDALF_FORCE_VOICE_PROFILE=gandalf
+    MITHRANDIR_DEFAULT_VOICE=mithrandir
+    MITHRANDIR_FORCE_VOICE_PROFILE=mithrandir
 and restart the server.
 """
 
@@ -67,8 +67,8 @@ def main():
     if not src.exists():
         sys.exit(f"File not found: {src}")
 
-    out_wav = _VOICES_DIR / "gandalf.wav"
-    out_txt = _VOICES_DIR / "gandalf.txt"
+    out_wav = _VOICES_DIR / "mithrandir.wav"
+    out_txt = _VOICES_DIR / "mithrandir.txt"
 
     print(f"Converting {src.name} → {out_wav}…")
     convert_to_wav(src, out_wav)
@@ -84,14 +84,14 @@ def main():
 
     print()
     print("=" * 60)
-    print("Gandalf voice reference installed.")
+    print("Mithrandir voice reference installed.")
     print()
     print("To activate Layer 2 (F5-TTS cloning), update .env:")
-    print("  GANDALF_DEFAULT_VOICE=gandalf")
-    print("  GANDALF_FORCE_VOICE_PROFILE=gandalf")
-    print("  GANDALF_PREWARM_F5=1")
+    print("  MITHRANDIR_DEFAULT_VOICE=mithrandir")
+    print("  MITHRANDIR_FORCE_VOICE_PROFILE=mithrandir")
+    print("  MITHRANDIR_PREWARM_F5=1")
     print()
-    print("Then restart the Gandalf server.")
+    print("Then restart the Mithrandir server.")
     print("=" * 60)
 
 

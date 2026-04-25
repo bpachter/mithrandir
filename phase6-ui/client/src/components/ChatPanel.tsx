@@ -63,7 +63,7 @@ function connectChatSocket(onTtsError?: (msg: string) => void) {
     if (!ev.wasClean) {
       const delay = Math.min(1000 * Math.pow(2, _reconnectAttempts), 30_000)
       _reconnectAttempts++
-      console.log(`[gandalf-ws] chat socket dropped — reconnecting in ${delay}ms (attempt ${_reconnectAttempts})`)
+      console.log(`[mithrandir-ws] chat socket dropped — reconnecting in ${delay}ms (attempt ${_reconnectAttempts})`)
       _reconnectTimer = setTimeout(() => connectChatSocket(), delay)
     } else {
       _reconnectAttempts = 0
@@ -157,41 +157,41 @@ function resumePlayCtx() {
 
 async function playAudio(b64: string, _fmt: string = 'wav'): Promise<void> {
   const ctx = getPlayCtx()
-  console.log(`[gandalf-audio] playAudio: ctx.state=${ctx.state}, bytes=${Math.round(b64.length * 0.75)}`)
+  console.log(`[mithrandir-audio] playAudio: ctx.state=${ctx.state}, bytes=${Math.round(b64.length * 0.75)}`)
   if (ctx.state === 'suspended') {
-    console.log('[gandalf-audio] resuming suspended AudioContext…')
+    console.log('[mithrandir-audio] resuming suspended AudioContext…')
     await ctx.resume()
-    console.log(`[gandalf-audio] AudioContext state after resume: ${ctx.state}`)
+    console.log(`[mithrandir-audio] AudioContext state after resume: ${ctx.state}`)
   }
   return new Promise((resolve) => {
     try {
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)).buffer
       ctx.decodeAudioData(bytes, (buf) => {
-        console.log(`[gandalf-audio] decodeAudioData OK: ${buf.duration.toFixed(2)}s @ ${buf.sampleRate}Hz`)
+        console.log(`[mithrandir-audio] decodeAudioData OK: ${buf.duration.toFixed(2)}s @ ${buf.sampleRate}Hz`)
         try {
           const src = ctx.createBufferSource()
           src.buffer = buf
           src.connect(ctx.destination)
-          src.onended = () => { console.log('[gandalf-audio] playback ended'); resolve() }
+          src.onended = () => { console.log('[mithrandir-audio] playback ended'); resolve() }
           src.start(0)
-          console.log('[gandalf-audio] src.start(0) called — audio should be playing')
+          console.log('[mithrandir-audio] src.start(0) called — audio should be playing')
         } catch (e) {
-          console.error('[gandalf-audio] src.start error:', e)
+          console.error('[mithrandir-audio] src.start error:', e)
           resolve()
         }
       }, (e) => {
-        console.warn('[gandalf-audio] decodeAudioData failed, trying <audio> fallback:', e)
+        console.warn('[mithrandir-audio] decodeAudioData failed, trying <audio> fallback:', e)
         const blob  = new Blob([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], { type: 'audio/wav' })
         const url   = URL.createObjectURL(blob)
         const audio = new Audio(url)
         audio.onended = () => { URL.revokeObjectURL(url); resolve() }
-        audio.onerror = (err) => { console.error('[gandalf-audio] <audio> element error:', err); URL.revokeObjectURL(url); resolve() }
+        audio.onerror = (err) => { console.error('[mithrandir-audio] <audio> element error:', err); URL.revokeObjectURL(url); resolve() }
         audio.play()
-          .then(() => console.log('[gandalf-audio] <audio>.play() started'))
-          .catch((err) => { console.error('[gandalf-audio] <audio>.play() rejected (autoplay?):', err); resolve() })
+          .then(() => console.log('[mithrandir-audio] <audio>.play() started'))
+          .catch((err) => { console.error('[mithrandir-audio] <audio>.play() rejected (autoplay?):', err); resolve() })
       })
     } catch (e) {
-      console.error('[gandalf-audio] playAudio outer error:', e)
+      console.error('[mithrandir-audio] playAudio outer error:', e)
       resolve()
     }
   })
@@ -218,7 +218,7 @@ async function _drainAudioQueue(): Promise<void> {
 
 /** Push a chunk to the playback queue and start draining if idle. */
 function enqueueAudio(b64: string, fmt: string): void {
-  console.log(`[gandalf-audio] enqueueAudio: queueLen=${_audioQueue.length}, playing=${_audioPlaying}, bytes≈${Math.round(b64.length * 0.75)}`)
+  console.log(`[mithrandir-audio] enqueueAudio: queueLen=${_audioQueue.length}, playing=${_audioPlaying}, bytes≈${Math.round(b64.length * 0.75)}`)
   _audioQueue.push({ b64, fmt })
   _drainAudioQueue()   // fire-and-forget — guards itself with _audioPlaying flag
 }
@@ -406,7 +406,7 @@ export default function ChatPanel() {
   useEffect(() => { voiceStateRef.current = voiceState }, [voiceState])
   useEffect(() => { loopRef.current = loopEnabled }, [loopEnabled])
 
-  // ── Pending input from DocsPanel "Ask Gandalf" button ─────────────────
+  // ── Pending input from DocsPanel "Ask Mithrandir" button ─────────────────
   useEffect(() => {
     if (pendingChatInput) {
       setInput(pendingChatInput)
@@ -536,7 +536,7 @@ export default function ChatPanel() {
         pendingBotId = null
         voiceBotIdRef.current = null
         // Wait for audio queue to finish before going idle, so loop-mode
-        // doesn't start recording while Gandalf is still speaking.
+        // doesn't start recording while Mithrandir is still speaking.
         const waitAndReset = async () => {
           while (_audioPlaying || _audioQueue.length > 0) {
             await new Promise<void>((r) => setTimeout(r, 80))
@@ -555,7 +555,7 @@ export default function ChatPanel() {
     }
     ws.onclose = () => {
       voiceWsRef.current = null
-      // If the socket drops while Gandalf was still responding, force-release
+      // If the socket drops while Mithrandir was still responding, force-release
       // the UI so buttons become clickable again. Without this reset the panel
       // would stay locked on busy + speaking forever.
       if (voiceStateRef.current !== 'idle' || pendingBotId) {
@@ -723,14 +723,14 @@ export default function ChatPanel() {
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="dim" style={{ alignSelf: 'center', marginTop: 40, textAlign: 'center', lineHeight: 2 }}>
-            <div style={{ fontSize: 32, fontFamily: 'var(--font-display)', color: 'var(--amber)', opacity: 0.3 }}>GANDALF AT WATCH</div>
+            <div style={{ fontSize: 32, fontFamily: 'var(--font-display)', color: 'var(--amber)', opacity: 0.3 }}>MITHRANDIR AT WATCH</div>
             <div style={{ fontSize: 11, opacity: 0.4 }}>SPEAK, OR SET YOUR QUESTION IN WORDS_</div>
           </div>
         )}
         {messages.map((m) => (
           <div key={m.id} className={`msg ${m.role}`}>
             <span className="msg-label">
-              {m.role === 'user' ? 'YOU' : 'GANDALF'} · {new Date(m.ts).toLocaleTimeString('en-US', { hour12: false })}
+              {m.role === 'user' ? 'YOU' : 'MITHRANDIR'} · {new Date(m.ts).toLocaleTimeString('en-US', { hour12: false })}
             </span>
             {m.steps && m.steps.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 4 }}>
