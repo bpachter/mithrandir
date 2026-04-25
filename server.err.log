@@ -22,3 +22,362 @@ C:\Users\benpa\AppData\Roaming\Python\Python312\site-packages\torch\nn\utils\wei
 2026-04-25 00:55:04,859 INFO mithrandir.voice: Kokoro: 'Ready when you are.…' \u2192 114,284 bytes (voice=bm_george)
 2026-04-25 00:55:04,860 INFO mithrandir.voice.optim: Kokoro warmup pass 3/3: ok
 2026-04-25 00:55:06,220 INFO mithrandir.voice: TTS backend=F5 profile='mithrandir' success
+INFO:     54.241.186.112:0 - "WebSocket /ws/chat" [accepted]
+INFO:     connection open
+2026-04-25 00:58:45,737 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 00:58:45,738 INFO regime_detector: Feature data is 1d stale — refreshing
+INFO:     54.241.186.112:0 - "WebSocket /ws/gpu" [accepted]
+INFO:     connection open
+2026-04-25 00:58:46,506 INFO regime_detector: Feature data refreshed through 2026-04-24
+2026-04-25 00:59:23,365 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 00:59:23,366 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 00:59:23,399 INFO regime_detector: Feature data refreshed through 2026-04-24
+2026-04-25 00:59:55,491 INFO mithrandir.ui: TTS: synthesizing 2043 chars (profile='mithrandir')
+2026-04-25 00:59:55,495 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=0
+2026-04-25 00:59:59,073 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=0
+2026-04-25 00:59:59,152 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=1
+2026-04-25 01:00:02,752 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=1
+2026-04-25 01:00:02,829 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=2
+2026-04-25 01:00:04,992 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=2
+2026-04-25 01:00:05,024 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=3
+2026-04-25 01:00:07,020 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=3
+2026-04-25 01:00:07,041 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=4
+2026-04-25 01:00:10,255 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=4
+2026-04-25 01:00:10,297 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=5
+2026-04-25 01:00:12,440 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=5
+2026-04-25 01:00:12,497 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=6
+2026-04-25 01:00:14,655 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=6
+2026-04-25 01:00:14,723 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=7
+2026-04-25 01:00:16,755 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=7
+2026-04-25 01:00:16,792 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=8
+2026-04-25 01:00:20,253 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=8
+2026-04-25 01:00:20,390 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=9
+2026-04-25 01:00:23,976 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=9
+2026-04-25 01:00:24,030 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=10
+2026-04-25 01:00:26,133 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=10
+2026-04-25 01:00:26,175 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=11
+2026-04-25 01:00:29,681 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=11
+2026-04-25 01:00:29,763 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=12
+2026-04-25 01:00:31,815 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=12
+2026-04-25 01:00:31,845 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=13
+2026-04-25 01:00:34,058 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=13
+2026-04-25 01:00:34,109 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=14
+2026-04-25 01:00:36,101 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=14
+2026-04-25 01:00:36,137 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=15
+2026-04-25 01:00:42,367 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=15
+2026-04-25 01:00:42,489 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=16
+2026-04-25 01:00:44,639 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=16
+2026-04-25 01:00:44,705 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=17
+2026-04-25 01:00:49,351 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=17
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/chat" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
+2026-04-25 01:15:15,057 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 01:15:15,058 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 01:15:15,094 INFO regime_detector: Feature data refreshed through 2026-04-24
+INFO:     54.241.186.112:0 - "WebSocket /ws/chat" [accepted]
+INFO:     connection open
+INFO:     54.241.186.112:0 - "WebSocket /ws/gpu" [accepted]
+INFO:     connection open
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/voice" [accepted]
+INFO:     connection open
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:16:48,497 INFO mithrandir.voice: Loading Whisper 'base.en' on CUDA (float16)…
+2026-04-25 01:16:49,049 INFO mithrandir.voice: Whisper ready (CUDA).
+2026-04-25 01:16:49,057 INFO faster_whisper: Processing audio with duration 00:09.472
+2026-04-25 01:16:49,266 INFO faster_whisper: VAD filter removed 00:00.896 of audio
+2026-04-25 01:16:50,137 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 01:16:50,146 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 01:16:50,176 INFO regime_detector: Feature data refreshed through 2026-04-24
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:17:11,843 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=0
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:17:13,852 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=0
+2026-04-25 01:17:13,886 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=1
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:17:21,531 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=1
+2026-04-25 01:17:21,696 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=2
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:17:25,198 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=2
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:18:57,250 INFO faster_whisper: Processing audio with duration 00:05.376
+2026-04-25 01:18:57,266 INFO faster_whisper: VAD filter removed 00:00.800 of audio
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:19:02,463 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 01:19:02,464 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 01:19:02,497 INFO regime_detector: Feature data refreshed through 2026-04-24
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:19:18,153 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=0
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:19:21,369 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=0
+2026-04-25 01:19:21,421 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=1
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:19:24,864 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' success seq=1
+2026-04-25 01:19:24,938 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=2
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:19:54,949 ERROR mithrandir.voice: F5-TTS timed out for profile: C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav
+2026-04-25 01:19:57,592 INFO mithrandir.voice: Kokoro: 'The current setup has a nice, profession…' \u2192 308,684 bytes (voice=bm_george)
+2026-04-25 01:19:57,593 INFO mithrandir.voice: TTS stream backend=Kokoro profile='mithrandir' seq=2
+2026-04-25 01:19:57,619 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=3
+2026-04-25 01:19:57,621 INFO mithrandir.voice: Starting F5-TTS worker process…
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:20:18,138 ERROR mithrandir.ui: TTS timed out after 60s
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+2026-04-25 01:20:25,118 INFO mithrandir.voice: F5-TTS worker ready.
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     connection closed
+2026-04-25 01:20:27,453 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 01:20:27,454 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 01:20:27,487 INFO regime_detector: Feature data refreshed through 2026-04-24
+INFO:     54.241.186.112:0 - "WebSocket /ws/dev" 403
+INFO:     connection rejected (403 Forbidden)
+INFO:     connection closed
+INFO:     connection closed
+INFO:     connection closed
+2026-04-25 01:20:31,288 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 01:20:31,288 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 01:20:31,319 INFO regime_detector: Feature data refreshed through 2026-04-24
+INFO:     54.241.186.112:0 - "WebSocket /ws/chat" [accepted]
+INFO:     connection open
+INFO:     54.241.186.112:0 - "WebSocket /ws/gpu" [accepted]
+INFO:     connection open
+INFO:     54.241.186.112:0 - "WebSocket /ws/voice" [accepted]
+INFO:     connection open
+2026-04-25 01:21:04,330 INFO faster_whisper: Processing audio with duration 00:11.861
+2026-04-25 01:21:04,363 INFO faster_whisper: VAD filter removed 00:00.693 of audio
+2026-04-25 01:21:09,615 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 01:21:09,615 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 01:21:09,636 INFO regime_detector: Feature data refreshed through 2026-04-24
+2026-04-25 01:23:01,640 INFO mithrandir.voice: TTS stream backend=F5 profile='mithrandir' ref=C:\Users\benpa\OneDrive\Desktop\Enkidu\phase6-ui\server\voices\mithrandir.wav seq=0
+INFO:     connection closed
+INFO:     connection closed
+INFO:     connection closed
+2026-04-25 01:23:27,144 INFO regime_detector: Regime model loaded from cache (trained 1d ago)
+2026-04-25 01:23:27,145 INFO regime_detector: Feature data is 1d stale — refreshing
+2026-04-25 01:23:27,174 INFO regime_detector: Feature data refreshed through 2026-04-24
+INFO:     54.241.186.112:0 - "WebSocket /ws/chat" [accepted]
+INFO:     connection open
+INFO:     54.241.186.112:0 - "WebSocket /ws/gpu" [accepted]
+INFO:     connection open

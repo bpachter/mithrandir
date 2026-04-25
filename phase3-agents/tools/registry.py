@@ -520,6 +520,62 @@ register(
 )
 
 register(
+    name="speech_guidance",
+    description=(
+        "Retrieve pronunciation lexicon entries and recent speech feedback relevant to the current query. "
+        "Use when preparing a spoken answer, when the user asks about pronunciation, or when you need "
+        "to honor prior feedback about natural speech style."
+    ),
+    parameters={
+        "query": "str — the current user query or phrase to ground speech guidance"
+    },
+    fn=lambda query: _call_memory_bridge("speech_guidance", query),
+)
+
+register(
+    name="lexicon_add",
+    description=(
+        "Add or update a pronunciation lexicon entry. Use when the user says to add a word, ticker, "
+        "symbol, or phrase to the lexicon and specifies how it should be spoken."
+    ),
+    parameters={
+        "term": "str — the written term, e.g. 'Q4_K_M'",
+        "spoken": "str — how Mithrandir should say it aloud, e.g. 'Q four K M'",
+        "ipa": "str — optional IPA pronunciation",
+        "notes": "str — optional usage or context note",
+    },
+    fn=lambda term, spoken, ipa="", notes="": _call_memory_bridge("lexicon_add", term, spoken, ipa, notes, "agent"),
+)
+
+register(
+    name="lexicon_lookup",
+    description=(
+        "List pronunciation lexicon entries matching a query. Use when the user asks how something is "
+        "pronounced or to inspect existing lexicon coverage."
+    ),
+    parameters={
+        "query": "str — term or phrase to search in the lexicon"
+    },
+    fn=lambda query: _call_memory_bridge("lexicon_list", query),
+)
+
+register(
+    name="speech_feedback_add",
+    description=(
+        "Record user feedback about spoken output quality, including a preferred corrected phrasing. "
+        "Use when the user says the spoken response sounded awkward, symbol-heavy, or wants a better phrasing remembered."
+    ),
+    parameters={
+        "feedback": "str — what sounded wrong or what to improve",
+        "corrected_text": "str — optional preferred spoken phrasing",
+        "issue_tags": "str — optional comma-separated tags like pronunciation,markdown,symbols,pacing",
+    },
+    fn=lambda feedback, corrected_text="", issue_tags="": _call_memory_bridge(
+        "speech_feedback", "", feedback, corrected_text, issue_tags, "", "", ""
+    ),
+)
+
+register(
     name="search_docs",
     description=(
         "Search the indexed local knowledge base (JOURNEY.md, Mithrandir codebase, research notes) "

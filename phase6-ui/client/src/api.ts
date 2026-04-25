@@ -109,6 +109,22 @@ export async function deleteMemory(id: string): Promise<void> {
   if (!r.ok) throw new Error(`deleteMemory ${r.status}: ${(await r.text()).slice(0, 200)}`)
 }
 
+export async function submitSpeechFeedback(body: {
+  exchange_id?: string
+  user_text?: string
+  assistant_text?: string
+  spoken_text?: string
+  feedback?: string
+  corrected_text?: string
+  issue_tags?: string | string[]
+}): Promise<AnyJson> {
+  return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/speech/feedback`, 'speech/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 export async function fetchDocs(): Promise<AnyJson> {
   return fetchJsonWithRetry<AnyJson>(`${API_BASE}/api/docs`, 'docs')
 }
@@ -124,6 +140,7 @@ export function createChatSocket(
   onStep: (msg: string) => void,
   onToken: (token: string) => void,
   onResponse: (msg: string) => void,
+  onSpokenPreview: (msg: string) => void,
   onDone: () => void,
   onError: (e: string) => void,
   onAudio?: (b64: string, fmt: string) => void,
@@ -135,6 +152,7 @@ export function createChatSocket(
     if (data.type === 'step')      onStep(data.content)
     if (data.type === 'token')     onToken(data.content)
     if (data.type === 'response')  onResponse(data.content)
+    if (data.type === 'spoken_preview') onSpokenPreview(data.content)
     if (data.type === 'done')      onDone()
     if (data.type === 'error')     onError(data.content)
     if (data.type === 'tts_error' && onTtsError) onTtsError(data.content)

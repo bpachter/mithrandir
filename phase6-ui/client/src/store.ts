@@ -5,6 +5,8 @@ export interface Message {
   role: 'user' | 'bot'
   content: string
   steps?: string[]
+  sourceUserContent?: string
+  spokenPreview?: string
   ts: number
 }
 

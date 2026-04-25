@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useStore } from '../store'
-import { createChatSocket, API_BASE, wsBase } from '../api'
+import { createChatSocket, API_BASE, submitSpeechFeedback, wsBase } from '../api'
 
 // ── Chat WebSocket (module-level singleton) ───────────────────────────────
 
@@ -42,6 +42,11 @@ function connectChatSocket(onTtsError?: (msg: string) => void) {
     (response) => {
       if (pendingBotId) useStore.setState((s) => ({
         messages: s.messages.map((m) => m.id === pendingBotId ? { ...m, content: response } : m),
+      }))
+    },
+    (spokenPreview) => {
+      if (pendingBotId) useStore.setState((s) => ({
+        messages: s.messages.map((m) => m.id === pendingBotId ? { ...m, spokenPreview } : m),
       }))
     },
     ()         => { flushTokenBuffer(); setBusy(false); pendingBotId = null; _reconnectAttempts = 0 },
@@ -391,6 +396,10 @@ export default function ChatPanel() {
   const [voiceProfiles,  setVoiceProfiles]  = useState<string[]>(['default'])
   const [selectedVoice,  setSelectedVoice]  = useState('default')
   const [activeAnalyser, setActiveAnalyser] = useState<AnalyserNode | null>(null)
+  const [feedbackOpenId, setFeedbackOpenId] = useState<string | null>(null)
+  const [feedbackText, setFeedbackText] = useState('')
+  const [correctionText, setCorrectionText] = useState('')
+  const [feedbackStatus, setFeedbackStatus] = useState('')
 
   const bottomRef       = useRef<HTMLDivElement>(null)
   const voiceWsRef      = useRef<WebSocket | null>(null)
@@ -405,6 +414,30 @@ export default function ChatPanel() {
 
   useEffect(() => { voiceStateRef.current = voiceState }, [voiceState])
   useEffect(() => { loopRef.current = loopEnabled }, [loopEnabled])
+
+  const submitFeedback = useCallback(async (messageId: string, approved: boolean) => {
+    const message = useStore.getState().messages.find((entry) => entry.id === messageId)
+    if (!message || message.role !== 'bot') return
+    const feedback = approved ? 'The spoken delivery sounded right.' : (feedbackText.trim() || 'Please improve the spoken delivery.')
+    const corrected = correctionText.trim()
+    try {
+      await submitSpeechFeedback({
+        user_text: message.sourceUserContent ?? '',
+        assistant_text: message.content,
+        spoken_text: message.spokenPreview ?? message.content,
+        feedback,
+        corrected_text: corrected,
+        issue_tags: approved ? 'approved' : 'rewrite,spoken-style',
+      })
+      setFeedbackStatus(approved ? 'Speech feedback saved.' : 'Speech correction saved.')
+      setFeedbackOpenId(null)
+      setFeedbackText('')
+      setCorrectionText('')
+      setTimeout(() => setFeedbackStatus(''), 2500)
+    } catch (err) {
+      setFeedbackStatus(err instanceof Error ? err.message : 'Speech feedback failed.')
+    }
+  }, [correctionText, feedbackText])
 
   // ── Pending input from DocsPanel "Ask Mithrandir" button ─────────────────
   useEffect(() => {
@@ -502,7 +535,7 @@ export default function ChatPanel() {
         voiceBotIdRef.current = botId
         pendingBotId = botId
         addMessage({ id: userId, role: 'user',  content: `🎤 ${msg.text}`, ts: Date.now() })
-        addMessage({ id: botId,  role: 'bot',   content: '', ts: Date.now() })
+        addMessage({ id: botId,  role: 'bot',   content: '', sourceUserContent: msg.text, ts: Date.now() })
         setBusy(true)
         setVoiceState('thinking')
 
@@ -516,6 +549,11 @@ export default function ChatPanel() {
       } else if (msg.type === 'response') {
         if (voiceBotIdRef.current) useStore.setState((s) => ({
           messages: s.messages.map((m) => m.id === voiceBotIdRef.current ? { ...m, content: msg.content } : m),
+        }))
+
+      } else if (msg.type === 'spoken_preview') {
+        if (voiceBotIdRef.current) useStore.setState((s) => ({
+          messages: s.messages.map((m) => m.id === voiceBotIdRef.current ? { ...m, spokenPreview: msg.content } : m),
         }))
 
       } else if (msg.type === 'tts_chunk' || msg.type === 'tts_audio') {
@@ -684,7 +722,7 @@ export default function ChatPanel() {
     const userId = crypto.randomUUID(); const botId = crypto.randomUUID()
     pendingBotId = botId
     addMessage({ id: userId, role: 'user', content: text, ts: Date.now() })
-    addMessage({ id: botId,  role: 'bot',  content: '',   ts: Date.now() })
+    addMessage({ id: botId,  role: 'bot',  content: '', sourceUserContent: text, ts: Date.now() })
     setBusy(true); setInput('')
     chatSocket.send(JSON.stringify({ message: text, voice_profile: selectedVoice, ...(activeConversationId ? { conversation_id: activeConversationId } : {}) }))
   }
@@ -721,6 +759,11 @@ export default function ChatPanel() {
 
       {/* Messages */}
       <div className="chat-messages">
+        {feedbackStatus && (
+          <div style={{ marginBottom: 8, fontSize: 11, color: feedbackStatus.toLowerCase().includes('failed') ? 'var(--red)' : 'var(--green)' }}>
+            {feedbackStatus}
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="dim" style={{ alignSelf: 'center', marginTop: 40, textAlign: 'center', lineHeight: 2 }}>
             <div style={{ fontSize: 32, fontFamily: 'var(--font-display)', color: 'var(--amber)', opacity: 0.3 }}>MITHRANDIR AT WATCH</div>
@@ -742,6 +785,62 @@ export default function ChatPanel() {
                 ? <span className="msg-typing">···</span>
                 : m.content)}
             </div>
+            {m.role === 'bot' && m.spokenPreview && m.spokenPreview !== m.content && (
+              <div style={{ marginTop: 6, fontSize: 11, color: 'var(--white-dim)', opacity: 0.85 }}>
+                Spoken: {m.spokenPreview}
+              </div>
+            )}
+            {m.role === 'bot' && m.content && (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => submitFeedback(m.id, true)}
+                  style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--green)', fontSize: 10, padding: '2px 8px', cursor: 'pointer' }}
+                >
+                  VOICE OK
+                </button>
+                <button
+                  onClick={() => {
+                    setFeedbackOpenId(feedbackOpenId === m.id ? null : m.id)
+                    setFeedbackText('')
+                    setCorrectionText(m.spokenPreview ?? m.content)
+                  }}
+                  style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--amber-dim)', fontSize: 10, padding: '2px 8px', cursor: 'pointer' }}
+                >
+                  CORRECT SPEECH
+                </button>
+              </div>
+            )}
+            {feedbackOpenId === m.id && (
+              <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
+                <input
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder="What should sound better?"
+                  style={{ background: 'var(--bg-input)', color: 'var(--amber)', border: '1px solid var(--border)', padding: '6px 8px', fontSize: 11 }}
+                />
+                <textarea
+                  value={correctionText}
+                  onChange={(e) => setCorrectionText(e.target.value)}
+                  placeholder="Preferred spoken phrasing"
+                  rows={3}
+                  style={{ background: 'var(--bg-input)', color: 'var(--amber)', border: '1px solid var(--border)', padding: '6px 8px', fontSize: 11, resize: 'vertical' }}
+                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    onClick={() => submitFeedback(m.id, false)}
+                    style={{ background: 'transparent', border: '1px solid var(--red)', color: 'var(--red)', fontSize: 10, padding: '2px 8px', cursor: 'pointer' }}
+                  >
+                    SAVE CORRECTION
+                  </button>
+                  <button
+                    onClick={() => setFeedbackOpenId(null)}
+                    style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--white-dim)', fontSize: 10, padding: '2px 8px', cursor: 'pointer' }}
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
         <div ref={bottomRef} />

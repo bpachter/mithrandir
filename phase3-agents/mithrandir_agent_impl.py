@@ -216,7 +216,7 @@ def _is_self_reference(query: str) -> bool:
     return any(p in lower for p in _SELF_REF_PATTERNS)
 
 
-def _build_system_prompt(user_message: str = "") -> str:
+def _build_system_prompt(user_message: str = "", response_mode: str = "visual") -> str:
     try:
         regime_info = get_regime()
         regime_block = (
@@ -234,6 +234,12 @@ def _build_system_prompt(user_message: str = "") -> str:
         retrieved = _call_memory_bridge("retrieve", user_message, timeout=10)
         if retrieved and not retrieved.startswith("["):
             memory_block = retrieved
+
+    speech_guidance = ""
+    if user_message and response_mode == "spoken":
+        spoken = _call_memory_bridge("speech_guidance", user_message, timeout=10)
+        if spoken and not spoken.startswith("["):
+            speech_guidance = spoken
 
     # Identity rule — always inject so the model never invents a different name
     identity_block = (
@@ -257,7 +263,15 @@ def _build_system_prompt(user_message: str = "") -> str:
                 f"User: {prev_user}\nMithrandir: {prev_asst}"
             )
 
-    extra = "\n\n".join(filter(None, [identity_block, last_exchange_block, memory_block]))
+    style_block = ""
+    if response_mode == "spoken":
+        style_block = (
+            "SPOKEN RESPONSE MODE: Favor warm, natural prose that sounds good aloud. "
+            "Avoid markdown headings, bullets, tool traces, enumerated debug lines, URLs, and symbol-heavy notation. "
+            "Expand abbreviations and punctuation into conversational phrasing. Sound calm, direct, and dignified."
+        )
+
+    extra = "\n\n".join(filter(None, [identity_block, last_exchange_block, memory_block, speech_guidance, style_block]))
 
     return _SYSTEM_TEMPLATE.format(
         tools=tool_descriptions(),
@@ -373,6 +387,9 @@ _TOOL_KEYWORDS = [
     "context window", "num_ctx", "ollama option", "model parameter",
     "power draw", "power limit", "clock speed", "boost clock",
     "optimize gpu", "gpu optimization", "how does cuda", "what is cuda",
+    # Speech quality / pronunciation / lexicon
+    "lexicon", "pronunciation", "pronounce", "spelled", "say this", "say it as",
+    "speak it as", "spoken as", "voice feedback", "speech feedback",
     # Explicit web search request → Claude handles it with the web_search tool
     "search the web", "search online", "search internet", "look up online",
     "browse", "find online",
@@ -413,7 +430,7 @@ def _needs_tools(query: str) -> bool:
     return False
 
 
-def _build_local_system_prompt(user_message: str = "", web_context: str | None = None) -> str:
+def _build_local_system_prompt(user_message: str = "", web_context: str | None = None, response_mode: str = "visual") -> str:
     """
     Simpler system prompt for direct Gemma calls — no JSON schema, no tool list.
     Includes regime context, memory, and optional live web search results.
@@ -434,6 +451,12 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         retrieved = _call_memory_bridge("retrieve", user_message, timeout=10)
         if retrieved and not retrieved.startswith("["):
             memory_block = f"\nRelevant past context:\n{retrieved}"
+
+    speech_guidance = ""
+    if user_message and response_mode == "spoken":
+        spoken = _call_memory_bridge("speech_guidance", user_message, timeout=10)
+        if spoken and not spoken.startswith("["):
+            speech_guidance = f"\nSpeech guidance:\n{spoken}"
 
     # Identity rule — must be first so model never invents a different name
     identity_rule = (
@@ -506,11 +529,18 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         parts.append(f"\nMarket context (for reference only — do not mention unless relevant): {regime_block}")
     if memory_block:
         parts.append(memory_block)
+    if speech_guidance:
+        parts.append(speech_guidance)
+    if response_mode == "spoken":
+        parts.append(
+            "Spoken style: Use complete sentences, gentle transitions, and natural pauses. "
+            "Prefer prose over lists, and explain symbols in words instead of reading punctuation literally."
+        )
 
     return "\n".join(parts)
 
 
-def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True, prior_messages: Optional[list] = None, on_token: Optional[Callable[[str], None]] = None, ollama_options: Optional[dict] = None) -> Optional[str]:
+def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True, prior_messages: Optional[list] = None, on_token: Optional[Callable[[str], None]] = None, ollama_options: Optional[dict] = None, response_mode: str = "visual") -> Optional[str]:
     """
     Send a query directly to Ollama with streaming enabled.
 
@@ -537,7 +567,7 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
         on_step("Searching the web...")
     web_context = _web_augment(query)
 
-    system = _build_local_system_prompt(query, web_context=web_context)
+    system = _build_local_system_prompt(query, web_context=web_context, response_mode=response_mode)
 
     try:
         # Build options — filter out sentinel values Ollama doesn't expect
@@ -619,6 +649,7 @@ def _run_local_react_loop(
     save_memory: bool = True,
     prior_messages: Optional[list] = None,
     ollama_options: Optional[dict] = None,
+    response_mode: str = "visual",
 ) -> Optional[str]:
     """
     Run the full ReAct/tool loop locally on Ollama/Gemma.
@@ -627,7 +658,7 @@ def _run_local_react_loop(
     """
     import requests as _req
 
-    system_prompt = _build_system_prompt(user_message)
+    system_prompt = _build_system_prompt(user_message, response_mode=response_mode)
     messages = [*(prior_messages or []), {"role": "user", "content": user_message}]
 
     for iteration in range(MAX_ITERATIONS):
@@ -751,6 +782,7 @@ def run_agent(
     prior_messages: Optional[list] = None,
     on_token: Optional[Callable[[str], None]] = None,
     ollama_options: Optional[dict] = None,
+    response_mode: str = "visual",
 ) -> str:
     """
     Run the ReAct loop for a single user message.
@@ -772,7 +804,7 @@ def run_agent(
     """
     _lighting_start()
     try:
-        return _run_agent_inner(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options)
+        return _run_agent_inner(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options, response_mode=response_mode)
     finally:
         _lighting_stop()
 
@@ -784,6 +816,7 @@ def _run_agent_inner(
     prior_messages: Optional[list] = None,
     on_token: Optional[Callable[[str], None]] = None,
     ollama_options: Optional[dict] = None,
+    response_mode: str = "visual",
 ) -> str:
     use_local_react = _AGENT_MODE in {"local_react", "local", "gemma_local"}
 
@@ -798,9 +831,10 @@ def _run_agent_inner(
                 save_memory=save_memory,
                 prior_messages=prior_messages,
                 ollama_options=ollama_options,
+                response_mode=response_mode,
             )
         else:
-            result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options)
+            result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options, response_mode=response_mode)
         if result is not None:
             return result
         return (
@@ -811,7 +845,7 @@ def _run_agent_inner(
     if not _needs_tools(user_message):
         if on_step:
             on_step(f"Routing: local GPU ({OLLAMA_MODEL})")
-        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options)
+        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options, response_mode=response_mode)
         if result is not None:
             return result
         # Ollama unreachable — fall through to Claude
@@ -827,6 +861,7 @@ def _run_agent_inner(
                 save_memory=save_memory,
                 prior_messages=prior_messages,
                 ollama_options=ollama_options,
+                response_mode=response_mode,
             )
             if result is not None:
                 return result
@@ -845,7 +880,7 @@ def _run_agent_inner(
         return "Error: ANTHROPIC_API_KEY not set in .env"
 
     client = Anthropic(api_key=api_key)
-    system_prompt = _build_system_prompt(user_message)
+    system_prompt = _build_system_prompt(user_message, response_mode=response_mode)
 
     # Message history for the LLM — grows as the loop runs.
     # Prepend prior exchange if continuing a conversation.

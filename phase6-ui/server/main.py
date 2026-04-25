@@ -83,9 +83,10 @@ _ROOT     = Path(__file__).parent.parent.parent
 _PHASE3   = _ROOT / "phase3-agents"
 _PHASE2T  = _ROOT / "phase2-tool-use" / "tools"
 _PHASE5   = _ROOT / "phase5-intelligence"
+_PHASE4   = _ROOT / "phase4-memory"
 _CLIENT_DIST = Path(__file__).parent.parent / "client" / "dist"
 
-for p in [str(_PHASE3), str(_PHASE3 / "tools"), str(_PHASE2T), str(_PHASE5)]:
+for p in [str(_PHASE3), str(_PHASE3 / "tools"), str(_PHASE2T), str(_PHASE5), str(_PHASE4)]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
@@ -151,6 +152,27 @@ def _import_edgar():
         return mod.get_context
     except Exception as e:
         logger.warning(f"edgar_screener unavailable: {e}")
+        return None
+
+
+def _import_speech_quality():
+    try:
+        import speech_quality
+        return speech_quality
+    except Exception as e:
+        logger.warning(f"speech_quality unavailable: {e}")
+        return None
+
+
+def _import_spoken_text():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("spoken_text", Path(__file__).parent / "spoken_text.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception as e:
+        logger.warning(f"spoken_text unavailable: {e}")
         return None
 
 # ---------------------------------------------------------------------------
@@ -672,6 +694,50 @@ class VoiceSelect(BaseModel):
     profile: str
 
 
+class LexiconEntry(BaseModel):
+    term: str
+    spoken: str
+    ipa: str = ""
+    notes: str = ""
+
+
+class SpeechFeedbackBody(BaseModel):
+    exchange_id: str = ""
+    user_text: str = ""
+    assistant_text: str = ""
+    spoken_text: str = ""
+    feedback: str = ""
+    corrected_text: str = ""
+    issue_tags: str | list[str] = ""
+
+
+def _rewrite_for_speech(text: str, user_query: str = "") -> dict:
+    mod = _import_spoken_text()
+    if mod is None:
+        return {"spoken_text": text, "notes": ["rewrite_unavailable"]}
+    try:
+        return mod.rewrite_for_speech(text, user_query=user_query)
+    except Exception as e:
+        logger.warning(f"speech rewrite failed: {e}")
+        return {"spoken_text": text, "notes": ["rewrite_failed"]}
+
+
+def _save_spoken_exchange(user_text: str, assistant_text: str, spoken_text: str, response_mode: str, voice_profile: Optional[str]) -> None:
+    mod = _import_speech_quality()
+    if mod is None:
+        return
+    try:
+        mod.attach_spoken_exchange(user_text, assistant_text, spoken_text, response_mode, voice_profile or "")
+    except Exception as e:
+        logger.warning(f"save_spoken_exchange failed: {e}")
+
+
+def _normalize_issue_tags(tags: str | list[str]) -> str:
+    if isinstance(tags, list):
+        return ",".join(tag.strip() for tag in tags if str(tag).strip())
+    return str(tags or "").strip()
+
+
 @app.post("/api/voice")
 def set_voice(body: VoiceSelect):
     """Switch the active TTS voice profile."""
@@ -691,6 +757,80 @@ def set_voice(body: VoiceSelect):
     return {"ok": True, "active": body.profile}
 
 
+@app.get("/api/speech/lexicon")
+def get_speech_lexicon(q: str = ""):
+    mod = _import_speech_quality()
+    if mod is None:
+        return JSONResponse({"error": "speech_quality unavailable"}, status_code=503)
+    try:
+        return {"entries": mod.list_lexicon(q)}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/speech/lexicon")
+def add_speech_lexicon(body: LexiconEntry):
+    mod = _import_speech_quality()
+    if mod is None:
+        return JSONResponse({"error": "speech_quality unavailable"}, status_code=503)
+    try:
+        return {"ok": True, "entry": mod.upsert_lexicon(body.term, body.spoken, body.ipa, body.notes, "api")}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@app.post("/api/speech/rewrite")
+def preview_speech_rewrite(body: dict):
+    text = str(body.get("text", "")).strip()
+    query = str(body.get("query", "")).strip()
+    if not text:
+        return JSONResponse({"error": "text is required"}, status_code=400)
+    return _rewrite_for_speech(text, user_query=query)
+
+
+@app.post("/api/speech/feedback")
+def add_speech_feedback(body: SpeechFeedbackBody):
+    mod = _import_speech_quality()
+    if mod is None:
+        return JSONResponse({"error": "speech_quality unavailable"}, status_code=503)
+    try:
+        result = mod.record_speech_feedback(
+            exchange_id=body.exchange_id,
+            feedback=body.feedback,
+            corrected_text=body.corrected_text,
+            issue_tags=_normalize_issue_tags(body.issue_tags),
+            user_msg=body.user_text,
+            assistant_msg=body.assistant_text,
+            spoken_text=body.spoken_text,
+        )
+        return result
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
+
+@app.get("/api/speech/readiness")
+def get_speech_readiness():
+    mod = _import_speech_quality()
+    if mod is None:
+        return JSONResponse({"error": "speech_quality unavailable"}, status_code=503)
+    try:
+        return mod.finetune_readiness_report()
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/speech/export")
+def export_speech_dataset(body: dict | None = None):
+    mod = _import_speech_quality()
+    if mod is None:
+        return JSONResponse({"error": "speech_quality unavailable"}, status_code=503)
+    try:
+        output_path = None if body is None else body.get("output_path")
+        return mod.export_spoken_lora_dataset(output_path)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.post("/api/chat")
 async def chat_rest(body: dict):
     """Non-streaming chat endpoint (fallback for clients that don't use WS)."""
@@ -701,9 +841,13 @@ async def chat_rest(body: dict):
     if run_agent is None:
         return JSONResponse({"error": "agent unavailable"}, status_code=503)
     try:
+        response_mode = "spoken" if body.get("tts", False) else str(body.get("response_mode", "visual"))
         response = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: run_agent(message)
+            None, lambda: run_agent(message, response_mode=response_mode)
         )
+        if response_mode == "spoken":
+            rewritten = _rewrite_for_speech(response or "", user_query=message)
+            return {"response": response, "spoken_text": rewritten.get("spoken_text", response), "rewrite_notes": rewritten.get("notes", [])}
         return {"response": response}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -768,6 +912,7 @@ async def ws_chat(ws: WebSocket):
             prior_messages   = _fetch_prior_messages(conversation_id) if conversation_id else []
             tts_enabled      = data.get("tts", True)   # client can opt out
             voice_profile_req = _effective_voice_profile(data.get("voice_profile"))
+            response_mode = "spoken" if tts_enabled else "visual"
 
             loop = asyncio.get_running_loop()
             tokens_sent = [0]
@@ -796,7 +941,7 @@ async def ws_chat(ws: WebSocket):
             try:
                 response = await loop.run_in_executor(
                     None,
-                    lambda: run_agent(message, on_step=on_step, on_token=on_token, prior_messages=prior_messages, ollama_options=dict(_gemma_params)),
+                    lambda: run_agent(message, on_step=on_step, on_token=on_token, prior_messages=prior_messages, ollama_options=dict(_gemma_params), response_mode=response_mode),
                 )
                 if tokens_sent[0] == 0:
                     final_text = response or ""
@@ -807,6 +952,16 @@ async def ws_chat(ws: WebSocket):
                 await ws.send_json({"type": "error", "content": str(e)})
                 await ws.send_json({"type": "done"})
                 continue
+
+            spoken_result = _rewrite_for_speech(final_text, user_query=message)
+            spoken_text = spoken_result.get("spoken_text", final_text).strip() or final_text
+            if spoken_text != final_text:
+                await ws.send_json({"type": "spoken_preview", "content": spoken_text, "notes": spoken_result.get("notes", [])})
+            threading.Thread(
+                target=_save_spoken_exchange,
+                args=(message, final_text, spoken_text, response_mode, voice_profile_req),
+                daemon=True,
+            ).start()
 
             # TTS — sentence-split streaming: client starts playing sentence 0
             # while the server is synthesizing sentence 1, etc.
@@ -832,10 +987,10 @@ async def ws_chat(ws: WebSocket):
                             raise WebSocketDisconnect() from send_exc
 
                     try:
-                        logger.info(f"TTS: synthesizing {len(final_text)} chars (profile={voice_profile_req!r})")
+                        logger.info(f"TTS: synthesizing {len(spoken_text)} chars (profile={voice_profile_req!r})")
                         await asyncio.wait_for(
                             voice.synthesize_streaming(
-                                final_text,
+                                spoken_text,
                                 _send_chunk,
                                 voice_profile=voice_profile_req,
                             ),
@@ -971,7 +1126,7 @@ async def ws_voice(ws: WebSocket):
                 try:
                     response = await loop.run_in_executor(
                         None,
-                        lambda: run_agent(text, on_step=on_step, on_token=on_token, ollama_options=dict(_gemma_params)),
+                        lambda: run_agent(text, on_step=on_step, on_token=on_token, ollama_options=dict(_gemma_params), response_mode="spoken"),
                     )
                     if collected_tokens:
                         final_text = "".join(collected_tokens)
@@ -983,6 +1138,16 @@ async def ws_voice(ws: WebSocket):
                     await ws.send_json({"type": "error", "content": str(e)})
                     await ws.send_json({"type": "done"})
                     continue
+
+            spoken_result = _rewrite_for_speech(final_text, user_query=text)
+            spoken_text = spoken_result.get("spoken_text", final_text).strip() or final_text
+            if spoken_text != final_text:
+                await ws.send_json({"type": "spoken_preview", "content": spoken_text, "notes": spoken_result.get("notes", [])})
+            threading.Thread(
+                target=_save_spoken_exchange,
+                args=(text, final_text, spoken_text, "spoken", voice_profile),
+                daemon=True,
+            ).start()
 
             # ── 3. TTS — sentence streaming ────────────────────────────────
             try:
@@ -1007,7 +1172,7 @@ async def ws_voice(ws: WebSocket):
             try:
                 await asyncio.wait_for(
                     voice.synthesize_streaming(
-                        final_text,
+                        spoken_text,
                         _send_voice_chunk,
                         voice_profile=voice_profile,
                     ),

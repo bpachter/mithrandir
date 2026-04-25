@@ -71,6 +71,60 @@ def main():
         ok = add_user_feedback(eid, text)
         print("ok" if ok else "not_found")
 
+    elif cmd == "save_spoken":
+        from speech_quality import attach_spoken_exchange
+        user_msg = sys.argv[2] if len(sys.argv) > 2 else ""
+        asst_msg = sys.argv[3] if len(sys.argv) > 3 else ""
+        spoken_msg = sys.argv[4] if len(sys.argv) > 4 else ""
+        response_mode = sys.argv[5] if len(sys.argv) > 5 else "spoken"
+        voice_profile = sys.argv[6] if len(sys.argv) > 6 else ""
+        ok = attach_spoken_exchange(user_msg, asst_msg, spoken_msg, response_mode, voice_profile)
+        print("ok" if ok else "not_found")
+
+    elif cmd == "speech_feedback":
+        from speech_quality import record_speech_feedback
+        exchange_id = sys.argv[2] if len(sys.argv) > 2 else ""
+        feedback = sys.argv[3] if len(sys.argv) > 3 else ""
+        corrected_text = sys.argv[4] if len(sys.argv) > 4 else ""
+        issue_tags = sys.argv[5] if len(sys.argv) > 5 else ""
+        user_msg = sys.argv[6] if len(sys.argv) > 6 else ""
+        asst_msg = sys.argv[7] if len(sys.argv) > 7 else ""
+        spoken_text = sys.argv[8] if len(sys.argv) > 8 else ""
+        result = record_speech_feedback(exchange_id, feedback, corrected_text, issue_tags, user_msg, asst_msg, spoken_text)
+        print(result)
+
+    elif cmd == "speech_guidance":
+        from speech_quality import retrieve_speech_guidance
+        query = sys.argv[2] if len(sys.argv) > 2 else ""
+        print(retrieve_speech_guidance(query))
+
+    elif cmd == "lexicon_add":
+        from speech_quality import upsert_lexicon
+        term = sys.argv[2] if len(sys.argv) > 2 else ""
+        spoken = sys.argv[3] if len(sys.argv) > 3 else ""
+        ipa = sys.argv[4] if len(sys.argv) > 4 else ""
+        notes = sys.argv[5] if len(sys.argv) > 5 else ""
+        source = sys.argv[6] if len(sys.argv) > 6 else "user"
+        print(upsert_lexicon(term, spoken, ipa, notes, source))
+
+    elif cmd == "lexicon_list":
+        from speech_quality import list_lexicon
+        query = sys.argv[2] if len(sys.argv) > 2 else ""
+        print(json.dumps(list_lexicon(query), ensure_ascii=False))
+
+    elif cmd == "lexicon_map":
+        from speech_quality import get_lexicon_map
+        print(json.dumps(get_lexicon_map(), ensure_ascii=False))
+
+    elif cmd == "export_spoken_lora":
+        from speech_quality import export_spoken_lora_dataset
+        output_path = sys.argv[2] if len(sys.argv) > 2 else ""
+        print(export_spoken_lora_dataset(output_path or None))
+
+    elif cmd == "finetune_report":
+        from speech_quality import finetune_readiness_report
+        print(json.dumps(finetune_readiness_report(), ensure_ascii=False))
+
     elif cmd == "add_score":
         from memory_store import add_auto_score
         eid = sys.argv[2] if len(sys.argv) > 2 else ""
