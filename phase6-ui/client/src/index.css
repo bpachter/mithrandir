@@ -736,11 +736,12 @@ html, body, #root {
   font-size: 10px;
   color: rgba(52,211,153,0.70);
   padding: 2px 4px;
-  padding: 0 2px;
   letter-spacing: 0.04em;
 }
 .msg-step::before { content: '⟩ '; opacity: 0.6; }
-  transition: max-height 200ms ease, opacity 200ms ease, padding-bottom 200ms ease;
+
+.msg-typing {
+  transition: opacity 200ms ease;
   color: var(--amber);
   font-size: 22px;
   letter-spacing: 6px;
