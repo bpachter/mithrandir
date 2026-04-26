@@ -59,7 +59,7 @@ function buildPerspectiveClouds(count: number): PerspectiveCloud[] {
     phase:        Math.random() * Math.PI * 2,
   }))
 }
-const PERSPECTIVE_CLOUDS = buildPerspectiveClouds(26)
+const PERSPECTIVE_CLOUDS = buildPerspectiveClouds(78)
 
 // ── night nebulae ──────────────────────────────────────────────
 const NIGHT_NEBULAE: NebulaVol[] = [
