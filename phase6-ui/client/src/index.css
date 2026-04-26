@@ -913,6 +913,11 @@ html[data-mithrandir-responding] .col-chat {
   background: rgba(248, 252, 255, 0.72);
 }
 
+:root:not([data-theme='dark']) .doc-cat-tabs {
+  background: rgba(220, 232, 246, 0.48);
+  border-bottom-color: rgba(132, 164, 202, 0.30);
+}
+
 :root:not([data-theme='dark']) .doc-cat-tab {
   color: rgba(58, 76, 98, 0.86);
 }
@@ -920,6 +925,29 @@ html[data-mithrandir-responding] .col-chat {
 :root:not([data-theme='dark']) .doc-cat-tab:hover {
   color: rgba(42, 62, 86, 0.96);
   background: rgba(220, 232, 246, 0.42);
+}
+
+:root:not([data-theme='dark']) .doc-example {
+  background: rgba(230, 240, 252, 0.70);
+  border-color: rgba(132, 164, 202, 0.28);
+  color: rgba(36, 80, 58, 0.94);
+}
+
+:root:not([data-theme='dark']) .doc-search:focus {
+  background: rgba(240, 248, 255, 0.88);
+  border-color: rgba(100, 140, 190, 0.60);
+}
+
+:root:not([data-theme='dark']) .doc-card:hover {
+  background: rgba(210, 228, 248, 0.32);
+}
+
+:root:not([data-theme='dark']) .doc-detail {
+  color: rgba(36, 55, 78, 0.92);
+}
+
+:root:not([data-theme='dark']) .doc-spec-label {
+  color: rgba(58, 76, 98, 0.86);
 }
 
 :root:not([data-theme='dark']) .doc-spec-val {
