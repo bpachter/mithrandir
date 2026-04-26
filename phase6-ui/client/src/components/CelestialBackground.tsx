@@ -372,7 +372,8 @@ export default function CelestialBackground() {
         ctx.globalCompositeOperation = 'source-over'
         const vpX    = W * 0.50
         const vpY    = H * 0.44
-        const spread = Math.min(W, H) * 0.95
+        // Use the half-diagonal so clouds on all angles (incl. hard left/right) reach the canvas edge
+        const spread = Math.hypot(W * 0.5, H * 0.5) * 1.20
 
         for (const cloud of PERSPECTIVE_CLOUDS) {
           const z    = ((cloud.initialPhase + cloud.speed * t) % 1.0 + 1.0) % 1.0
@@ -381,7 +382,7 @@ export default function CelestialBackground() {
           const sy   = vpY + Math.sin(cloud.angle) * dist
 
           // Bell opacity — fade in from vanishing point, fade out near edge
-          const bellOp = Math.sin(Math.min(z, 0.88) / 0.88 * Math.PI) * cloud.opacity * p
+          const bellOp = Math.sin(Math.min(z, 1.0) / 1.0 * Math.PI) * cloud.opacity * p
           if (bellOp < 0.015) continue
 
           // Cloud grows with z (tiny at centre, large as it passes)
