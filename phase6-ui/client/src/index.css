@@ -1557,22 +1557,15 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
   border-radius: 50%;
   flex-shrink: 0;
 }
-/* ── Theme transition: smooth color fade on toggle ───────────── */
-/* data-transitioning is set for 4.5 s whenever the theme changes */
-html[data-transitioning] :is(
-  .msg-bubble, .msg-label, .msg-step,
-  .panel-title, .panel-body,
-  .header-logo, .header-meta, .header-status,
-  .param-label, .param-value, .param-desc,
-  .hw-cell-label, .hw-cell-value, .hw-cell-sub,
-  .tab-btn, .tab,
-  .doc-card-title, .doc-card-summary, .doc-detail,
-  .history-msg, .history-preview, .history-ts,
-  .chat-input, .chat-prefix, .chat-send,
-  .ticker-table td, .ticker-sym,
-  .metric-value, .dim, .subtle
-) {
-  transition: color 3.5s ease-in-out !important;
+/* ── Theme fade-through: content dims to 0, snaps, fades in ─── */
+/* .theme-fading is added for ~320 ms during manual theme toggle  */
+html.theme-fading .col-left :is(.panel-title, .panel-body, .tab-bar, .tab-btn, .param-label, .param-value, .param-desc, .save-btn, .doc-search, .doc-cat-tab, .doc-card, .doc-card-title, .doc-card-summary),
+html.theme-fading .col-chat :is(.panel-title, .chat-messages, .msg-label, .msg-bubble, .chat-input-row, .chat-prefix, .chat-input, .chat-send),
+html.theme-fading .col-right :is(.panel-title, .ticker-table, .metric-value, .dim, .tab, .tab-btn),
+html.theme-fading .hw-bar :is(.hw-cell-label, .hw-cell-value, .hw-cell-sub),
+html.theme-fading .app-header :is(.header-meta, .header-status, .header-logo) {
+  opacity: 0 !important;
+  transition: opacity 0.28s ease-in !important;
 }
 
 .metric-modal-state-text {

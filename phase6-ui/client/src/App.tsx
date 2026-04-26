@@ -60,13 +60,8 @@ export default function App() {
     return () => ws.close()
   }, [setGpuStats, pushGpuHistory])
 
-  // Keep data-theme in sync; set data-transitioning so CSS color transitions fire
   useEffect(() => {
-    const el = document.documentElement
-    el.setAttribute('data-theme', theme)
-    el.setAttribute('data-transitioning', '')
-    const tid = setTimeout(() => el.removeAttribute('data-transitioning'), 4500)
-    return () => { clearTimeout(tid); el.removeAttribute('data-transitioning') }
+    document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
   // Auto-switch at 7 AM and 6 PM EST — polls every 30 s, smooth canvas handles the visual fade
@@ -91,7 +86,17 @@ export default function App() {
     <div className="sky-layer sky-aurora" aria-hidden="true" />
     <div className="app-grid app-grid-shell">
       <button
-        onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+        onClick={() => {
+          const next = theme === 'dark' ? 'light' : 'dark'
+          // Fade content to opacity-0, snap theme while invisible, then let 3s fade-in play
+          document.documentElement.classList.add('theme-fading')
+          setTimeout(() => {
+            setTheme(next)
+            requestAnimationFrame(() => requestAnimationFrame(() =>
+              document.documentElement.classList.remove('theme-fading')
+            ))
+          }, 320)
+        }}
         title={theme === 'dark' ? 'Switch to day mode (auto at 7 AM EST)' : 'Switch to night mode (auto at 6 PM EST)'}
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         className="theme-toggle fixed top-2 right-3 z-50"
