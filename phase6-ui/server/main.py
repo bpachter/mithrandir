@@ -23,6 +23,7 @@ import json
 import logging
 import os
 import random
+import re
 import sys
 import time
 import threading
@@ -248,7 +249,7 @@ _DEFAULT_PARAMS = {
     "min_p":          0.0,
     "repeat_penalty": 1.1,
     "num_ctx":        8192,
-    "num_predict":    2048,
+    "num_predict":    640,
     "seed":           -1,
 }
 
@@ -276,6 +277,26 @@ _VOICE_MAX_RAW_BYTES = int(os.environ.get("MITHRANDIR_VOICE_MAX_RAW_BYTES", "500
 _VOICE_MIN_RATE = int(os.environ.get("MITHRANDIR_VOICE_MIN_SAMPLE_RATE", "8000"))
 _VOICE_MAX_RATE = int(os.environ.get("MITHRANDIR_VOICE_MAX_SAMPLE_RATE", "48000"))
 _PRELUDE_CACHE_LIMIT = int(os.environ.get("MITHRANDIR_PRELUDE_CACHE_LIMIT", "12"))
+_STREAM_SENTENCE_MIN_CHARS = int(os.environ.get("MITHRANDIR_STREAM_SENTENCE_MIN_CHARS", "12"))
+_STREAM_SENTENCE_SOFT_CHARS = int(os.environ.get("MITHRANDIR_STREAM_SENTENCE_SOFT_CHARS", "48"))
+
+_LATENCY_MAX_RECORDS = int(os.environ.get("MITHRANDIR_LATENCY_MAX_RECORDS", "200"))
+_LATENCY_LOCK = threading.Lock()
+_LATENCY_EVENTS: list[dict] = []
+
+
+def _record_latency(stage: str, elapsed_ms: float, **meta) -> None:
+    event = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "stage": stage,
+        "ms": round(float(elapsed_ms), 1),
+    }
+    if meta:
+        event["meta"] = meta
+    with _LATENCY_LOCK:
+        _LATENCY_EVENTS.append(event)
+        if len(_LATENCY_EVENTS) > _LATENCY_MAX_RECORDS:
+            del _LATENCY_EVENTS[0 : len(_LATENCY_EVENTS) - _LATENCY_MAX_RECORDS]
 
 _PROCESSING_PRELUDES = [
     "Give me a moment to process your query.",
@@ -723,6 +744,15 @@ def get_telemetry(n: int = 50):
         return {"records": [], "tool_stats": {}, "error": str(e)}
 
 
+@app.get("/api/latency")
+def get_latency_events(n: int = 100):
+    """Return recent conversational latency timing events."""
+    n = max(1, min(int(n), _LATENCY_MAX_RECORDS))
+    with _LATENCY_LOCK:
+        events = list(_LATENCY_EVENTS[-n:])
+    return {"count": len(events), "events": events}
+
+
 @app.get("/api/docs")
 def get_docs():
     """Return all CUDA/hardware/inference reference entries."""
@@ -1093,9 +1123,21 @@ async def chat_rest(body: dict):
     if run_agent is None:
         return JSONResponse({"error": "agent unavailable"}, status_code=503)
     try:
+        t0 = time.perf_counter()
         response_mode = "spoken" if body.get("tts", False) else str(body.get("response_mode", "visual"))
         response = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: run_agent(message, response_mode=response_mode)
+            None,
+            lambda: run_agent(
+                message,
+                response_mode=response_mode,
+                ollama_options=dict(_gemma_params),
+            ),
+        )
+        _record_latency(
+            "chat_rest_total_ms",
+            (time.perf_counter() - t0) * 1000,
+            mode=response_mode,
+            chars=len(response or ""),
         )
         if response_mode == "spoken":
             rewritten = _rewrite_for_speech(response or "", user_query=message)
@@ -1159,6 +1201,7 @@ async def ws_chat(ws: WebSocket):
             message = data.get("message", "").strip()
             if not message:
                 continue
+            turn_t0 = time.perf_counter()
 
             conversation_id  = data.get("conversation_id")
             prior_messages   = _fetch_prior_messages(conversation_id) if conversation_id else []
@@ -1175,6 +1218,78 @@ async def ws_chat(ws: WebSocket):
             loop = asyncio.get_running_loop()
             tokens_sent = [0]
             collected_tokens: list[str] = []
+            first_token_at = [None]
+            first_audio_at = [None]
+
+            # ── Streaming TTS state ────────────────────────────────────────────
+            # Synthesise each sentence as Gemma produces it rather than waiting
+            # for the full response. _s_pending tracks submitted futures so we
+            # can await them before handing off to synthesize_streaming.
+            _s_buf: list[str] = []
+            _s_seq = [0]
+            _s_pending: list = []
+            _stt2_live = (
+                tts_enabled and voice
+                and hasattr(voice, "_styletts2_available")
+                and voice._styletts2_available()
+            )
+
+            def _fire_stream_sentence(sentence: str) -> None:
+                sentence = sentence.strip()
+                if not sentence:
+                    return
+                clean = re.sub(r'\*+|`+|^#+\s+', '', sentence, flags=re.MULTILINE).strip()
+                if not clean:
+                    return
+                seq = _s_seq[0]
+                _s_seq[0] += 1
+
+                async def _do(s=clean, q=seq):
+                    try:
+                        wav = await loop.run_in_executor(None, lambda: voice._synth_styletts2(s))
+                        if wav:
+                            if hasattr(voice, "_postprocess_wav_bytes"):
+                                wav = voice._postprocess_wav_bytes(wav, voice_profile_req)
+                            if first_audio_at[0] is None:
+                                first_audio_at[0] = time.perf_counter()
+                                _record_latency(
+                                    "ws_chat_first_audio_ms",
+                                    (first_audio_at[0] - turn_t0) * 1000,
+                                    mode=response_mode,
+                                    streaming=True,
+                                )
+                            await ws.send_json({
+                                "type": "tts_chunk",
+                                "data": base64.b64encode(wav).decode(),
+                                "format": "wav",
+                                "seq": q,
+                            })
+                    except WebSocketDisconnect:
+                        pass
+                    except Exception as exc:
+                        logger.debug(f"Streaming TTS seq={q}: {exc}")
+
+                _s_pending.append(asyncio.run_coroutine_threadsafe(_do(), loop))
+
+            def _drain_stream_buf() -> None:
+                buf = "".join(_s_buf)
+                has_hard_boundary = re.search(r'[.!?]["\']?\s', buf)
+                has_soft_boundary = len(buf) >= _STREAM_SENTENCE_SOFT_CHARS and re.search(r'[,;:]\s', buf)
+                if len(buf) < _STREAM_SENTENCE_MIN_CHARS or not (has_hard_boundary or has_soft_boundary):
+                    return
+                parts = (
+                    voice.split_sentences(buf)
+                    if hasattr(voice, "split_sentences")
+                    else re.split(r'(?<=[.!?])\s+', buf, maxsplit=1)
+                )
+                if len(parts) < 2:
+                    return
+                for s in parts[:-1]:
+                    _fire_stream_sentence(s)
+                _s_buf.clear()
+                if parts[-1]:
+                    _s_buf.append(parts[-1])
+            # ──────────────────────────────────────────────────────────────────
 
             def on_step(msg: str):
                 asyncio.run_coroutine_threadsafe(
@@ -1185,10 +1300,20 @@ async def ws_chat(ws: WebSocket):
             def on_token(tok: str):
                 tokens_sent[0] += 1
                 collected_tokens.append(tok)
+                if first_token_at[0] is None:
+                    first_token_at[0] = time.perf_counter()
+                    _record_latency(
+                        "ws_chat_ttft_ms",
+                        (first_token_at[0] - turn_t0) * 1000,
+                        mode=response_mode,
+                    )
                 asyncio.run_coroutine_threadsafe(
                     ws.send_json({"type": "token", "content": tok}),
                     loop,
                 )
+                if _stt2_live:
+                    _s_buf.append(tok)
+                    _drain_stream_buf()
 
             if run_agent is None:
                 await ws.send_json({"type": "error", "content": "Agent unavailable"})
@@ -1211,6 +1336,18 @@ async def ws_chat(ws: WebSocket):
                 await ws.send_json({"type": "done"})
                 continue
 
+            # Flush any remaining partial sentence and await all streaming synthesis
+            if _stt2_live:
+                remaining = "".join(_s_buf).strip()
+                if remaining:
+                    _fire_stream_sentence(remaining)
+                    _s_buf.clear()
+                if _s_pending:
+                    await asyncio.gather(
+                        *[asyncio.wrap_future(f) for f in _s_pending],
+                        return_exceptions=True,
+                    )
+
             spoken_result = _rewrite_for_speech(final_text, user_query=message)
             spoken_text = spoken_result.get("spoken_text", final_text).strip() or final_text
             if spoken_text != final_text:
@@ -1221,11 +1358,14 @@ async def ws_chat(ws: WebSocket):
                 daemon=True,
             ).start()
 
-            # TTS — sentence-split streaming: client starts playing sentence 0
-            # while the server is synthesizing sentence 1, etc.
+            # TTS: if streaming synthesis already handled it, skip synthesize_streaming.
+            # Fall through to synthesize_streaming only for the Claude tool-use path
+            # (no tokens streamed) or when StyleTTS2 is unavailable.
             if tts_enabled and voice and final_text.strip():
-                if not hasattr(voice, "synthesize_streaming"):
-                    # Server is running old voice.py — needs restart
+                if _s_pending:
+                    # Streaming synthesis ran during generation — already done.
+                    pass
+                elif not hasattr(voice, "synthesize_streaming"):
                     logger.error("voice.py missing synthesize_streaming — restart the server")
                     await ws.send_json({"type": "tts_error", "content": "TTS: restart server (old voice.py loaded)"})
                 else:
@@ -1240,6 +1380,14 @@ async def ws_chat(ws: WebSocket):
                                 "format": fmt,
                                 "seq":    _seq,
                             })
+                            if first_audio_at[0] is None:
+                                first_audio_at[0] = time.perf_counter()
+                                _record_latency(
+                                    "ws_chat_first_audio_ms",
+                                    (first_audio_at[0] - turn_t0) * 1000,
+                                    mode=response_mode,
+                                    streaming=False,
+                                )
                             seq += 1
                         except Exception as send_exc:
                             raise WebSocketDisconnect() from send_exc
@@ -1255,7 +1403,6 @@ async def ws_chat(ws: WebSocket):
                             timeout=60.0,
                         )
                         if seq == 0:
-                            # synthesize_streaming ran but sent nothing — all engines failed
                             logger.warning("TTS: synthesize_streaming produced no audio chunks")
                             try:
                                 await ws.send_json({"type": "tts_error", "content": "TTS: no audio produced (check server logs)"})
@@ -1271,6 +1418,13 @@ async def ws_chat(ws: WebSocket):
                             pass
 
             try:
+                _record_latency(
+                    "ws_chat_total_ms",
+                    (time.perf_counter() - turn_t0) * 1000,
+                    mode=response_mode,
+                    tokens=tokens_sent[0],
+                    chars=len(final_text),
+                )
                 await ws.send_json({"type": "done"})
             except Exception:
                 return
@@ -1307,6 +1461,7 @@ async def ws_voice(ws: WebSocket):
             data = await ws.receive_json()
             if data.get("type") != "audio":
                 continue
+            turn_t0 = time.perf_counter()
 
             b64_audio = data.get("data", "")
             if not isinstance(b64_audio, str) or not b64_audio:
@@ -1370,6 +1525,74 @@ async def ws_voice(ws: WebSocket):
 
             # ── 2. Run agent ───────────────────────────────────────────────
             collected_tokens: list[str] = []
+            first_token_at = [None]
+            first_audio_at = [None]
+
+            # Streaming TTS state (same pattern as ws_chat)
+            _vs_buf: list[str] = []
+            _vs_seq = [0]
+            _vs_pending: list = []
+            _vstt2_live = (
+                voice
+                and hasattr(voice, "_styletts2_available")
+                and voice._styletts2_available()
+            )
+
+            def _fire_vs_sentence(sentence: str) -> None:
+                sentence = sentence.strip()
+                if not sentence:
+                    return
+                clean = re.sub(r'\*+|`+|^#+\s+', '', sentence, flags=re.MULTILINE).strip()
+                if not clean:
+                    return
+                seq = _vs_seq[0]
+                _vs_seq[0] += 1
+
+                async def _do(s=clean, q=seq):
+                    try:
+                        wav = await loop.run_in_executor(None, lambda: voice._synth_styletts2(s))
+                        if wav:
+                            if hasattr(voice, "_postprocess_wav_bytes"):
+                                wav = voice._postprocess_wav_bytes(wav, voice_profile)
+                            if first_audio_at[0] is None:
+                                first_audio_at[0] = time.perf_counter()
+                                _record_latency(
+                                    "ws_voice_first_audio_ms",
+                                    (first_audio_at[0] - turn_t0) * 1000,
+                                    mode="spoken",
+                                    streaming=True,
+                                )
+                            await ws.send_json({
+                                "type": "tts_chunk",
+                                "data": base64.b64encode(wav).decode(),
+                                "format": "wav",
+                                "seq": q,
+                            })
+                    except WebSocketDisconnect:
+                        pass
+                    except Exception as exc:
+                        logger.debug(f"Voice streaming TTS seq={q}: {exc}")
+
+                _vs_pending.append(asyncio.run_coroutine_threadsafe(_do(), loop))
+
+            def _drain_vs_buf() -> None:
+                buf = "".join(_vs_buf)
+                has_hard_boundary = re.search(r'[.!?]["\']?\s', buf)
+                has_soft_boundary = len(buf) >= _STREAM_SENTENCE_SOFT_CHARS and re.search(r'[,;:]\s', buf)
+                if len(buf) < _STREAM_SENTENCE_MIN_CHARS or not (has_hard_boundary or has_soft_boundary):
+                    return
+                parts = (
+                    voice.split_sentences(buf)
+                    if hasattr(voice, "split_sentences")
+                    else re.split(r'(?<=[.!?])\s+', buf, maxsplit=1)
+                )
+                if len(parts) < 2:
+                    return
+                for s in parts[:-1]:
+                    _fire_vs_sentence(s)
+                _vs_buf.clear()
+                if parts[-1]:
+                    _vs_buf.append(parts[-1])
 
             def on_step(msg: str):
                 asyncio.run_coroutine_threadsafe(
@@ -1378,9 +1601,19 @@ async def ws_voice(ws: WebSocket):
 
             def on_token(tok: str):
                 collected_tokens.append(tok)
+                if first_token_at[0] is None:
+                    first_token_at[0] = time.perf_counter()
+                    _record_latency(
+                        "ws_voice_ttft_ms",
+                        (first_token_at[0] - turn_t0) * 1000,
+                        mode="spoken",
+                    )
                 asyncio.run_coroutine_threadsafe(
                     ws.send_json({"type": "token", "content": tok}), loop
                 )
+                if _vstt2_live:
+                    _vs_buf.append(tok)
+                    _drain_vs_buf()
 
             if run_agent is None:
                 final_text = "Agent is unavailable right now."
@@ -1401,6 +1634,18 @@ async def ws_voice(ws: WebSocket):
                     await ws.send_json({"type": "error", "content": str(e)})
                     await ws.send_json({"type": "done"})
                     continue
+
+            # Flush remaining partial sentence and await all streaming synthesis
+            if _vstt2_live:
+                remaining = "".join(_vs_buf).strip()
+                if remaining:
+                    _fire_vs_sentence(remaining)
+                    _vs_buf.clear()
+                if _vs_pending:
+                    await asyncio.gather(
+                        *[asyncio.wrap_future(f) for f in _vs_pending],
+                        return_exceptions=True,
+                    )
 
             spoken_result = _rewrite_for_speech(final_text, user_query=text)
             spoken_text = spoken_result.get("spoken_text", final_text).strip() or final_text
@@ -1427,20 +1672,29 @@ async def ws_voice(ws: WebSocket):
                         "format": fmt,
                         "seq":    seq,
                     })
+                    if first_audio_at[0] is None:
+                        first_audio_at[0] = time.perf_counter()
+                        _record_latency(
+                            "ws_voice_first_audio_ms",
+                            (first_audio_at[0] - turn_t0) * 1000,
+                            mode="spoken",
+                            streaming=False,
+                        )
                 except Exception as send_exc:
                     # Translate send-after-close into a normal disconnect so
                     # synthesize_streaming can unwind without logging a traceback.
                     raise WebSocketDisconnect() from send_exc
 
             try:
-                await asyncio.wait_for(
-                    voice.synthesize_streaming(
-                        spoken_text,
-                        _send_voice_chunk,
-                        voice_profile=voice_profile,
-                    ),
-                    timeout=60.0,
-                )
+                if not _vs_pending:
+                    await asyncio.wait_for(
+                        voice.synthesize_streaming(
+                            spoken_text,
+                            _send_voice_chunk,
+                            voice_profile=voice_profile,
+                        ),
+                        timeout=60.0,
+                    )
             except asyncio.TimeoutError:
                 logger.error("TTS timed out after 60s")
                 try:
@@ -1458,6 +1712,13 @@ async def ws_voice(ws: WebSocket):
                     pass
 
             try:
+                _record_latency(
+                    "ws_voice_total_ms",
+                    (time.perf_counter() - turn_t0) * 1000,
+                    mode="spoken",
+                    tokens=len(collected_tokens),
+                    chars=len(final_text),
+                )
                 await ws.send_json({"type": "done"})
             except Exception:
                 return

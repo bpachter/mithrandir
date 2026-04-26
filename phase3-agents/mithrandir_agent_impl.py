@@ -39,6 +39,8 @@ import os
 import re
 import sys
 import json
+import time
+import concurrent.futures
 from typing import Callable, Optional
 
 from dotenv import load_dotenv
@@ -94,10 +96,21 @@ CLAUDE_MODEL = "claude-sonnet-4-6"
 # Backward compatible with older .env files that use OLLAMA_HOST.
 OLLAMA_URL = os.environ.get("OLLAMA_URL") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:26b")
+OLLAMA_FAST_MODEL = os.environ.get("OLLAMA_FAST_MODEL", "").strip()
+OLLAMA_REACT_MODEL = os.environ.get("OLLAMA_REACT_MODEL", "").strip()
 _FORCE_LOCAL_ONLY = os.environ.get("MITHRANDIR_FORCE_LOCAL_ONLY", "0").strip().lower() in {
     "1", "true", "yes", "on"
 }
 _AGENT_MODE = os.environ.get("MITHRANDIR_AGENT_MODE", "local_react").strip().lower()
+_FAST_LANE_ENABLED = os.environ.get("MITHRANDIR_FAST_LANE", "1").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+_SPOKEN_MAX_TOKENS = int(os.environ.get("MITHRANDIR_SPOKEN_MAX_TOKENS", "384"))
+_SHORT_REPLY_MAX_TOKENS = int(os.environ.get("MITHRANDIR_SHORT_REPLY_MAX_TOKENS", "160"))
+_REACT_MAX_TOKENS = int(os.environ.get("MITHRANDIR_REACT_MAX_TOKENS", "768"))
+_REACT_MAX_ITERATIONS = int(os.environ.get("MITHRANDIR_REACT_MAX_ITERATIONS", "6"))
+_REACT_SPOKEN_MAX_ITERATIONS = int(os.environ.get("MITHRANDIR_REACT_SPOKEN_MAX_ITERATIONS", "4"))
+_REACT_TOOL_TRUNCATE_CHARS = int(os.environ.get("MITHRANDIR_REACT_TOOL_TRUNCATE_CHARS", "1600"))
 
 
 # ---------------------------------------------------------------------------
@@ -282,30 +295,109 @@ def _load_soul() -> str:
 _SOUL = _load_soul()
 
 
-def _build_system_prompt(user_message: str = "", response_mode: str = "visual") -> str:
-    try:
-        regime_info = get_regime()
-        regime_block = (
-            f"Current market regime: {regime_info['regime']} "
-            f"(confidence: {regime_info['confidence']:.0%}, as of {regime_info['as_of']}). "
-            f"SPY weekly return: {regime_info['weekly_return']:+.2%}, "
-            f"30d volatility: {regime_info['volatility_30d']:.2%}, "
-            f"price vs 200MA: {regime_info['price_vs_200ma']:.3f}x."
-        )
-    except Exception:
-        regime_block = "Market regime: unavailable."
+_CONVERSATIONAL_CUES = [
+    "hey", "hi", "hello", "how are", "what do you think", "thoughts",
+    "quick", "short", "brief", "explain simply", "talk me through",
+    "jarvis", "chat", "conversational",
+]
 
-    memory_block = ""
-    if user_message:
+
+def _looks_conversational(query: str) -> bool:
+    q = query.lower().strip()
+    if len(q.split()) <= 14:
+        return True
+    return any(cue in q for cue in _CONVERSATIONAL_CUES)
+
+
+def _select_local_model(query: str, response_mode: str, tool_mode: bool) -> str:
+    if tool_mode and OLLAMA_REACT_MODEL:
+        return OLLAMA_REACT_MODEL
+    if not tool_mode and _FAST_LANE_ENABLED and OLLAMA_FAST_MODEL:
+        if response_mode == "spoken" or _looks_conversational(query):
+            return OLLAMA_FAST_MODEL
+    return OLLAMA_MODEL
+
+
+def _with_latency_budget(
+    base_options: Optional[dict],
+    query: str,
+    response_mode: str,
+    tool_mode: bool,
+) -> dict:
+    opts = dict(base_options or {})
+
+    def _opt_int(name: str, fallback: int) -> int:
+        try:
+            return int(opts.get(name, fallback))
+        except Exception:
+            return fallback
+
+    if tool_mode:
+        opts["num_predict"] = min(_opt_int("num_predict", _REACT_MAX_TOKENS), _REACT_MAX_TOKENS)
+        return opts
+
+    if response_mode == "spoken":
+        opts["num_predict"] = min(_opt_int("num_predict", _SPOKEN_MAX_TOKENS), _SPOKEN_MAX_TOKENS)
+    if _looks_conversational(query):
+        opts["num_predict"] = min(_opt_int("num_predict", _SHORT_REPLY_MAX_TOKENS), _SHORT_REPLY_MAX_TOKENS)
+
+    return opts
+
+
+def _react_iteration_limit(user_message: str, response_mode: str) -> int:
+    cap = min(MAX_ITERATIONS, _REACT_MAX_ITERATIONS)
+    if response_mode == "spoken":
+        cap = min(cap, _REACT_SPOKEN_MAX_ITERATIONS)
+    if _looks_conversational(user_message):
+        cap = min(cap, 4)
+    return max(2, cap)
+
+
+def _truncate_observation(observation: str, max_chars: int) -> str:
+    if len(observation) <= max_chars:
+        return observation
+    head = max_chars // 2
+    tail = max_chars - head
+    return observation[:head] + "\n[...truncated for latency...]\n" + observation[-tail:]
+
+
+def _build_system_prompt(user_message: str = "", response_mode: str = "visual", max_iter: int = MAX_ITERATIONS) -> str:
+    def _fetch_regime() -> str:
+        try:
+            regime_info = get_regime()
+            return (
+                f"Current market regime: {regime_info['regime']} "
+                f"(confidence: {regime_info['confidence']:.0%}, as of {regime_info['as_of']}). "
+                f"SPY weekly return: {regime_info['weekly_return']:+.2%}, "
+                f"30d volatility: {regime_info['volatility_30d']:.2%}, "
+                f"price vs 200MA: {regime_info['price_vs_200ma']:.3f}x."
+            )
+        except Exception:
+            return "Market regime: unavailable."
+
+    def _fetch_memory() -> str:
+        if not user_message:
+            return ""
         retrieved = _call_memory_bridge("retrieve", user_message, timeout=10)
         if retrieved and not retrieved.startswith("["):
-            memory_block = retrieved
+            return retrieved
+        return ""
 
-    speech_guidance = ""
-    if user_message and response_mode == "spoken":
+    def _fetch_speech_guidance() -> str:
+        if not user_message or response_mode != "spoken":
+            return ""
         spoken = _call_memory_bridge("speech_guidance", user_message, timeout=10)
         if spoken and not spoken.startswith("["):
-            speech_guidance = spoken
+            return spoken
+        return ""
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        regime_future = pool.submit(_fetch_regime)
+        memory_future = pool.submit(_fetch_memory)
+        speech_future = pool.submit(_fetch_speech_guidance)
+        regime_block = regime_future.result()
+        memory_block = memory_future.result()
+        speech_guidance = speech_future.result()
 
     # Identity rule — always inject so the model never invents a different name
     identity_block = (
@@ -334,14 +426,15 @@ def _build_system_prompt(user_message: str = "", response_mode: str = "visual") 
         style_block = (
             "SPOKEN RESPONSE MODE: Favor warm, natural prose that sounds good aloud. "
             "Avoid markdown headings, bullets, tool traces, enumerated debug lines, URLs, and symbol-heavy notation. "
-            "Expand abbreviations and punctuation into conversational phrasing. Sound calm, direct, and dignified."
+            "Expand abbreviations and punctuation into conversational phrasing. Sound calm, direct, and dignified. "
+            "Latency rule: give a concise first answer in 1-3 short sentences, then offer to expand if needed."
         )
 
     extra = "\n\n".join(filter(None, [identity_block, last_exchange_block, memory_block, speech_guidance, style_block]))
 
     operational = _SYSTEM_TEMPLATE.format(
         tools=tool_descriptions(),
-        max_iter=MAX_ITERATIONS,
+        max_iter=max_iter,
         regime=regime_block,
         memory=extra,
     )
@@ -414,6 +507,22 @@ def _web_augment(query: str, on_step=None) -> str | None:
         return mod.search_context(query, max_results=4)
     except Exception:
         return None
+
+
+_WEB_KEYWORDS = [
+    "today", "yesterday", "this week", "this month", "this year",
+    "news", "latest", "recent", "currently", "right now", "breaking",
+    "what happened", "what's happening", "update", "live",
+    "price of", "rate of", "weather", "forecast", "who won",
+    "election", "announced", "released", "launched",
+]
+
+def _needs_web(query: str) -> bool:
+    """Return True if the query benefits from a live DDG search."""
+    lower = query.lower()
+    if len(lower.split()) <= 4:
+        return False
+    return any(kw in lower for kw in _WEB_KEYWORDS)
 
 
 # Keywords that signal the agent needs a tool call.
@@ -497,33 +606,76 @@ def _needs_tools(query: str) -> bool:
     return False
 
 
+_TOOL_STATUS: dict[str, tuple[str, str]] = {
+    # (calling_message, done_message)
+    "edgar_screener":       ("Pulling SEC financial data...",         "Financials retrieved, analyzing..."),
+    "system_info":          ("Checking system diagnostics...",        "System stats in hand..."),
+    "market_regime":        ("Reading the market regime...",          "Regime data ready, reasoning..."),
+    "python_sandbox":       ("Running the numbers...",                "Calculation complete, reading output..."),
+    "qv_performance":       ("Pulling QV performance record...",      "Performance data ready, summarizing..."),
+    "qv_snapshot":          ("Loading the current watchlist...",      "Watchlist loaded, assessing..."),
+    "rl_optimize":          ("Running the RL optimizer...",           "Optimization complete, reviewing..."),
+    "recall_memory":        ("Searching past conversations...",       "Memory retrieved, incorporating context..."),
+    "search_docs":          ("Searching local knowledge base...",     "Documentation found, reading..."),
+    "web_search":           ("Searching the internet...",             "Web results in, synthesizing..."),
+    "cuda_reference":       ("Consulting CUDA reference docs...",     "Reference found, applying..."),
+    "claude_subagent":      ("Consulting Claude for deep analysis...", "Deep analysis complete, integrating..."),
+    "claude_subagent_stats":("Pulling delegation audit stats...",     "Stats ready..."),
+    "speech_guidance":      ("Checking pronunciation guidance...",    "Speech guidance loaded..."),
+    "lexicon_add":          ("Updating pronunciation lexicon...",     "Lexicon updated..."),
+    "lexicon_lookup":       ("Looking up pronunciation...",           "Pronunciation found..."),
+    "lexicon_remove":       ("Removing lexicon entry...",             "Entry removed..."),
+    "speech_feedback_add":  ("Recording speech feedback...",          "Feedback saved..."),
+}
+
+def _tool_msg(tool_name: str, phase: int) -> str:
+    """Return a human-readable status for a tool call. phase=0 calling, phase=1 done."""
+    entry = _TOOL_STATUS.get(tool_name)
+    if entry:
+        return entry[phase]
+    return (f"Calling {tool_name}..." if phase == 0 else f"{tool_name} complete, reasoning...")
+
+
 def _build_local_system_prompt(user_message: str = "", web_context: str | None = None, response_mode: str = "visual") -> str:
     """
     Simpler system prompt for direct Gemma calls — no JSON schema, no tool list.
     Includes regime context, memory, and optional live web search results.
     """
-    try:
-        regime_info = get_regime()
-        regime_block = (
-            f"Current market regime: {regime_info['regime']} "
-            f"(confidence: {regime_info['confidence']:.0%}). "
-            f"SPY weekly return: {regime_info['weekly_return']:+.2%}, "
-            f"30d volatility: {regime_info['volatility_30d']:.2%}."
-        )
-    except Exception:
-        regime_block = ""
+    def _fetch_regime() -> str:
+        try:
+            regime_info = get_regime()
+            return (
+                f"Current market regime: {regime_info['regime']} "
+                f"(confidence: {regime_info['confidence']:.0%}). "
+                f"SPY weekly return: {regime_info['weekly_return']:+.2%}, "
+                f"30d volatility: {regime_info['volatility_30d']:.2%}."
+            )
+        except Exception:
+            return ""
 
-    memory_block = ""
-    if user_message:
+    def _fetch_memory() -> str:
+        if not user_message:
+            return ""
         retrieved = _call_memory_bridge("retrieve", user_message, timeout=10)
         if retrieved and not retrieved.startswith("["):
-            memory_block = f"\nRelevant past context:\n{retrieved}"
+            return f"\nRelevant past context:\n{retrieved}"
+        return ""
 
-    speech_guidance = ""
-    if user_message and response_mode == "spoken":
+    def _fetch_speech_guidance() -> str:
+        if not user_message or response_mode != "spoken":
+            return ""
         spoken = _call_memory_bridge("speech_guidance", user_message, timeout=10)
         if spoken and not spoken.startswith("["):
-            speech_guidance = f"\nSpeech guidance:\n{spoken}"
+            return f"\nSpeech guidance:\n{spoken}"
+        return ""
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        regime_future = pool.submit(_fetch_regime)
+        memory_future = pool.submit(_fetch_memory)
+        speech_future = pool.submit(_fetch_speech_guidance)
+        regime_block = regime_future.result()
+        memory_block = memory_future.result()
+        speech_guidance = speech_future.result()
 
     # Identity rule — must be first so model never invents a different name
     identity_rule = (
@@ -641,14 +793,24 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
     if response_mode == "spoken":
         parts.append(
             "Spoken style: Use complete sentences, gentle transitions, and natural pauses. "
-            "Prefer prose over lists, and explain symbols in words instead of reading punctuation literally."
+            "Prefer prose over lists, and explain symbols in words instead of reading punctuation literally. "
+            "Keep the first pass concise (1-3 short sentences), then offer detail on request."
         )
 
     operational = "\n".join(parts)
     return f"{_SOUL}\n\n---\n\n{operational}" if _SOUL else operational
 
 
-def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save_memory: bool = True, prior_messages: Optional[list] = None, on_token: Optional[Callable[[str], None]] = None, ollama_options: Optional[dict] = None, response_mode: str = "visual") -> Optional[str]:
+def _run_local(
+    query: str,
+    on_step: Optional[Callable[[str], None]] = None,
+    save_memory: bool = True,
+    prior_messages: Optional[list] = None,
+    on_token: Optional[Callable[[str], None]] = None,
+    ollama_options: Optional[dict] = None,
+    response_mode: str = "visual",
+    local_model: Optional[str] = None,
+) -> Optional[str]:
     """
     Send a query directly to Ollama with streaming enabled.
 
@@ -665,15 +827,15 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
     import requests as _req
     import time as _time
 
+    model_name = local_model or OLLAMA_MODEL
     if on_step:
-        on_step(f"Running on local GPU ({OLLAMA_MODEL})...")
+        on_step(f"Running on local GPU ({model_name})...")
 
-    # Always fetch live web results to ground Gemma's answer in current info.
-    # DDG is ~0.5s and free; if the search fails or returns nothing, web_context
-    # is None and Gemma falls back to its parametric knowledge gracefully.
-    if on_step:
-        on_step("Searching the web...")
-    web_context = _web_augment(query)
+    web_context = None
+    if _needs_web(query):
+        if on_step:
+            on_step("Searching the web...")
+        web_context = _web_augment(query)
 
     system = _build_local_system_prompt(query, web_context=web_context, response_mode=response_mode)
 
@@ -683,7 +845,8 @@ def _run_local(query: str, on_step: Optional[Callable[[str], None]] = None, save
         resp = _req.post(
             f"{OLLAMA_URL}/api/chat",
             json={
-                "model": OLLAMA_MODEL,
+                "model": model_name,
+                "keep_alive": -1,
                 "messages": [
                     {"role": "system", "content": system},
                     *(prior_messages or []),
@@ -758,6 +921,7 @@ def _run_local_react_loop(
     prior_messages: Optional[list] = None,
     ollama_options: Optional[dict] = None,
     response_mode: str = "visual",
+    local_model: Optional[str] = None,
 ) -> Optional[str]:
     """
     Run the full ReAct/tool loop locally on Ollama/Gemma.
@@ -766,31 +930,60 @@ def _run_local_react_loop(
     """
     import requests as _req
 
-    system_prompt = _build_system_prompt(user_message, response_mode=response_mode)
+    react_iter_cap = _react_iteration_limit(user_message, response_mode)
+    model_name = local_model or OLLAMA_MODEL
+    system_prompt = _build_system_prompt(user_message, response_mode=response_mode, max_iter=react_iter_cap)
     messages = [*(prior_messages or []), {"role": "user", "content": user_message}]
 
-    for iteration in range(MAX_ITERATIONS):
+    for iteration in range(react_iter_cap):
         if on_step:
-            on_step(f"Local ReAct iteration {iteration + 1}/{MAX_ITERATIONS} on {OLLAMA_MODEL}")
+            on_step(f"Local ReAct iteration {iteration + 1}/{react_iter_cap} on {model_name}")
 
         try:
             _opts = {k: v for k, v in (ollama_options or {}).items() if not (k == "seed" and v == -1)}
             resp = _req.post(
                 f"{OLLAMA_URL}/api/chat",
                 json={
-                    "model": OLLAMA_MODEL,
+                    "model": model_name,
+                    "keep_alive": -1,
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         *messages,
                     ],
-                    "stream": False,
+                    "stream": True,
                     **({"options": _opts} if _opts else {}),
                 },
+                stream=True,
                 timeout=(180, 300),
             )
             resp.raise_for_status()
-            payload = resp.json()
-            raw = payload.get("message", {}).get("content", "")
+            chunks: list[str] = []
+            last_emit = time.monotonic()
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                token = chunk.get("message", {}).get("content", "")
+                if token:
+                    chunks.append(token)
+
+                now = time.monotonic()
+                if on_step and now - last_emit >= 1.2 and len(chunks) >= 12:
+                    preview = "".join(chunks).strip().replace("\n", " ")
+                    if len(preview) > 120:
+                        preview = preview[-120:]
+                    if preview:
+                        on_step(f"Local ReAct thinking: {preview}")
+                    last_emit = now
+
+                if chunk.get("done"):
+                    break
+
+            raw = "".join(chunks).strip()
         except Exception:
             return None
 
@@ -819,10 +1012,9 @@ def _run_local_react_loop(
             tool_name = step.action
             tool_args = step.action_input
             if on_step:
-                on_step(f"Local tool call: {tool_name}")
+                on_step(_tool_msg(tool_name, 0))
             observation = dispatch(tool_name, **tool_args)
-            if len(observation) > 3000:
-                observation = observation[:3000] + "\n[...truncated]"
+            observation = _truncate_observation(observation, _REACT_TOOL_TRUNCATE_CHARS)
 
             messages.append({"role": "assistant", "content": raw})
             messages.append({
@@ -858,7 +1050,8 @@ def _run_local_react_loop(
         resp = _req.post(
             f"{OLLAMA_URL}/api/chat",
             json={
-                "model": OLLAMA_MODEL,
+                "model": model_name,
+                "keep_alive": -1,
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     *messages,
@@ -927,22 +1120,51 @@ def _run_agent_inner(
     response_mode: str = "visual",
 ) -> str:
     use_local_react = _AGENT_MODE in {"local_react", "local", "gemma_local"}
+    needs_tools = _needs_tools(user_message)
+
+    direct_model = _select_local_model(user_message, response_mode=response_mode, tool_mode=False)
+    react_model = _select_local_model(user_message, response_mode=response_mode, tool_mode=True)
+    direct_options = _with_latency_budget(ollama_options, user_message, response_mode, tool_mode=False)
+    react_options = _with_latency_budget(ollama_options, user_message, response_mode, tool_mode=True)
 
     # --- Routing decision ---
     if _FORCE_LOCAL_ONLY:
         if on_step:
-            on_step(f"Routing: forced local GPU ({OLLAMA_MODEL})")
-        if _needs_tools(user_message):
+            on_step(f"Routing: forced local GPU ({direct_model})")
+        if needs_tools:
             result = _run_local_react_loop(
                 user_message,
                 on_step=on_step,
                 save_memory=save_memory,
                 prior_messages=prior_messages,
-                ollama_options=ollama_options,
+                ollama_options=react_options,
                 response_mode=response_mode,
+                local_model=react_model,
             )
         else:
-            result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options, response_mode=response_mode)
+            result = _run_local(
+                user_message,
+                on_step=on_step,
+                save_memory=save_memory,
+                prior_messages=prior_messages,
+                on_token=on_token,
+                ollama_options=direct_options,
+                response_mode=response_mode,
+                local_model=direct_model,
+            )
+            if result is None and direct_model != OLLAMA_MODEL:
+                if on_step:
+                    on_step(f"Fast model unavailable, retrying on {OLLAMA_MODEL}...")
+                result = _run_local(
+                    user_message,
+                    on_step=on_step,
+                    save_memory=save_memory,
+                    prior_messages=prior_messages,
+                    on_token=on_token,
+                    ollama_options=direct_options,
+                    response_mode=response_mode,
+                    local_model=OLLAMA_MODEL,
+                )
         if result is not None:
             return result
         return (
@@ -950,10 +1172,32 @@ def _run_agent_inner(
             "Start Ollama or disable MITHRANDIR_FORCE_LOCAL_ONLY."
         )
 
-    if not _needs_tools(user_message):
+    if not needs_tools:
         if on_step:
-            on_step(f"Routing: local GPU ({OLLAMA_MODEL})")
-        result = _run_local(user_message, on_step=on_step, save_memory=save_memory, prior_messages=prior_messages, on_token=on_token, ollama_options=ollama_options, response_mode=response_mode)
+            on_step(f"Routing: local fast lane ({direct_model})")
+        result = _run_local(
+            user_message,
+            on_step=on_step,
+            save_memory=save_memory,
+            prior_messages=prior_messages,
+            on_token=on_token,
+            ollama_options=direct_options,
+            response_mode=response_mode,
+            local_model=direct_model,
+        )
+        if result is None and direct_model != OLLAMA_MODEL:
+            if on_step:
+                on_step(f"Fast model unavailable, retrying on {OLLAMA_MODEL}...")
+            result = _run_local(
+                user_message,
+                on_step=on_step,
+                save_memory=save_memory,
+                prior_messages=prior_messages,
+                on_token=on_token,
+                ollama_options=direct_options,
+                response_mode=response_mode,
+                local_model=OLLAMA_MODEL,
+            )
         if result is not None:
             return result
         # Ollama unreachable — fall through to Claude
@@ -962,14 +1206,15 @@ def _run_agent_inner(
     else:
         if use_local_react:
             if on_step:
-                on_step(f"Routing: local ReAct tool mode ({OLLAMA_MODEL})")
+                on_step(f"Routing: local ReAct tool mode ({react_model})")
             result = _run_local_react_loop(
                 user_message,
                 on_step=on_step,
                 save_memory=save_memory,
                 prior_messages=prior_messages,
-                ollama_options=ollama_options,
+                ollama_options=react_options,
                 response_mode=response_mode,
+                local_model=react_model,
             )
             if result is not None:
                 return result
@@ -1041,7 +1286,7 @@ def _run_agent_inner(
             tool_args = step.action_input
 
             if on_step:
-                on_step(f"🔧 Calling `{tool_name}`...")
+                on_step(_tool_msg(tool_name, 0))
 
             observation = dispatch(tool_name, **tool_args)
 
@@ -1050,7 +1295,7 @@ def _run_agent_inner(
                 observation = observation[:3000] + "\n[...truncated]"
 
             if on_step:
-                on_step(f"📊 Got result from `{tool_name}`, reasoning...")
+                on_step(_tool_msg(tool_name, 1))
 
             # Append this turn to history
             messages.append({"role": "assistant", "content": raw})

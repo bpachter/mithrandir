@@ -152,7 +152,7 @@ def _synthesize(
     device: str,
     alpha: float = 0.3,
     beta: float  = 0.7,
-    diffusion_steps: int = 5,
+    diffusion_steps: int = 3,
 ) -> bytes:
     import io
     import torch

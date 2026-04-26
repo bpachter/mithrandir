@@ -58,6 +58,8 @@ voice-training/checkpoints/
 
 # Frontend local runtime logs
 phase6-ui/client.log
+server.err.log
+*.err.log
 
 # Voice training — ElevenLabs dataset WAVs and training artifacts
 voice-training/elevenlabs_data/
@@ -66,3 +68,5 @@ voice-training/pipeline.log
 voice-training/vctk_download.log
 voice-training/vctk_download_err.log
 logs/
+
+voice-training/pretrained/ststts2_git_tmp/

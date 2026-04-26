@@ -285,6 +285,35 @@ Commands during the session:
 - `/refresh` — re-download EDGAR data and regenerate the QV screened portfolio
 - `/rate <text>` — save feedback on the last response
 
+### 8. Fast Conversational Lane (Qwen/Llama + Gemma)
+
+Mithrandir supports a dual-lane local architecture:
+
+1. Fast conversational lane (`OLLAMA_FAST_MODEL`) for low-latency spoken/chat turns.
+2. Deep/tool lane (`OLLAMA_MODEL`) for heavier reasoning and tool use.
+3. Claude subagent remains optional escalation for hard synthesis/coding tasks.
+
+On RTX 4090, recommended default:
+
+1. `qwen2.5:7b` as fast lane
+2. `gemma4:26b` as deep lane
+
+Alternative:
+
+1. `llama3.1:8b` as fast lane if you prefer Llama style/cadence.
+
+Use the helper script to configure `.env` and pull models:
+
+```powershell
+# Recommended default (Qwen fast lane)
+.\scripts\setup_fast_lane.ps1
+
+# Llama fast lane
+.\scripts\setup_fast_lane.ps1 -Family llama
+```
+
+Then restart Mithrandir (`.\start_mithrandir.ps1`).
+
 ---
 
 ## EDGAR Financial Screener (Phase 2 Tool)

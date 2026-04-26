@@ -755,7 +755,21 @@ def prewarm_tts():
             except Exception as _e:
                 logger.error(f"auto_ref_text failed: {_e!r}")
 
+    def _prewarm_stt2():
+        if not _styletts2_available():
+            return
+        logger.info("Pre-warming StyleTTS2…")
+        try:
+            result = _synth_styletts2("Online.")
+            if result:
+                logger.info(f"StyleTTS2 pre-warm complete ({len(result):,} bytes).")
+            else:
+                logger.warning("StyleTTS2 pre-warm returned no audio.")
+        except Exception as _e:
+            logger.warning(f"StyleTTS2 pre-warm failed: {_e}")
+
     threading.Thread(target=_prewarm, name="kokoro-prewarm", daemon=True).start()
+    threading.Thread(target=_prewarm_stt2, name="stt2-prewarm", daemon=True).start()
 
 
 def prewarm_chatterbox():
@@ -1121,7 +1135,7 @@ _STT2_WORKER_SCRIPT = Path(__file__).parent / "styletts2_worker.py"
 _stt2_proc:   Optional[subprocess.Popen] = None
 _stt2_lock  = threading.Lock()
 _stt2_ready = False
-_STT2_MAX_FAILS = int(os.environ.get("MITHRANDIR_STT2_MAX_FAILS", "1"))
+_STT2_MAX_FAILS = int(os.environ.get("MITHRANDIR_STT2_MAX_FAILS", "3"))
 _stt2_fail_count = 0
 _stt2_disabled_session = False
 
@@ -1215,9 +1229,9 @@ def _synth_styletts2(text: str, timeout: int = 30) -> Optional[bytes]:
                 if not line:
                     continue
                 try:
-                    result_holder.append(json.loads(line))
+                    result_holder.append(_json.loads(line))
                     return
-                except json.JSONDecodeError:
+                except _json.JSONDecodeError:
                     logger.debug(f"StyleTTS2 non-JSON: {line!r}")
 
         t = threading.Thread(target=_read, daemon=True)
