@@ -439,11 +439,17 @@ def resample_to_24k(audio_bytes: bytes, original_sr: int) -> np.ndarray:
     return data
 
 
+def _load_sentences_from_file(path: Path) -> list[str]:
+    lines = [ln.strip() for ln in path.read_text(encoding="utf-8").splitlines()]
+    return [ln for ln in lines if ln and not ln.startswith("#")]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--api-key",  required=True, help="ElevenLabs API key")
     ap.add_argument("--voice-id", required=True, help="ElevenLabs voice ID for Mithrandir")
     ap.add_argument("--out-dir",  default="./elevenlabs_data", help="Output directory")
+    ap.add_argument("--sentences-file", default="", help="Optional text file with one sentence per line")
     ap.add_argument("--resume",   action="store_true", help="Skip already-generated clips")
     ap.add_argument("--model",    default="eleven_multilingual_v2", help="ElevenLabs model ID")
     ap.add_argument("--stability",    type=float, default=0.65)
@@ -462,7 +468,15 @@ def main():
     wav_dir  = out / "wavs"
     wav_dir.mkdir(parents=True, exist_ok=True)
 
-    sentences = SENTENCES.copy()
+    if args.sentences_file:
+        sent_path = Path(args.sentences_file).resolve()
+        if not sent_path.exists():
+            raise FileNotFoundError(f"sentences file not found: {sent_path}")
+        sentences = _load_sentences_from_file(sent_path)
+        if not sentences:
+            raise ValueError(f"no usable sentences found in: {sent_path}")
+    else:
+        sentences = SENTENCES.copy()
     random.shuffle(sentences)
 
     print(f"Generating {len(sentences)} clips into {out}")
