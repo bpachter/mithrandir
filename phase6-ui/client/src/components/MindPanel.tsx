@@ -354,20 +354,20 @@ export default function MindPanel() {
               <ellipse cx="100" cy="75" rx="86" ry="24" className="mind-ring mind-ring-a" />
               <ellipse cx="100" cy="75" rx="24" ry="72" className="mind-ring mind-ring-b" />
               <ellipse cx="100" cy="75" rx="72" ry="20" className="mind-ring mind-ring-c" />
-              {/* Left hemisphere */}
-              <path d="M100 26 C82 24,64 30,52 44 C40 58,36 72,40 86 C44 100,54 112,68 118 C80 123,92 122,100 120" className="mind-hemi" />
-              {/* Right hemisphere */}
-              <path d="M100 26 C118 24,136 30,148 44 C160 58,164 72,160 86 C156 100,146 112,132 118 C120 123,108 122,100 120" className="mind-hemi" />
-              {/* Midline sulcus */}
-              <line x1="100" y1="26" x2="100" y2="120" className="mind-sulcus" />
-              {/* Cerebral folds — left */}
-              <path d="M68 32 C60 44,56 60,60 76" className="mind-fold" />
-              <path d="M50 60 C52 72,58 84,68 92" className="mind-fold" />
-              <path d="M86 28 C80 44,80 62,86 78 C88 86,90 94,90 106" className="mind-fold" />
-              {/* Cerebral folds — right */}
-              <path d="M132 32 C140 44,144 60,140 76" className="mind-fold" />
-              <path d="M150 60 C148 72,142 84,132 92" className="mind-fold" />
-              <path d="M114 28 C120 44,120 62,114 78 C112 86,110 94,110 106" className="mind-fold" />
+              {/* Left hemisphere — 3 gyri bumps on outer edge */}
+              <path d="M 100 20 C 90 15,76 13,62 18 C 50 23,42 30,38 37 C 34 37,28 39,26 47 C 24 55,28 58,28 63 C 24 68,20 72,20 78 C 20 84,24 88,26 94 C 24 100,26 105,28 110 C 32 116,42 122,56 126 C 70 130,86 130,100 128" className="mind-hemi" />
+              {/* Right hemisphere — mirror */}
+              <path d="M 100 20 C 110 15,124 13,138 18 C 150 23,158 30,162 37 C 166 37,172 39,174 47 C 176 55,172 58,172 63 C 176 68,180 72,180 78 C 180 84,176 88,174 94 C 176 100,174 105,172 110 C 168 116,158 122,144 126 C 130 130,114 130,100 128" className="mind-hemi" />
+              {/* Longitudinal fissure — slightly wavy center line */}
+              <path d="M 100 20 C 99 55,101 90,100 128" className="mind-sulcus" />
+              {/* Left sulci — major gyral boundaries */}
+              <path d="M 85 28 C 70 36,58 48,54 62 C 52 70,54 80,56 90" className="mind-fold" />
+              <path d="M 74 70 C 64 70,54 66,46 58" className="mind-fold" />
+              <path d="M 82 100 C 70 104,58 110,52 120" className="mind-fold" />
+              {/* Right sulci — mirror */}
+              <path d="M 115 28 C 130 36,142 48,146 62 C 148 70,146 80,144 90" className="mind-fold" />
+              <path d="M 126 70 C 136 70,146 66,154 58" className="mind-fold" />
+              <path d="M 118 100 C 130 104,142 110,148 120" className="mind-fold" />
               {/* Synaptic base connections */}
               <line x1="100" y1="72" x2="100" y2="46" className="mind-syn" />
               <line x1="100" y1="72" x2="74" y2="56" className="mind-syn" />

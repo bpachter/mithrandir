@@ -1601,12 +1601,12 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
 }
 /* Brain hemispheres */
 .mind-hemi {
-  fill: none;
-  stroke: rgba(172, 216, 255, 0.54);
-  stroke-width: 2;
+  fill: rgba(100, 160, 220, 0.04);
+  stroke: rgba(172, 216, 255, 0.70);
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 5px rgba(140, 200, 255, 0.30));
+  filter: drop-shadow(0 0 7px rgba(140, 200, 255, 0.38));
 }
 /* Midline */
 .mind-sulcus {
@@ -1617,7 +1617,7 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
 /* Cerebral folds */
 .mind-fold {
   fill: none;
-  stroke: rgba(140, 190, 255, 0.20);
+  stroke: rgba(140, 190, 255, 0.30);
   stroke-width: 1;
   stroke-linecap: round;
 }
