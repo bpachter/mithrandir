@@ -349,51 +349,72 @@ export default function MindPanel() {
             onMouseLeave={() => setStatusText(reflecting ? 'mithrandir is reflecting over recent memory' : 'hover the cortex to surface actions')}
           >
             <div className="mind-neural-ambient" aria-hidden="true" />
-            <svg viewBox="0 0 200 150" className="mind-neural-svg" aria-hidden="true">
-              {/* Orbit rings — 3 planes give 3-D orbital feel */}
-              <ellipse cx="100" cy="75" rx="86" ry="24" className="mind-ring mind-ring-a" />
-              <ellipse cx="100" cy="75" rx="24" ry="72" className="mind-ring mind-ring-b" />
-              <ellipse cx="100" cy="75" rx="72" ry="20" className="mind-ring mind-ring-c" />
-              {/* Left hemisphere — 3 gyri bumps on outer edge */}
-              <path d="M 100 20 C 90 15,76 13,62 18 C 50 23,42 30,38 37 C 34 37,28 39,26 47 C 24 55,28 58,28 63 C 24 68,20 72,20 78 C 20 84,24 88,26 94 C 24 100,26 105,28 110 C 32 116,42 122,56 126 C 70 130,86 130,100 128" className="mind-hemi" />
-              {/* Right hemisphere — mirror */}
-              <path d="M 100 20 C 110 15,124 13,138 18 C 150 23,158 30,162 37 C 166 37,172 39,174 47 C 176 55,172 58,172 63 C 176 68,180 72,180 78 C 180 84,176 88,174 94 C 176 100,174 105,172 110 C 168 116,158 122,144 126 C 130 130,114 130,100 128" className="mind-hemi" />
-              {/* Longitudinal fissure — slightly wavy center line */}
-              <path d="M 100 20 C 99 55,101 90,100 128" className="mind-sulcus" />
-              {/* Left sulci — major gyral boundaries */}
-              <path d="M 85 28 C 70 36,58 48,54 62 C 52 70,54 80,56 90" className="mind-fold" />
-              <path d="M 74 70 C 64 70,54 66,46 58" className="mind-fold" />
-              <path d="M 82 100 C 70 104,58 110,52 120" className="mind-fold" />
-              {/* Right sulci — mirror */}
-              <path d="M 115 28 C 130 36,142 48,146 62 C 148 70,146 80,144 90" className="mind-fold" />
-              <path d="M 126 70 C 136 70,146 66,154 58" className="mind-fold" />
-              <path d="M 118 100 C 130 104,142 110,148 120" className="mind-fold" />
-              {/* Synaptic base connections */}
-              <line x1="100" y1="72" x2="100" y2="46" className="mind-syn" />
-              <line x1="100" y1="72" x2="74" y2="56" className="mind-syn" />
-              <line x1="100" y1="72" x2="126" y2="56" className="mind-syn" />
-              <line x1="100" y1="72" x2="58" y2="80" className="mind-syn" />
-              <line x1="100" y1="72" x2="142" y2="80" className="mind-syn" />
-              <line x1="100" y1="72" x2="74" y2="104" className="mind-syn" />
-              <line x1="100" y1="72" x2="126" y2="104" className="mind-syn" />
-              {/* Traveling synaptic pulses */}
-              <path d="M100 72 L100 46" className="mind-pulse pulse-1" />
-              <path d="M100 72 L74 56"  className="mind-pulse pulse-2" />
-              <path d="M100 72 L126 56" className="mind-pulse pulse-3" />
-              <path d="M100 72 L58 80"  className="mind-pulse pulse-4" />
-              <path d="M100 72 L142 80" className="mind-pulse pulse-5" />
-              <path d="M100 72 L74 104" className="mind-pulse pulse-6" />
-              <path d="M100 72 L126 104" className="mind-pulse pulse-7" />
-              {/* Peripheral nodes */}
-              <circle cx="100" cy="46"  r="3"   className="mind-nc node-top" />
-              <circle cx="74"  cy="56"  r="3.5" className="mind-nc node-1" />
-              <circle cx="126" cy="56"  r="3.5" className="mind-nc node-2" />
-              <circle cx="58"  cy="80"  r="3"   className="mind-nc node-3" />
-              <circle cx="142" cy="80"  r="3"   className="mind-nc node-4" />
-              <circle cx="74"  cy="104" r="3"   className="mind-nc node-5" />
-              <circle cx="126" cy="104" r="3"   className="mind-nc node-6" />
-              {/* Core — always rendered last so it's on top */}
-              <circle cx="100" cy="72"  r="7"   className="mind-nc mind-nc-core" />
+            <svg viewBox="0 0 220 160" className="mind-neural-svg" aria-hidden="true">
+              {/* Sagittal (side profile) brain — right lateral view */}
+              
+              {/* Main cerebral hemisphere outline — lateral surface */}
+              <path d="M 45 35 C 55 20,75 15,95 18 C 115 21,135 30,145 45 C 155 60,160 80,158 100 C 156 115,148 128,135 138 C 110 148,75 150,55 145 C 40 140,35 125,38 105 C 40 85,42 65,45 35" className="mind-hemi" />
+              
+              {/* Cerebellum — bulbous structure below brain */}
+              <path d="M 70 145 C 60 148,55 152,58 160 C 65 162,85 162,95 160 C 100 156,98 148,90 146 C 82 145,75 145,70 145" className="mind-cerebellum" />
+              
+              {/* Brainstem — connecting line */}
+              <line x1="85" y1="145" x2="82" y2="160" className="mind-brainstem" />
+              
+              {/* Major sulci — deep grooves that define lobes */}
+              
+              {/* Central sulcus (Rolandic) — separates frontal from parietal */}
+              <path d="M 110 28 C 105 55,102 85,100 115" className="mind-fold mind-fold-major" />
+              
+              {/* Lateral sulcus (Sylvian) — separates temporal lobe */}
+              <path d="M 60 65 C 85 70,130 72,150 75" className="mind-fold mind-fold-major" />
+              
+              {/* Parieto-occipital sulcus */}
+              <path d="M 120 35 C 125 60,128 90,125 120" className="mind-fold mind-fold-major" />
+              
+              {/* Intermediate gyri/sulci for texture — frontal region */}
+              <path d="M 65 35 C 70 50,72 65,70 80" className="mind-fold" />
+              <path d="M 75 32 C 80 48,85 68,83 88" className="mind-fold" />
+              <path d="M 55 55 C 62 68,65 80,62 95" className="mind-fold" />
+              
+              {/* Parietal/occipital texture */}
+              <path d="M 130 45 C 132 68,133 90,131 110" className="mind-fold" />
+              <path d="M 140 52 C 140 75,138 100,135 120" className="mind-fold" />
+              <path d="M 115 38 C 118 65,120 95,117 125" className="mind-fold" />
+              
+              {/* Temporal region gyri */}
+              <path d="M 90 85 C 105 90,125 92,140 88" className="mind-fold" />
+              <path d="M 85 100 C 110 102,135 100,150 95" className="mind-fold" />
+              
+              {/* Synaptic network — emanating from core areas */}
+              <line x1="90" y1="75" x2="40" y2="50" className="mind-syn" />
+              <line x1="95" y1="85" x2="35" y2="80" className="mind-syn" />
+              <line x1="100" y1="95" x2="50" y2="120" className="mind-syn" />
+              <line x1="110" y1="80" x2="165" y2="60" className="mind-syn" />
+              <line x1="115" y1="90" x2="170" y2="85" className="mind-syn" />
+              <line x1="120" y1="100" x2="165" y2="110" className="mind-syn" />
+              <line x1="90" y1="135" x2="75" y2="152" className="mind-syn" />
+              
+              {/* Traveling synaptic pulses — 7 pathways */}
+              <path d="M 90 75 L 40 50" className="mind-pulse pulse-1" />
+              <path d="M 95 85 L 35 80" className="mind-pulse pulse-2" />
+              <path d="M 100 95 L 50 120" className="mind-pulse pulse-3" />
+              <path d="M 110 80 L 165 60" className="mind-pulse pulse-4" />
+              <path d="M 115 90 L 170 85" className="mind-pulse pulse-5" />
+              <path d="M 120 100 L 165 110" className="mind-pulse pulse-6" />
+              <path d="M 90 135 L 75 152" className="mind-pulse pulse-7" />
+              
+              {/* Peripheral neural nodes */}
+              <circle cx="40" cy="50"  r="2.5" className="mind-nc node-1" />
+              <circle cx="35" cy="80"  r="2.5" className="mind-nc node-2" />
+              <circle cx="50" cy="120" r="2.5" className="mind-nc node-3" />
+              <circle cx="165" cy="60" r="2.5" className="mind-nc node-4" />
+              <circle cx="170" cy="85" r="2.5" className="mind-nc node-5" />
+              <circle cx="165" cy="110" r="2.5" className="mind-nc node-6" />
+              <circle cx="75" cy="152" r="2.5" className="mind-nc node-7" />
+              
+              {/* Core thalamus — central processing hub */}
+              <circle cx="85" cy="95" r="6" className="mind-nc mind-nc-core" />
             </svg>
             <div className="mind-neural-chips">
               <button
