@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Map as MapIcon, Settings2, BookText, Code2, Moon, Sun } from 'lucide-react'
+import { Settings2, BookText, Code2, Moon, Sun } from 'lucide-react'
 import CelestialBackground from './components/CelestialBackground'
 import ChatPanel        from './components/ChatPanel'
 import GpuHistoryPanel  from './components/GpuHistoryPanel'
@@ -105,34 +105,12 @@ export default function App() {
         {theme === 'dark' ? 'Day' : 'Night'}
       </button>
 
-      {/* Avalon launch button */}
-      <button
-        onClick={() => setMode('avalon')}
-        title="Open Atlas, the datacenter siting command map"
-        className="
-          group fixed top-2 right-[130px] z-50
-          inline-flex items-center gap-2 rounded-sm border
-          px-3 py-1 font-display text-[10.5px] font-semibold uppercase tracking-[0.22em]
-          transition-all duration-150
-          hover:shadow-[0_0_14px_-4px_rgba(184,196,208,0.4)]
-          focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2
-        "
-        style={{
-          borderColor: 'var(--border-strong)',
-          background: 'rgba(186,198,210,0.10)',
-          color: 'var(--fg)',
-        }}
-      >
-        <MapIcon className="h-3 w-3" strokeWidth={2.4} />
-        Atlas
-      </button>
-
       {/* Dev panel launch button */}
       <button
         onClick={() => setMode('dev')}
         title="Open Mithrandir Forge — code orchestration and review"
         className="
-          group fixed top-2 right-[220px] z-50
+          group fixed bottom-3 right-3 z-50
           inline-flex items-center gap-2 rounded-sm border
           px-3 py-1 font-display text-[10.5px] font-semibold uppercase tracking-[0.22em]
           transition-all duration-150
