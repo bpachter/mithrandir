@@ -67,14 +67,14 @@ function computeDerived(history: GpuHistoryPoint[]): SparkPoint[] {
 /* ── Styling helpers ──────────────────────────────────────────────────── */
 
 const LEVEL_COLOR: Record<string, string> = {
-  safe: 'rgba(100,200,160,0.92)',
-  warn: 'rgba(220,195,120,0.92)',
-  crit: 'rgba(215,110,100,0.92)',
+  safe: 'rgba(110,190,155,0.70)',
+  warn: 'rgba(200,180,110,0.70)',
+  crit: 'rgba(200,100,90,0.70)',
 }
 const LEVEL_BG: Record<string, string> = {
-  safe: 'rgba(50,150,110,0.07)',
-  warn: 'rgba(190,145,50,0.07)',
-  crit: 'rgba(190,50,50,0.07)',
+  safe: 'rgba(80,160,120,0.03)',
+  warn: 'rgba(180,145,60,0.03)',
+  crit: 'rgba(180,60,55,0.03)',
 }
 
 const MODAL_W = 840
@@ -251,14 +251,15 @@ export default function MetricDetailModal({
             <div
               key={i}
               className="metric-modal-state"
-              style={{ background: LEVEL_BG[s.level], borderColor: LEVEL_COLOR[s.level] }}
+              style={{ background: LEVEL_BG[s.level], borderColor: 'var(--border)', borderLeftColor: LEVEL_COLOR[s.level], borderLeftWidth: 2 }}
             >
               <div className="metric-modal-state-hdr">
                 <span className="metric-modal-state-dot" style={{ background: LEVEL_COLOR[s.level] }} />
                 <span style={{
                   color: LEVEL_COLOR[s.level],
                   fontFamily: 'var(--font-display)',
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.18em',
+                  fontSize: 9, fontWeight: 600, letterSpacing: '0.14em',
+                  opacity: 0.80,
                 }}>
                   {s.level.toUpperCase()}
                 </span>

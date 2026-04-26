@@ -1582,7 +1582,8 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
   gap: 8px;
 }
 .metric-modal-state {
-  border: 1px solid;
+  border: 1px solid var(--border);
+  border-left: 2px solid;
   border-radius: 9px;
   padding: 10px 14px 12px;
 }
@@ -1593,10 +1594,11 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
   margin-bottom: 5px;
 }
 .metric-modal-state-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+  opacity: 0.75;
 }
 /* ── Theme fade-through: content dims to 0, snaps, fades in ─── */
 /* .theme-fading is added for ~320 ms during manual theme toggle  */
