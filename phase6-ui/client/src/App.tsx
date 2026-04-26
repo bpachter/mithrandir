@@ -110,7 +110,7 @@ export default function App() {
         onClick={() => setMode('dev')}
         title="Open Mithrandir Forge — code orchestration and review"
         className="
-          group fixed bottom-3 right-3 z-50
+          group fixed bottom-2 right-2 z-50
           inline-flex items-center gap-2 rounded-sm border
           px-3 py-1 font-display text-[10.5px] font-semibold uppercase tracking-[0.22em]
           transition-all duration-150
