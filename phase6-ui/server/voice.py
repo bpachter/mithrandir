@@ -1589,4 +1589,12 @@ async def synthesize_streaming(
         if wav:
             await on_sentence(wav, "wav", seq)
         else:
-            logger.warning(f"TTS returned nothing for sentence {seq} (profile={profile!r}), skipping")
+            logger.warning(
+                f"TTS returned nothing for sentence {seq} (profile={profile!r}), "
+                "trying full synth fallback"
+            )
+            fb_audio, fb_fmt = await synthesize(sentence, voice_profile=profile)
+            if fb_audio:
+                await on_sentence(fb_audio, fb_fmt, seq)
+            else:
+                logger.error(f"TTS fallback also failed for sentence {seq} (profile={profile!r})")

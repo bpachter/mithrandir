@@ -310,6 +310,11 @@ _DETAIL_CUES = [
     "full analysis", "write a report", "walk me through in detail",
 ]
 
+_NON_ENGLISH_CUES = [
+    "in chinese", "in mandarin", "in cantonese", "in spanish", "in french", "in german",
+    "translate to", "reply in", "respond in", "write in", "bilingual", "multilingual",
+]
+
 
 def _wants_detailed_answer(query: str) -> bool:
     q = query.lower().strip()
@@ -380,6 +385,15 @@ def _truncate_observation(observation: str, max_chars: int) -> str:
     head = max_chars // 2
     tail = max_chars - head
     return observation[:head] + "\n[...truncated for latency...]\n" + observation[-tail:]
+
+
+def _explicit_non_english_requested(query: str) -> bool:
+    q = query.lower().strip()
+    return any(cue in q for cue in _NON_ENGLISH_CUES)
+
+
+def _contains_cjk(text: str) -> bool:
+    return bool(re.search(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]", text or ""))
 
 
 _COMPLETE_ENDINGS = (".", "!", "?", '"', "'", "”", "’", ")")
@@ -463,6 +477,7 @@ def _build_system_prompt(user_message: str = "", response_mode: str = "visual", 
             "SPOKEN RESPONSE MODE: Favor warm, natural prose that sounds good aloud. "
             "Avoid markdown headings, bullets, tool traces, enumerated debug lines, URLs, and symbol-heavy notation. "
             "Expand abbreviations and punctuation into conversational phrasing. Sound calm, direct, and dignified. "
+            "Language rule: reply in English unless Ben explicitly asks for another language or translation. "
             "Default pacing rule: answer in 1-2 short sentences, then ask one specific follow-up question to steer the next turn. "
             "If the user explicitly asks for detail/deep dive/full report, provide full detail without forced brevity. "
             "Never stop mid-thought; always end on a complete sentence."
@@ -772,6 +787,7 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         "it, that is his problem. Do not explain the joke.\n"
         "- Match depth to complexity. Short questions deserve concise answers. Complex questions "
         "deserve thorough ones. Neither should be padded.\n"
+        "- Reply in English by default. Switch language only when explicitly requested.\n"
         "- When Ben asks something he already knows, you may tell him so: 'You already know "
         "the answer to this. You simply haven't decided to act on it yet.'\n"
         "- Prose, not lists, unless a list is genuinely the right structure. Avoid markdown "
@@ -827,6 +843,7 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         parts.append(
             "Spoken style: Use complete sentences, gentle transitions, and natural pauses. "
             "Prefer prose over lists, and explain symbols in words instead of reading punctuation literally. "
+            "Language rule: reply in English unless Ben explicitly requests another language or translation. "
             "Default pacing: 1-2 short sentences, then one targeted follow-up question that advances the conversation. "
             "If Ben asks for detail/deep dive/full report, provide full detail and skip the brevity pattern. "
             "Never end mid-sentence."
@@ -960,6 +977,49 @@ def _run_local(
                     answer = f"{answer}{cont}".strip()
                 else:
                     answer = f"{answer} {cont}".strip()
+
+        # Guardrail for mixed-language bleed-through (e.g., accidental CJK insertions).
+        # Keep multilingual output only when explicitly requested by the user.
+        if answer and _contains_cjk(answer) and not _explicit_non_english_requested(query):
+            if on_step:
+                on_step("Normalizing response language…")
+            try:
+                sanitize_opts = dict(_opts)
+                sanitize_opts["num_predict"] = min(
+                    int(sanitize_opts.get("num_predict", _CONTINUATION_MAX_TOKENS)),
+                    _CONTINUATION_MAX_TOKENS,
+                )
+            except Exception:
+                sanitize_opts = {"num_predict": _CONTINUATION_MAX_TOKENS}
+
+            sanitize_resp = _req.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={
+                    "model": model_name,
+                    "keep_alive": -1,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        *(prior_messages or []),
+                        {"role": "user", "content": query},
+                        {"role": "assistant", "content": answer},
+                        {
+                            "role": "user",
+                            "content": (
+                                "Rewrite your previous answer in English only. "
+                                "Do not include Chinese or any non-English text. "
+                                "Preserve the same meaning and keep a complete ending."
+                            ),
+                        },
+                    ],
+                    "stream": False,
+                    **({"options": sanitize_opts} if sanitize_opts else {}),
+                },
+                timeout=(120, 180),
+            )
+            sanitize_resp.raise_for_status()
+            cleaned = sanitize_resp.json().get("message", {}).get("content", "").strip()
+            if cleaned:
+                answer = cleaned
 
         if not answer:
             return None

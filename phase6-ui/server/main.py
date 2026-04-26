@@ -277,6 +277,7 @@ _VOICE_MAX_RAW_BYTES = int(os.environ.get("MITHRANDIR_VOICE_MAX_RAW_BYTES", "500
 _VOICE_MIN_RATE = int(os.environ.get("MITHRANDIR_VOICE_MIN_SAMPLE_RATE", "8000"))
 _VOICE_MAX_RATE = int(os.environ.get("MITHRANDIR_VOICE_MAX_SAMPLE_RATE", "48000"))
 _PRELUDE_CACHE_LIMIT = int(os.environ.get("MITHRANDIR_PRELUDE_CACHE_LIMIT", "12"))
+_PRELUDES_ENABLED = os.environ.get("MITHRANDIR_PRELUDES_ENABLED", "0").strip() not in ("", "0", "false", "no")
 _STREAM_SENTENCE_MIN_CHARS = int(os.environ.get("MITHRANDIR_STREAM_SENTENCE_MIN_CHARS", "12"))
 _STREAM_SENTENCE_SOFT_CHARS = int(os.environ.get("MITHRANDIR_STREAM_SENTENCE_SOFT_CHARS", "48"))
 
@@ -1012,6 +1013,8 @@ async def _stream_processing_prelude(ws: WebSocket, voice, voice_profile: Option
 
 
 async def _play_processing_prelude(ws: WebSocket, voice, voice_profile: Optional[str]) -> None:
+    if not _PRELUDES_ENABLED:
+        return
     try:
         await _stream_processing_prelude(ws, voice, voice_profile)
     except WebSocketDisconnect:
@@ -1246,10 +1249,22 @@ async def ws_chat(ws: WebSocket):
 
                 async def _do(s=clean, q=seq):
                     try:
-                        wav = await loop.run_in_executor(None, lambda: voice._synth_styletts2(s))
-                        if wav:
-                            if hasattr(voice, "_postprocess_wav_bytes"):
-                                wav = voice._postprocess_wav_bytes(wav, voice_profile_req)
+                        audio_bytes = b""
+                        fmt = "wav"
+
+                        # Use full backend fallback chain per sentence so a StyleTTS2
+                        # timeout does not silently drop the rest of the spoken reply.
+                        if hasattr(voice, "synthesize"):
+                            audio_bytes, fmt = await voice.synthesize(s, voice_profile=voice_profile_req)
+                        else:
+                            wav = await loop.run_in_executor(None, lambda: voice._synth_styletts2(s))
+                            if wav:
+                                audio_bytes = wav
+                                fmt = "wav"
+
+                        if audio_bytes:
+                            if fmt == "wav" and hasattr(voice, "_postprocess_wav_bytes"):
+                                audio_bytes = voice._postprocess_wav_bytes(audio_bytes, voice_profile_req)
                             if first_audio_at[0] is None:
                                 first_audio_at[0] = time.perf_counter()
                                 _record_latency(
@@ -1260,8 +1275,8 @@ async def ws_chat(ws: WebSocket):
                                 )
                             await ws.send_json({
                                 "type": "tts_chunk",
-                                "data": base64.b64encode(wav).decode(),
-                                "format": "wav",
+                                "data": base64.b64encode(audio_bytes).decode(),
+                                "format": fmt,
                                 "seq": q,
                             })
                     except WebSocketDisconnect:
@@ -1328,9 +1343,11 @@ async def ws_chat(ws: WebSocket):
                 )
                 if tokens_sent[0] == 0:
                     final_text = response or ""
-                    await ws.send_json({"type": "response", "content": final_text})
                 else:
                     final_text = "".join(collected_tokens)
+                # Always send final authoritative text so the client can replace
+                # any streamed partial/malformed tokens with the cleaned output.
+                await ws.send_json({"type": "response", "content": final_text})
             except Exception as e:
                 await ws.send_json({"type": "error", "content": str(e)})
                 await ws.send_json({"type": "done"})
@@ -1629,7 +1646,9 @@ async def ws_voice(ws: WebSocket):
                     else:
                         # Claude tool-use path — full response, no tokens
                         final_text = response or ""
-                        await ws.send_json({"type": "response", "content": final_text})
+                    # Always send final authoritative text so the client can
+                    # overwrite streamed partials with the cleaned final output.
+                    await ws.send_json({"type": "response", "content": final_text})
                 except Exception as e:
                     await ws.send_json({"type": "error", "content": str(e)})
                     await ws.send_json({"type": "done"})

@@ -26,34 +26,32 @@
   --white-dim:     #47627f;
   --subtle:        #3f5a77;
 
-  /* ── Gold accent (primary CTA) ───────────────────────────── */
-  --amber:         #efd086;
-  --amber-dim:     #c6a358;
-  --amber-glow:    rgba(201,168,76,0.28);
-  --amber-soft:    rgba(201,168,76,0.10);
-  --amber-rgb:     201 168 76;
+  /* ── Neutral accent palette (pane chrome + text) ─────────── */
+  --amber:         #d5d9de;
+  --amber-dim:     #8e97a1;
+  --amber-glow:    rgba(190,198,207,0.28);
+  --amber-soft:    rgba(190,198,207,0.10);
+  --amber-rgb:     190 198 207;
 
-  /* ── Azure accent (secondary) ────────────────────────────── */
-  --cyan:          #b7dcff;
-  --cyan-dim:      #83b4e6;
-  --cyan-glow:     rgba(88,178,245,0.28);
-  --cyan-soft:     rgba(88,178,245,0.10);
-  --cyan-rgb:      88 178 245;
+  --cyan:          #d0d6dd;
+  --cyan-dim:      #8a94a0;
+  --cyan-glow:     rgba(182,191,201,0.28);
+  --cyan-soft:     rgba(182,191,201,0.10);
+  --cyan-rgb:      182 191 201;
 
-  /* ── Indigo (tertiary, restrained) ───────────────────────── */
-  --violet:        #c1d9ff;
-  --violet-dim:    #8eb0dd;
-  --violet-glow:   rgba(193,217,255,0.30);
-  --violet-soft:   rgba(193,217,255,0.12);
-  --violet-rgb:    193 217 255;
+  --violet:        #d4d9df;
+  --violet-dim:    #8c96a0;
+  --violet-glow:   rgba(185,193,202,0.30);
+  --violet-soft:   rgba(185,193,202,0.12);
+  --violet-rgb:    185 193 202;
 
-  /* ── Life indicators ──────────────────────────────────────── */
-  --green:         #34d399;
-  --green-dim:     #065f46;
-  --green-glow:    rgba(52,211,153,0.28);
-  --red:           #f87171;
-  --red-dim:       #7f1d1d;
-  --red-glow:      rgba(248,113,113,0.28);
+  /* ── Status colors mapped to neutral tones ────────────────── */
+  --green:         #cfd6dd;
+  --green-dim:     #8a939e;
+  --green-glow:    rgba(184,193,203,0.28);
+  --red:           #c9d0d8;
+  --red-dim:       #858f9b;
+  --red-glow:      rgba(178,188,199,0.28);
 
   /* ── Typography ───────────────────────────────────────────── */
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
@@ -110,23 +108,30 @@
   --white-dim:     #7f9ec3;
   --subtle:        #6984a6;
 
-  --amber:         #e3c98b;
-  --amber-dim:     #9f7d40;
-  --amber-rgb:     227 201 139;
-  --amber-glow:    rgba(227,201,139,0.24);
-  --amber-soft:    rgba(227,201,139,0.08);
+  --amber:         #d7dbe1;
+  --amber-dim:     #8f98a4;
+  --amber-rgb:     198 206 216;
+  --amber-glow:    rgba(198,206,216,0.24);
+  --amber-soft:    rgba(198,206,216,0.08);
 
-  --cyan:          #78c0ff;
-  --cyan-dim:      #3c78b8;
-  --cyan-rgb:      120 192 255;
-  --cyan-glow:     rgba(120,192,255,0.26);
-  --cyan-soft:     rgba(120,192,255,0.10);
+  --cyan:          #d2d8df;
+  --cyan-dim:      #8994a1;
+  --cyan-rgb:      178 188 200;
+  --cyan-glow:     rgba(178,188,200,0.26);
+  --cyan-soft:     rgba(178,188,200,0.10);
 
-  --violet:        #8ea8cf;
-  --violet-dim:    #4e688e;
-  --violet-rgb:    142 168 207;
-  --violet-glow:   rgba(142,168,207,0.24);
-  --violet-soft:   rgba(142,168,207,0.08);
+  --violet:        #d0d6dd;
+  --violet-dim:    #87919d;
+  --violet-rgb:    176 186 198;
+  --violet-glow:   rgba(176,186,198,0.24);
+  --violet-soft:   rgba(176,186,198,0.08);
+
+  --green:         #c9d1da;
+  --green-dim:     #838f9d;
+  --green-glow:    rgba(176,186,198,0.24);
+  --red:           #c4cdd7;
+  --red-dim:       #7f8b99;
+  --red-glow:      rgba(170,181,194,0.24);
 
   --nebula-violet: 88 126 186;
   --nebula-azure:  72 148 226;
@@ -681,7 +686,7 @@ html, body, #root {
   font-size: 8.5px; letter-spacing: 0.10em; color: var(--white-dim);
   padding: 0 4px; text-transform: uppercase; font-weight: 600;
 }
-.msg.user .msg-label { color: rgba(88,178,245,0.70); }
+.msg.user .msg-label { color: rgba(185,193,204,0.72); }
 .msg-bubble {
   padding: 11px 16px;
   font-size: 13px;
@@ -714,18 +719,18 @@ html, body, #root {
   width: 2px;
   background: linear-gradient(
     180deg,
-    rgb(var(--nebula-violet) / 0.95),
-    var(--cyan)                       38%,
-    rgb(var(--nebula-gold)   / 0.90) 68%,
-    var(--amber)
+    rgba(194, 201, 209, 0.90),
+    rgba(182, 190, 200, 0.86) 38%,
+    rgba(170, 179, 189, 0.84) 68%,
+    rgba(194, 201, 209, 0.88)
   );
   border-radius: 2px;
-  box-shadow: 0 0 6px rgb(var(--nebula-azure) / 0.45), 0 0 14px rgb(var(--nebula-violet) / 0.30);
+  box-shadow: 0 0 6px rgba(185, 193, 202, 0.40), 0 0 14px rgba(165, 174, 184, 0.28);
   animation: aurora-stripe 7s ease-in-out infinite alternate;
 }
 @keyframes aurora-stripe {
-  0%   { box-shadow: 0 0  5px rgb(var(--nebula-azure)  / 0.30), 0 0 10px rgb(var(--nebula-violet) / 0.20); }
-  100% { box-shadow: 0 0 10px rgb(var(--nebula-gold)   / 0.55), 0 0 20px rgb(var(--nebula-azure)  / 0.38); }
+  0%   { box-shadow: 0 0 5px rgba(185, 193, 202, 0.28), 0 0 10px rgba(165, 174, 184, 0.18); }
+  100% { box-shadow: 0 0 10px rgba(185, 193, 202, 0.42), 0 0 20px rgba(165, 174, 184, 0.30); }
 }
 .msg-step {
   font-size: 10px;
@@ -766,14 +771,14 @@ html[data-mithrandir-responding] .col-chat {
 @keyframes response-panel-flash {
   0%, 100% {
     box-shadow:
-      inset 0 0 0 0 rgba(224, 201, 119, 0.00),
-      0 -1px 0 rgba(224, 201, 119, 0.18);
+      inset 0 0 0 0 rgba(189, 197, 206, 0.00),
+      0 -1px 0 rgba(189, 197, 206, 0.18);
     filter: brightness(1);
   }
   50% {
     box-shadow:
-      inset 0 0 18px rgba(224, 201, 119, 0.18),
-      0 -1px 0 rgba(224, 201, 119, 0.40);
+      inset 0 0 18px rgba(189, 197, 206, 0.18),
+      0 -1px 0 rgba(189, 197, 206, 0.40);
     filter: brightness(1.08);
   }
 }

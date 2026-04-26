@@ -292,9 +292,9 @@ function Waveform({ analyser, mode }: { analyser: AnalyserNode | null; mode: Wav
 
         // Glow under-fill
         const fill = ctx.createLinearGradient(0, 0, 0, H)
-        fill.addColorStop(0,   'rgba(124,58,237,0)')
-        fill.addColorStop(0.5, 'rgba(56,189,248,0.18)')
-        fill.addColorStop(1,   'rgba(224,201,119,0)')
+        fill.addColorStop(0,   'rgba(184,192,202,0)')
+        fill.addColorStop(0.5, 'rgba(184,192,202,0.18)')
+        fill.addColorStop(1,   'rgba(184,192,202,0)')
         ctx.fillStyle = fill
         ctx.beginPath()
         ctx.moveTo(0, H / 2)
@@ -307,14 +307,14 @@ function Waveform({ analyser, mode }: { analyser: AnalyserNode | null; mode: Wav
         ctx.closePath()
         ctx.fill()
 
-        // Main waveform line — aurora violet/cyan
+        // Main waveform line — neutral signal glow
         const recGrad = ctx.createLinearGradient(0, 0, W, 0)
-        recGrad.addColorStop(0,   'rgba(124,58,237,0.88)')
-        recGrad.addColorStop(0.5, 'rgba(56,189,248,0.96)')
-        recGrad.addColorStop(1,   'rgba(224,201,119,0.86)')
+        recGrad.addColorStop(0,   'rgba(168,176,186,0.82)')
+        recGrad.addColorStop(0.5, 'rgba(196,204,214,0.95)')
+        recGrad.addColorStop(1,   'rgba(168,176,186,0.82)')
         ctx.strokeStyle = recGrad
         ctx.lineWidth = 1.6
-        ctx.shadowColor = '#7c3aed'
+        ctx.shadowColor = '#b9c1cb'
         ctx.shadowBlur = 9
         ctx.beginPath()
         for (let i = 0; i < time.length; i++) {
@@ -332,12 +332,12 @@ function Waveform({ analyser, mode }: { analyser: AnalyserNode | null; mode: Wav
         const alpha = 0.25 + pulse * 0.55
 
         const grad = ctx.createLinearGradient(0, 0, W, 0)
-        grad.addColorStop(0,   `rgba(224,201,119,${alpha * 0.20})`)
-        grad.addColorStop(0.5, `rgba(224,201,119,${alpha})`)
-        grad.addColorStop(1,   `rgba(224,201,119,${alpha * 0.20})`)
+        grad.addColorStop(0,   `rgba(189,197,206,${alpha * 0.20})`)
+        grad.addColorStop(0.5, `rgba(189,197,206,${alpha})`)
+        grad.addColorStop(1,   `rgba(189,197,206,${alpha * 0.20})`)
         ctx.strokeStyle = grad
         ctx.lineWidth = mode === 'speaking' ? 2 : 1.6
-        ctx.shadowColor = '#e0c977'
+        ctx.shadowColor = '#bcc4ce'
         ctx.shadowBlur = mode === 'speaking' ? 12 : 8
         ctx.beginPath()
         ctx.moveTo(0, H / 2)
@@ -346,14 +346,14 @@ function Waveform({ analyser, mode }: { analyser: AnalyserNode | null; mode: Wav
         ctx.shadowBlur = 0
 
       } else {
-        // ── Idle: slow breathing aurora line ──────────────────────────────
+        // ── Idle: slow breathing neutral line ─────────────────────────────
         phaseRef.current += 0.012
         const alpha = 0.1 + Math.abs(Math.sin(phaseRef.current)) * 0.22
         const idleGrad = ctx.createLinearGradient(0, 0, W, 0)
-        idleGrad.addColorStop(0,   `rgba(110, 80, 240, 0)`)
-        idleGrad.addColorStop(0.3, `rgba(110, 80, 240, ${alpha})`)
-        idleGrad.addColorStop(0.6, `rgba(30, 140, 255, ${alpha * 0.8})`)
-        idleGrad.addColorStop(1,   `rgba(110, 80, 240, 0)`)
+        idleGrad.addColorStop(0,   `rgba(168, 176, 186, 0)`)
+        idleGrad.addColorStop(0.3, `rgba(168, 176, 186, ${alpha})`)
+        idleGrad.addColorStop(0.6, `rgba(196, 204, 214, ${alpha * 0.8})`)
+        idleGrad.addColorStop(1,   `rgba(168, 176, 186, 0)`)
         ctx.strokeStyle = idleGrad
         ctx.lineWidth = 1
         ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke()
@@ -814,7 +814,7 @@ export default function ChatPanel() {
               letterSpacing: '0.10em',
               color: 'var(--fg)',
               opacity: 0.80,
-              filter: 'drop-shadow(0 0 12px rgba(140,190,240,0.28))',
+              filter: 'drop-shadow(0 0 12px rgba(188,196,206,0.28))',
               marginBottom: 14,
             }}>
               MITHRANDIR
@@ -905,8 +905,8 @@ export default function ChatPanel() {
         className={`voice-response-panel ${isResponding ? 'is-active' : ''}`}
         style={{
           flexShrink: 0,
-          background: 'linear-gradient(180deg, rgb(var(--nebula-azure) / 0.16), rgb(var(--nebula-azure) / 0.08))',
-          borderTop: '1px solid rgb(var(--nebula-violet) / 0.34)',
+          background: 'linear-gradient(180deg, rgba(188,196,206,0.12), rgba(188,196,206,0.05))',
+          borderTop: '1px solid rgba(188,196,206,0.26)',
           backdropFilter: 'blur(14px) saturate(150%)',
           WebkitBackdropFilter: 'blur(14px) saturate(150%)',
         }}
@@ -916,7 +916,7 @@ export default function ChatPanel() {
 
       {/* Mic error */}
       {micError && (
-        <div style={{ flexShrink: 0, padding: '4px 12px', fontSize: 11, color: 'var(--red)', background: 'rgba(255,26,64,0.07)', borderTop: '1px solid var(--red)' }}>
+        <div style={{ flexShrink: 0, padding: '4px 12px', fontSize: 11, color: 'var(--red)', background: 'rgba(176,188,200,0.10)', borderTop: '1px solid var(--red)' }}>
           {micError}
           <button onClick={() => setMicError('')} style={{ marginLeft: 8, background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 11 }}>✕</button>
         </div>
@@ -931,12 +931,12 @@ export default function ChatPanel() {
           title={isRecording ? 'Cease listening / Space' : 'Speak / Space'}
           style={{
             flexShrink: 0, width: 34, height: 34, borderRadius: '50%',
-            background: isRecording ? 'rgba(255,26,64,0.15)' : 'var(--bg-input)',
+            background: isRecording ? 'rgba(184,196,208,0.16)' : 'var(--bg-input)',
             border: `1.5px solid ${micColor}`,
             color: micColor, fontSize: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: (busy && !isRecording) ? 'default' : 'pointer',
-            boxShadow: isRecording ? '0 0 10px rgba(255,26,64,0.4)' : isSpeaking ? '0 0 8px rgba(57,211,83,0.3)' : 'none',
+            boxShadow: isRecording ? '0 0 10px rgba(184,196,208,0.40)' : isSpeaking ? '0 0 8px rgba(184,196,208,0.28)' : 'none',
             transition: 'all 0.15s',
             animation: isRecording ? 'pulse-ring-sm 1.2s ease-out infinite' : 'none',
             padding: 0,
@@ -964,7 +964,7 @@ export default function ChatPanel() {
       <div style={{
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
         padding: '4px 10px', borderTop: '1px solid var(--border)',
-        background: 'linear-gradient(180deg, rgb(var(--nebula-azure) / 0.14), rgb(var(--nebula-azure) / 0.06))',
+        background: 'linear-gradient(180deg, rgba(188,196,206,0.11), rgba(188,196,206,0.04))',
         backdropFilter: 'blur(14px) saturate(145%)',
         WebkitBackdropFilter: 'blur(14px) saturate(145%)',
       }}>
@@ -979,9 +979,9 @@ export default function ChatPanel() {
           title="TTS voice profile"
           style={{
             marginLeft: 4, fontSize: 10, padding: '1px 4px',
-            background: selectedVoice !== 'default' ? 'rgba(0,200,255,0.08)' : 'var(--bg-input)',
-            border: `1px solid ${selectedVoice !== 'default' ? 'var(--cyan)' : 'var(--border)'}`,
-            color: selectedVoice !== 'default' ? 'var(--cyan)' : 'var(--amber-dim)',
+            background: selectedVoice !== 'default' ? 'rgba(184,196,208,0.10)' : 'var(--bg-input)',
+            border: `1px solid ${selectedVoice !== 'default' ? 'var(--border-strong)' : 'var(--border)'}`,
+            color: selectedVoice !== 'default' ? 'var(--fg)' : 'var(--amber-dim)',
             fontFamily: 'var(--font-mono)', cursor: 'pointer', outline: 'none',
             maxWidth: 100,
           }}
@@ -1014,7 +1014,7 @@ export default function ChatPanel() {
             flexShrink: 0,
             padding: '6px 10px',
             borderTop: '1px solid var(--border)',
-            background: 'linear-gradient(180deg, rgb(var(--nebula-azure) / 0.12), rgb(var(--nebula-azure) / 0.06))',
+            background: 'linear-gradient(180deg, rgba(188,196,206,0.10), rgba(188,196,206,0.04))',
             backdropFilter: 'blur(12px) saturate(145%)',
             WebkitBackdropFilter: 'blur(12px) saturate(145%)',
           }}
@@ -1033,9 +1033,9 @@ export default function ChatPanel() {
 
       <style>{`
         @keyframes pulse-ring-sm {
-          0%   { box-shadow: 0 0 0 0 rgba(255,26,64,0.5); }
-          70%  { box-shadow: 0 0 0 6px rgba(255,26,64,0); }
-          100% { box-shadow: 0 0 0 0 rgba(255,26,64,0); }
+          0%   { box-shadow: 0 0 0 0 rgba(184,196,208,0.50); }
+          70%  { box-shadow: 0 0 0 6px rgba(184,196,208,0); }
+          100% { box-shadow: 0 0 0 0 rgba(184,196,208,0); }
         }
         @keyframes pulse-text {
           0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
