@@ -349,13 +349,12 @@ export default function MindPanel() {
             onMouseLeave={() => setStatusText(reflecting ? 'mithrandir is reflecting over recent memory' : 'hover the cortex to surface actions')}
           >
             <div className="mind-neural-ambient" aria-hidden="true" />
-            <svg viewBox="0 0 240 180" className="mind-neural-svg" aria-hidden="true">
-              {/* Sagittal (side profile) brain with realistic anatomy */}
+            <svg viewBox="0 0 280 220" className="mind-neural-svg" aria-hidden="true">
+              {/* Sagittal (true side profile) brain with realistic anatomy */}
               
-              {/* Main hemisphere outline — smooth, organic lateral surface */}
               <defs>
-                <filter id="brainGlow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <filter id="brainGlow2">
+                  <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
                   <feMerge>
                     <feMergeNode in="coloredBlur"/>
                     <feMergeNode in="SourceGraphic"/>
@@ -363,82 +362,101 @@ export default function MindPanel() {
                 </filter>
               </defs>
               
-              {/* Cerebral hemisphere — organic, bulbous outline */}
-              <path d="M 65 48 Q 50 45,48 60 Q 45 75,48 90 Q 50 105,58 115 Q 65 125,75 132 Q 85 138,100 140 Q 120 142,135 138 Q 155 133,165 120 Q 172 108,175 90 Q 177 72,175 58 Q 172 45,160 42 Q 140 38,120 40 Q 100 42,85 42 Q 75 42,65 48 Z" 
-                    className="mind-hemi" filter="url(#brainGlow)" />
+              {/* Frontal lobe — pointed front */}
+              <path d="M 70 90 Q 65 75,68 55 Q 72 40,85 35 Q 100 32,115 38 Q 120 50,118 70" className="mind-hemi" filter="url(#brainGlow2)" />
               
-              {/* Frontal lobe region — upper front bulge */}
-              <path d="M 65 50 Q 72 48,80 52 Q 88 58,90 70" className="mind-fold-major" />
+              {/* Parietal lobe — rounded top and back */}
+              <path d="M 115 38 Q 145 35,170 50 Q 185 65,188 90 Q 188 110,180 130" className="mind-hemi" filter="url(#brainGlow2)" />
               
-              {/* Central sulcus (Rolandic) — key dividing line */}
-              <path d="M 105 42 Q 108 60,110 80 Q 108 100,105 130" className="mind-fold-major" />
+              {/* Occipital lobe — back taper */}
+              <path d="M 180 130 Q 185 145,180 160 Q 170 175,155 180 Q 145 180,135 170" className="mind-hemi" filter="url(#brainGlow2)" />
               
-              {/* Lateral sulcus (Sylvian) — major horizontal groove */}
-              <path d="M 65 85 Q 95 88,130 90 Q 150 88,170 85" className="mind-fold-major" />
+              {/* Temporal lobe bulge — lower side */}
+              <path d="M 118 70 Q 130 95,145 105 Q 155 100,160 85" className="mind-hemi" filter="url(#brainGlow2)" />
               
-              {/* Parietal region sulci — upper posterior */}
-              <path d="M 115 48 Q 125 65,128 85" className="mind-fold" />
-              <path d="M 125 50 Q 135 70,138 95" className="mind-fold" />
+              {/* Inferior temporal — lower curve */}
+              <path d="M 135 170 Q 120 172,105 170 Q 95 165,90 150" className="mind-hemi" filter="url(#brainGlow2)" />
               
-              {/* Occipital region — back of brain */}
-              <path d="M 140 100 Q 155 105,165 115" className="mind-fold" />
+              {/* Close the main cerebral mass */}
+              <path d="M 90 150 Q 75 135,70 110 L 70 90" className="mind-hemi" filter="url(#brainGlow2)" />
               
-              {/* Prefrontal gyri — fine texture on front */}
-              <path d="M 68 58 Q 72 62,75 65" className="mind-fold" />
-              <path d="M 68 70 Q 73 75,78 78" className="mind-fold" />
-              <path d="M 70 95 Q 78 98,85 100" className="mind-fold" />
+              {/* Corpus callosum region — midsagittal hint */}
+              <path d="M 110 100 Q 130 95,150 105" className="mind-fold-major" />
               
-              {/* Temporal region gyri — side bulges */}
-              <path d="M 90 95 Q 100 100,110 102" className="mind-fold" />
-              <path d="M 85 110 Q 100 115,115 118" className="mind-fold" />
-              <path d="M 80 125 Q 95 130,110 132" className="mind-fold" />
+              {/* Central sulcus (Rolandic) — divides front/back */}
+              <path d="M 120 45 Q 125 70,128 100 Q 130 130,125 160" className="mind-fold-major" />
               
-              {/* Parietal/Occipital posterior sulci */}
-              <path d="M 135 65 Q 145 80,152 105" className="mind-fold" />
-              <path d="M 145 75 Q 155 95,160 120" className="mind-fold" />
+              {/* Lateral sulcus (Sylvian) — temporal separation */}
+              <path d="M 75 100 Q 100 110,140 115 Q 160 112,170 105" className="mind-fold-major" />
               
-              {/* Cerebellum — beneath, distinct rounded bulge */}
-              <path d="M 85 138 Q 75 142,75 155 Q 80 165,95 167 Q 110 168,120 165 Q 128 160,128 148 Q 125 140,110 138 Q 100 137,85 138 Z" 
-                    className="mind-cerebellum" filter="url(#brainGlow)" />
+              {/* Parieto-occipital sulcus — upper back */}
+              <path d="M 155 70 Q 165 100,168 135" className="mind-fold-major" />
               
-              {/* Cerebellar folia — vertical ridges in cerebellum */}
-              <path d="M 82 145 L 82 162" className="mind-fold" />
-              <path d="M 92 143 L 92 165" className="mind-fold" />
-              <path d="M 102 142 L 102 164" className="mind-fold" />
-              <path d="M 112 143 L 112 162" className="mind-fold" />
+              {/* Calcarine sulcus — occipital visual */}
+              <path d="M 160 155 Q 155 168,148 178" className="mind-fold" />
               
-              {/* Brainstem — thin connector between hemispheres and cerebellum */}
-              <line x1="100" y1="138" x2="100" y2="150" className="mind-brainstem" />
+              {/* Cingulate region — inner curve hint */}
+              <path d="M 115 85 Q 125 80,135 85" className="mind-fold" />
               
-              {/* Synaptic pathways radiating outward */}
-              <line x1="80" y1="90" x2="35" y2="70" className="mind-syn" />
-              <line x1="75" y1="110" x2="40" y2="120" className="mind-syn" />
-              <line x1="90" y1="135" x2="60" y2="160" className="mind-syn" />
-              <line x1="150" y1="75" x2="190" y2="50" className="mind-syn" />
-              <line x1="165" y1="100" x2="200" y2="95" className="mind-syn" />
-              <line x1="160" y1="125" x2="195" y2="140" className="mind-syn" />
-              <line x1="100" y1="165" x2="100" y2="175" className="mind-syn" />
+              {/* Prefrontal gyri — anterior texture */}
+              <path d="M 78 70 Q 85 65,92 70" className="mind-fold" />
+              <path d="M 80 85 Q 88 82,95 88" className="mind-fold" />
+              
+              {/* Parietal texture — upper middle */}
+              <path d="M 135 55 Q 150 60,160 70" className="mind-fold" />
+              <path d="M 140 75 Q 160 82,170 95" className="mind-fold" />
+              
+              {/* Temporal texture — side folds */}
+              <path d="M 115 95 Q 130 105,145 110" className="mind-fold" />
+              <path d="M 120 115 Q 135 125,150 130" className="mind-fold" />
+              
+              {/* Occipital texture — back folds */}
+              <path d="M 165 145 Q 160 160,152 170" className="mind-fold" />
+              <path d="M 170 135 Q 165 155,158 168" className="mind-fold" />
+              
+              {/* Cerebellum — distinct rounded bulb below */}
+              <path d="M 100 180 Q 85 178,78 190 Q 78 205,95 210 Q 120 213,135 208 Q 148 200,145 185 Q 135 175,115 177 Q 105 177,100 180 Z" 
+                    className="mind-cerebellum" filter="url(#brainGlow2)" />
+              
+              {/* Cerebellar folia — vertical ridges */}
+              <path d="M 90 185 L 88 205" className="mind-fold" />
+              <path d="M 102 180 L 102 208" className="mind-fold" />
+              <path d="M 115 178 L 115 210" className="mind-fold" />
+              <path d="M 128 180 L 128 207" className="mind-fold" />
+              <path d="M 140 185 L 142 202" className="mind-fold" />
+              
+              {/* Brainstem — connector between brain and cerebellum */}
+              <line x1="110" y1="177" x2="110" y2="188" className="mind-brainstem" />
+              
+              {/* Neural pathways radiating outward */}
+              <line x1="80" y1="70" x2="35" y2="40" className="mind-syn" />
+              <line x1="75" y1="120" x2="30" y2="140" className="mind-syn" />
+              <line x1="105" y1="165" x2="70" y2="190" className="mind-syn" />
+              <line x1="175" y1="90" x2="230" y2="70" className="mind-syn" />
+              <line x1="180" y1="130" x2="235" y2="135" className="mind-syn" />
+              <line x1="160" y1="175" x2="220" y2="200" className="mind-syn" />
+              <line x1="110" y1="210" x2="110" y2="250" className="mind-syn" />
               
               {/* Traveling synaptic pulses */}
-              <path d="M 80 90 L 35 70" className="mind-pulse pulse-1" />
-              <path d="M 75 110 L 40 120" className="mind-pulse pulse-2" />
-              <path d="M 90 135 L 60 160" className="mind-pulse pulse-3" />
-              <path d="M 150 75 L 190 50" className="mind-pulse pulse-4" />
-              <path d="M 165 100 L 200 95" className="mind-pulse pulse-5" />
-              <path d="M 160 125 L 195 140" className="mind-pulse pulse-6" />
-              <path d="M 100 165 L 100 175" className="mind-pulse pulse-7" />
+              <path d="M 80 70 L 35 40" className="mind-pulse pulse-1" />
+              <path d="M 75 120 L 30 140" className="mind-pulse pulse-2" />
+              <path d="M 105 165 L 70 190" className="mind-pulse pulse-3" />
+              <path d="M 175 90 L 230 70" className="mind-pulse pulse-4" />
+              <path d="M 180 130 L 235 135" className="mind-pulse pulse-5" />
+              <path d="M 160 175 L 220 200" className="mind-pulse pulse-6" />
+              <path d="M 110 210 L 110 250" className="mind-pulse pulse-7" />
               
-              {/* Peripheral neural nodes */}
-              <circle cx="35" cy="70"  r="2.2" className="mind-nc node-1" />
-              <circle cx="40" cy="120" r="2.2" className="mind-nc node-2" />
-              <circle cx="60" cy="160" r="2.2" className="mind-nc node-3" />
-              <circle cx="190" cy="50" r="2.2" className="mind-nc node-4" />
-              <circle cx="200" cy="95" r="2.2" className="mind-nc node-5" />
-              <circle cx="195" cy="140" r="2.2" className="mind-nc node-6" />
-              <circle cx="100" cy="175" r="2.2" className="mind-nc node-7" />
+              {/* Neural nodes */}
+              <circle cx="35" cy="40"  r="2.2" className="mind-nc node-1" />
+              <circle cx="30" cy="140" r="2.2" className="mind-nc node-2" />
+              <circle cx="70" cy="190" r="2.2" className="mind-nc node-3" />
+              <circle cx="230" cy="70"  r="2.2" className="mind-nc node-4" />
+              <circle cx="235" cy="135" r="2.2" className="mind-nc node-5" />
+              <circle cx="220" cy="200" r="2.2" className="mind-nc node-6" />
+              <circle cx="110" cy="250" r="2.2" className="mind-nc node-7" />
               
-              {/* Central thalamus — cognitive hub */}
-              <circle cx="100" cy="90" r="5.5" className="mind-nc mind-nc-core" filter="url(#brainGlow)" />
+              {/* Thalamus core — central processing hub */}
+              <circle cx="120" cy="110" r="5.5" className="mind-nc mind-nc-core" filter="url(#brainGlow2)" />
             </svg>
             <div className="mind-neural-chips">
               <button
