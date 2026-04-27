@@ -55,21 +55,48 @@ Personal local AI assistant for Ben — RTX 4090, Ollama + Claude, quantitative 
 - [x] Provenance tags on all financial answers
 - [x] GitHub issue templates and PR template
 
----
-
-## In Progress / Near-term
-
-### Phase 7 (extended) — Data Center Siting Selection
+### Phase 7 (extended) — Data Center Siting Selection (shipped 2026-04-18)
 - [x] Factor catalog (14 factors), archetype weights, kill criteria
 - [x] Composite scorer (0-10) with cohort-median imputation + provenance
 - [x] CLI (`python -m src.cli score|ingest`) and sample-site smoke run
 - [x] FastAPI endpoints in Phase 6 UI: `/api/siting/factors`, `/api/siting/score`, `/api/siting/sample`
-- [ ] Real ingest: HIFLD transmission ≥230 kV, gas pipelines, long-haul fiber
-- [ ] Real ingest: EIA-861/930, EPA eGRID, FEMA NFHL, USGS seismic, NOAA NCEI/Drought, PeeringDB, IRS OZ, BLS QCEW/OEWS
+- [x] Real ingest: HIFLD transmission ≥230 kV, gas pipelines, long-haul fiber, IXPs (ArcGIS REST)
+- [x] Real ingest: EIA-861 industrial retail electricity prices (state-keyed)
+- [x] Full-screen React siting map: MapLibre GL dark-matter basemap, candidate markers, overlay layers, archetype switcher, factor sliders, detail card
+- [x] `/api/siting/layers` and `/api/siting/layer/{key}?bbox=` GeoJSON endpoints
+
+### Phase 8 — Local Research Pipeline (shipped 2026-04-27)
+- [x] Gemma-only research pipeline (no external planning model)
+- [x] Pydantic contracts for datacenter and LLM release domains
+- [x] 5-stage pipeline: discovery → verification → normalization → QA → export
+- [x] CLI runner with domain, target-count, run-id, and out-dir flags
+- [x] Deterministic CSV/JSON export artifacts with provenance
+
+### UI — Consciousness + Mind Panel (shipped 2026-04-27)
+- [x] Animated sagittal brain SVG (lobes, sulci, cerebellum, brainstem, thalamus core)
+- [x] 7 animated synaptic pathways with traveling pulses
+- [x] Awareness stats (exchange depth, valued, rated, awakened date)
+- [x] Structured self-reflections with localStorage persistence (up to 18 entries)
+- [x] Knowledge map with topic frequency bars
+- [x] Mind tab (left) + Vault tab (right) — Mind as default
+
+### UI — Celestial Background + Day/Night Theme (shipped 2026-04-27)
+- [x] Animated canvas celestial background: parallax stars, shooting stars, aurora
+- [x] Auto day/night theme switching (7 AM–6 PM EST → light; otherwise dark)
+- [x] Manual toggle via header moon/sun button
+- [x] Smooth opacity fade on theme transition
+
+---
+
+## In Progress / Near-term
+
+### Phase 7 (extended) — Data Center Siting: Remaining Ingest
 - [ ] ISO/RTO interconnection queue scrapers (PJM, ERCOT, MISO, SPP, CAISO, NYISO, ISO-NE)
+- [ ] EIA-930 / EPA eGRID carbon intensity per balancing authority
+- [ ] FEMA NFHL flood risk, USGS seismic, NOAA NCEI/Drought
+- [ ] PeeringDB latency layer, IRS OZ overlay, BLS QCEW/OEWS labor
 - [ ] H3 r7 hex grid over CONUS + first end-to-end ERCOT run
-- [ ] React siting view: MapLibre overlay, factor sliders, archetype switcher, top-N table
-- [ ] Backtest: top-decile hex overlap with 2023-2025 announced hyperscaler builds
+- [ ] Backtest: top-decile hex overlap with 2023–2025 announced hyperscaler builds
 - [ ] Behind-the-meter generation overlay (gas turbines, SMR queue)
 - [ ] Canada cohort (AESO, BC Hydro, Hydro-Québec)
 

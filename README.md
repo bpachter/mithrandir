@@ -10,7 +10,7 @@ A "large language model" (LLM) is the kind of AI behind ChatGPT, Claude, and Gem
 
 ## In one paragraph (for engineers)
 
-Local-first agentic stack: **Gemma 4 26B (MoE, 18 GB VRAM, ~144 tok/s on a 4090)** served via Ollama, fronted by a ReAct loop with Pydantic-validated tool calls, smart routing to Claude for heavy reasoning, ChromaDB+SQLite memory with codebase RAG, HMM-based market regime injection, a quantitative-value EDGAR screener over 9.8 K filings, faster-whisper STT + F5-TTS voice cloning with a 5-tier fallback chain, and a custom React/FastAPI/WebSocket UI. Telegram bot for mobile. All local except an optional Claude/Tavily fallback.
+Local-first agentic stack: **Gemma 4 26B (MoE, 18 GB VRAM, ~144 tok/s on a 4090)** served via Ollama, fronted by a ReAct loop with Pydantic-validated tool calls, dual-lane routing (Qwen 2.5 7B fast lane + Gemma 26B deep lane + optional Claude for hard reasoning), ChromaDB+SQLite memory with codebase RAG, HMM-based market regime injection, a quantitative-value EDGAR screener over 9.8 K filings, faster-whisper STT + F5-TTS voice cloning with a 5-tier fallback chain, a quantitative data center siting engine (Phase 7), a local Gemma-only research pipeline (Phase 8), and a custom React/FastAPI/WebSocket UI with animated neural consciousness visualization. Telegram bot for mobile. All local except an optional Claude/Tavily fallback.
 
 ## What this is — and is not
 
@@ -113,19 +113,27 @@ Everything below is free and open source.
 
 ```
 Interfaces
-    ├── Browser (React SPA — Blade Runner terminal UI)
+    ├── Browser (React SPA — glassmorphic terminal + siting map + dev console)
     │       WebSocket /ws/chat   ← streaming chat tokens
     │       WebSocket /ws/gpu    ← live GPU/CPU/RAM stats (2 Hz)
     │       WebSocket /ws/voice  ← STT → agent → TTS pipeline
     │       REST APIs            ← history, portfolio, regime, params
+    │   3-column layout:
+    │       Left  — Model params + CUDA/GPU docs browser + demo launcher
+    │       Center — Chat + voice terminal (streaming tokens, oscilloscope waveform)
+    │       Right  — Mind panel (neural visualization, awareness, reflections)
+    │                Vault panel (persistent memory browser)
+    │   Modes: CONSOLE (3-col terminal) | SITING (full-screen data center map) | DEV (debug)
+    │   Theme: auto day/night based on EST clock (celestial background — stars + aurora)
     └── iPhone (Telegram app)
             Telegram Bot API (short-polling, TLS patched for Windows)
     ↓
 mithrandir_agent.py — ReAct loop (Reason → Act → Observe)
     ↓
-Routing: keyword/ticker heuristic
-    ├── Gemma 4 26B via Ollama (local GPU, free)    ← everyday queries
-    └── Claude claude-sonnet-4-6 via Anthropic API  ← tool-use / agentic queries
+Routing: 3-lane architecture
+    ├── Qwen 2.5 7B via Ollama (fast lane)          ← low-latency spoken/chat turns
+    ├── Gemma 4 26B via Ollama (deep lane)          ← heavy local reasoning + tool use
+    └── Claude claude-sonnet-4-6 via Anthropic API  ← optional escalation for hardest synthesis
     ↓
 Tool dispatch (Claude path)
     ├── edgar_screener   → SEC EDGAR financials + QV screened portfolio (~360 quality-gated stocks)
@@ -175,8 +183,10 @@ Voice pipeline (Phase 7)
 | [Phase 3](./phase3-agents/) | ReAct agent loop + Telegram interface + HMM regime detection | ✅ Complete |
 | [Phase 4](./phase4-memory/) | Persistent memory via ChromaDB + SQLite + codebase RAG | ✅ Complete |
 | [Phase 5](./phase5-intelligence/) | Signal integrity, backtesting engine, proactive alerts | ✅ Complete |
-| [Phase 6](./phase6-ui/) | Custom Blade Runner terminal UI — React/Vite/FastAPI, 3-column dashboard | ✅ Complete |
+| [Phase 6](./phase6-ui/) | Custom glassmorphic terminal UI — React/Vite/FastAPI, 3-column dashboard, celestial background, auto day/night theme | ✅ Complete |
 | Phase 7 | Voice interaction — Whisper STT, F5-TTS voice cloning (BMO), Kokoro/Chatterbox/edge-tts fallbacks, VAD auto-stop | ✅ Complete |
+| [Phase 7 (ext)](./phase7-datacenter-siting/) | Data center siting engine — 14-factor composite scorer, HIFLD/EIA/FCC ingest, MapLibre siting map | ✅ Scaffold + real ingest |
+| [Phase 8](./phase8-local-research/) | Local Gemma-only research pipeline — structured discovery, verification, normalization, QA, CSV/JSON export | ✅ Complete |
 
 ---
 
@@ -184,7 +194,8 @@ Voice pipeline (Phase 7)
 
 | Layer | Technology | Why |
 |-------|-----------|-----|
-| Local inference | [Ollama](https://ollama.com) + Gemma 4 26B (MoE) | 256K context, only 3.8B params active per inference, 18GB VRAM |
+| Local inference (deep) | [Ollama](https://ollama.com) + Gemma 4 26B (MoE) | 256K context, only 3.8B params active per inference, 18GB VRAM |
+| Local inference (fast) | [Ollama](https://ollama.com) + Qwen 2.5 7B | Low-latency spoken/chat lane — ~3–4× faster than Gemma for short turns |
 | GPU | NVIDIA CUDA 12.x | Required for local inference — AMD ROCm not covered here |
 | Container runtime | Docker Desktop + WSL2 | Reproducible setup, GPU passthrough works well on Windows |
 | UI frontend | React 18 + Vite + TypeScript | Custom Blade Runner terminal dashboard; replaces Open WebUI |
@@ -410,9 +421,9 @@ mithrandir/
 │   ├── performance_tracker.py        # Compute returns vs SPY at 30/90/180/365-day horizons
 │   └── alert_engine.py               # Proactive Telegram alerts (price dips, ranking changes, perf)
 │
-└── phase6-ui/                        # Custom Blade Runner terminal UI (Phase 6–7)
+└── phase6-ui/                        # Custom glassmorphic terminal UI (Phase 6–7)
     ├── server/
-    │   ├── main.py                   # FastAPI — chat/gpu/voice WebSockets + REST APIs
+    │   ├── main.py                   # FastAPI — chat/gpu/voice WebSockets + REST APIs + siting endpoints
     │   ├── voice.py                  # STT (faster-whisper) + TTS (5-tier: F5-TTS/Chatterbox/Kokoro/edge-tts/pyttsx3) + character FX
     │   ├── cuda_docs.py              # CUDA/GPU documentation search (RAG via ChromaDB)
     │   ├── f5tts_worker.py           # F5-TTS subprocess worker (persistent process, stdin/stdout JSON)
@@ -424,19 +435,33 @@ mithrandir/
     │       └── bmo.wav               # BMO (Adventure Time) voice reference clip for F5-TTS cloning
     └── client/                       # React 18 + Vite + TypeScript SPA
         ├── src/
-        │   ├── App.tsx               # 3-column grid layout, GPU WebSocket owner
+        │   ├── App.tsx               # 3-column grid layout, GPU WebSocket owner, mode/theme controller
         │   ├── store.ts              # Zustand state (messages, GPU history, params, memory)
-        │   ├── index.css             # Blade Runner design system — CSS variables + grid
+        │   ├── index.css             # Glassmorphic design system — CSS variables + grid + animations
         │   └── components/
+        │       ├── CelestialBackground.tsx  # Animated canvas: stars, shooting stars, aurora borealis
         │       ├── ChatPanel.tsx     # Unified chat + voice (VAD mic, oscilloscope waveform, audio queue)
+        │       ├── DevPanel.tsx      # Developer console — debug, health, telemetry
+        │       ├── DemoPanel.tsx     # Prebuilt demo launcher (local speed, EDGAR, voice, system)
         │       ├── DocsPanel.tsx     # CUDA/GPU docs browser with "Ask Mithrandir" integration
         │       ├── GpuHistoryPanel.tsx # iCUE-style sparkline history charts (Recharts)
+        │       ├── Header.tsx        # Live GPU stats inline + mode switcher + day/night toggle
         │       ├── MarketPanel.tsx   # Regime badge + QV portfolio picks
+        │       ├── MemoryPanel.tsx   # Past conversation memory viewer (Vault tab)
+        │       ├── MetricDetailModal.tsx  # Drill-down modal for GPU/performance metrics
+        │       ├── MindPanel.tsx     # Consciousness visualization — animated sagittal brain SVG, awareness stats, reflections
         │       ├── ModelParamsPanel.tsx # Gemma parameter sliders
-        │       ├── MemoryPanel.tsx   # Past conversation memory viewer
-        │       ├── HistoryPanel.tsx  # Session history
-        │       └── Header.tsx        # Live GPU stats inline
+        │       ├── SitingPanel.tsx   # Full-screen data center siting map (MapLibre GL + factor sliders)
+        │       └── HistoryPanel.tsx  # Session history
         └── dist/                     # Production build (served by FastAPI)
+
+└── phase8-local-research/            # Local Gemma-only structured research pipeline
+    ├── run_pipeline.py               # CLI runner — domains: datacenter, llm
+    ├── stages.py                     # Pipeline stages: discovery, verification, normalization, QA
+    ├── pipeline_contracts.py         # Pydantic data contracts for each domain
+    ├── exporters.py                  # CSV/JSON export with provenance
+    ├── local_gemma_client.py         # Ollama Gemma client wrapper
+    └── output/                       # Stage artifacts and final exports (not tracked)
 ```
 
 ---

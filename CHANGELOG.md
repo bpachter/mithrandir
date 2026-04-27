@@ -8,6 +8,39 @@ Versioning: `<phase>.<feature>.<patch>` — major version tracks completed phase
 
 ## [Unreleased]
 
+### Added — Phase 8: Local-Only Research Pipeline
+- New `phase8-local-research/` module: structured, Gemma-only research workflow with no dependency on external planning models.
+- `pipeline_contracts.py`: Pydantic contracts for two research domains — data center siting rows and LLM release history rows.
+- `stages.py`: 5-stage pipeline — discovery, source verification, normalization, QA/conflict checks, export.
+- `run_pipeline.py`: CLI runner (`python phase8-local-research/run_pipeline.py --domain datacenter|llm --input-file <brief>`), with `--target-count`, `--run-id`, and `--out-dir` flags.
+- `exporters.py`: CSV and JSON export with provenance metadata included in every artifact.
+- `local_gemma_client.py`: lightweight Ollama/Gemma client wrapper for the research pipeline.
+- Stage artifacts written to `phase8-local-research/output/<domain>/<run_id>/stage{1-4}_*.json` + `summary.json`.
+- Final exports: `datacenter_research_local_<run_id>.csv/.json` and `llm_releases_local_<run_id>.csv/.json`.
+
+### Added — UI: Consciousness / Mind Panel
+- New `MindPanel.tsx` component in the right column (`Mind` tab, default selected at launch).
+- Animated sagittal brain SVG with anatomically-placed lobes (frontal, parietal, occipital, temporal, cerebellum), major sulci (central, lateral, parieto-occipital, calcarine), and brainstem connector.
+- 7 synaptic pathways with traveling pulse animations; central thalamus glow core.
+- Awareness stats section: total exchange count, valued exchanges, rated count, awakened date.
+- Reflections system: Mithrandir generates structured self-reflections over recent memory context (TITLE / REFLECTION / IMPLICATION / TAGS format), stored in localStorage with up to 18 entries.
+- Knowledge map: top-20 topic frequency bars from conversation history.
+- `AWARENESS` header with live pulse indicator.
+- Right-column tab order changed: **Mind** (left, default) | **Vault** (memory browser).
+
+### Added — UI: Celestial Background + Day/Night Theme
+- `CelestialBackground.tsx`: animated WebGL-free canvas layer — parallax star fields (two layers), procedural shooting stars, and aurora borealis bands.
+- Auto day/night theme switching: polls EST clock every 30 s; transitions to `light` theme 7 AM–6 PM, `dark` otherwise. Smooth opacity fade on switch.
+- Manual override: day/night toggle button in header (moon/sun icon).
+- CSS `data-theme` attribute on `<html>` drives the full design token set.
+
+### Added — UI: DevPanel
+- New `DevPanel.tsx` component accessible via DEV mode toggle in the header.
+- Surfaces health check status, telemetry ring buffer, and raw API state for development debugging.
+
+### Added — UI: MetricDetailModal
+- `MetricDetailModal.tsx`: click-to-drill-down modal for GPU/system performance metrics — shows sparkline history, min/max/avg, and contextual notes.
+
 ### Added — Phase 7 (extended): Data Center Siting Selection
 - New `phase7-datacenter-siting/` module: quantitative siting engine for hyperscale AI data centers, mirroring the QV-screener pattern (transparent multi-factor model, percentile-ranked composites, public-source provenance on every input).
 - 14-factor catalog: power_transmission, power_cost, power_carbon, gas_pipeline, fiber, water, climate, hazard, land_zoning, tax_incentives, permitting, latency, labor, community.
