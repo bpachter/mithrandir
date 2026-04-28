@@ -662,8 +662,6 @@ export default function MindPanel() {
           >
             <div className="mind-neural-ambient" aria-hidden="true" />
             <svg viewBox="0 0 280 220" className="mind-neural-svg" aria-hidden="true">
-              {/* Top-down (dorsal) anatomical brain view */}
-
               <defs>
                 <filter id="brainGlowA">
                   <feGaussianBlur stdDeviation="3" result="blur"/>
@@ -681,93 +679,79 @@ export default function MindPanel() {
                 </filter>
               </defs>
 
-              {/* Ambient field glow */}
-              <ellipse cx="140" cy="112" rx="96" ry="76" fill="rgba(80,140,220,0.07)" filter="url(#brainGlowA)" />
+              {/* Larger glow so the silhouette reads clearly at panel scale */}
+              <ellipse cx="140" cy="110" rx="112" ry="88" fill="rgba(80,140,220,0.07)" filter="url(#brainGlowA)" />
 
-              {/* ── Right cerebral hemisphere ── */}
+              {/* Single dorsal outer silhouette (walnut-like) */}
               <path
-                d="M 140 28 C 175 24, 222 46, 245 84 C 258 110, 252 148, 230 172 C 210 190, 176 198, 148 197 L 140 196 Z"
-                className="mind-hemi" filter="url(#brainGlowA)"
+                d="M 140 24
+                   C 176 20, 214 34, 236 60
+                   C 254 82, 258 112, 248 136
+                   C 240 156, 225 172, 205 183
+                   C 188 193, 168 198, 148 198
+                   C 144 198, 142 196, 140 193
+                   C 138 196, 136 198, 132 198
+                   C 112 198, 92 193, 75 183
+                   C 55 172, 40 156, 32 136
+                   C 22 112, 26 82, 44 60
+                   C 66 34, 104 20, 140 24 Z"
+                className="mind-hemi"
+                filter="url(#brainGlowA)"
               />
 
-              {/* ── Left cerebral hemisphere ── */}
-              <path
-                d="M 140 28 C 105 24, 58 46, 35 84 C 22 110, 28 148, 50 172 C 70 190, 104 198, 132 197 L 140 196 Z"
-                className="mind-hemi" filter="url(#brainGlowA)"
-              />
+              {/* Interhemispheric fissure */}
+              <path d="M 140 31 C 142 62, 142 94, 140 125 C 138 154, 139 176, 140 193" className="mind-sulcus" />
 
-              {/* ── Right hemisphere sulci (grooves between gyri) ── */}
-              {/* Medial sulcus R — just right of midline */}
-              <path d="M 146 32 C 150 68, 150 105, 148 138 C 146 163, 142 183, 140 196" className="mind-fold-major" />
-              {/* Superior frontal sulcus R */}
-              <path d="M 160 30 C 168 60, 170 95, 167 130 C 163 158, 155 180, 149 195" className="mind-fold" />
-              {/* Intraparietal sulcus R */}
-              <path d="M 185 36 C 200 63, 206 94, 201 126 C 195 154, 180 172, 166 186" className="mind-fold-major" />
-              {/* Lateral groove R */}
-              <path d="M 218 56 C 234 80, 240 108, 231 136 C 221 160, 200 175, 183 185" className="mind-fold" />
-              {/* Central sulcus R — transverse landmark separating frontal from parietal */}
-              <path d="M 148 74 C 166 69, 190 67, 213 70 C 228 73, 240 79, 245 88" className="mind-fold-major" />
-              {/* Post-central sulcus R */}
-              <path d="M 148 92 C 164 88, 185 87, 206 90 C 222 93, 234 99, 241 108" className="mind-fold" />
-              {/* Parieto-occipital sulcus R */}
-              <path d="M 148 154 C 165 151, 186 147, 205 142 C 222 137, 234 131, 241 122" className="mind-fold" />
+              {/* Right sulci */}
+              <path d="M 151 36 C 162 58, 166 87, 163 118 C 160 145, 154 170, 147 190" className="mind-fold-major" />
+              <path d="M 170 40 C 184 62, 190 90, 188 121 C 186 146, 179 167, 168 184" className="mind-fold" />
+              <path d="M 196 51 C 214 72, 222 98, 220 126 C 217 149, 205 167, 189 180" className="mind-fold-major" />
+              <path d="M 149 76 C 173 70, 202 71, 224 80" className="mind-fold-major" />
+              <path d="M 149 98 C 172 94, 198 95, 218 103" className="mind-fold" />
+              <path d="M 149 149 C 170 145, 192 140, 211 131" className="mind-fold" />
 
-              {/* ── Left hemisphere sulci (mirror) ── */}
-              {/* Medial sulcus L */}
-              <path d="M 134 32 C 130 68, 130 105, 132 138 C 134 163, 138 183, 140 196" className="mind-fold-major" />
-              {/* Superior frontal sulcus L */}
-              <path d="M 120 30 C 112 60, 110 95, 113 130 C 117 158, 125 180, 131 195" className="mind-fold" />
-              {/* Intraparietal sulcus L */}
-              <path d="M 95 36 C 80 63, 74 94, 79 126 C 85 154, 100 172, 114 186" className="mind-fold-major" />
-              {/* Lateral groove L */}
-              <path d="M 62 56 C 46 80, 40 108, 49 136 C 59 160, 80 175, 97 185" className="mind-fold" />
-              {/* Central sulcus L */}
-              <path d="M 132 74 C 114 69, 90 67, 67 70 C 52 73, 40 79, 35 88" className="mind-fold-major" />
-              {/* Post-central sulcus L */}
-              <path d="M 132 92 C 116 88, 95 87, 74 90 C 58 93, 46 99, 39 108" className="mind-fold" />
-              {/* Parieto-occipital sulcus L */}
-              <path d="M 132 154 C 115 151, 94 147, 75 142 C 58 137, 46 131, 39 122" className="mind-fold" />
+              {/* Left sulci (mirror) */}
+              <path d="M 129 36 C 118 58, 114 87, 117 118 C 120 145, 126 170, 133 190" className="mind-fold-major" />
+              <path d="M 110 40 C 96 62, 90 90, 92 121 C 94 146, 101 167, 112 184" className="mind-fold" />
+              <path d="M 84 51 C 66 72, 58 98, 60 126 C 63 149, 75 167, 91 180" className="mind-fold-major" />
+              <path d="M 131 76 C 107 70, 78 71, 56 80" className="mind-fold-major" />
+              <path d="M 131 98 C 108 94, 82 95, 62 103" className="mind-fold" />
+              <path d="M 131 149 C 110 145, 88 140, 69 131" className="mind-fold" />
 
-              {/* ── Gyral ridge highlights — bright ridge crests ── */}
-              {/* Right crests */}
-              <path d="M 153 31 C 158 64, 159 100, 157 134 C 155 160, 151 180, 148 195" className="mind-gyrus-ridge" />
-              <path d="M 172 33 C 182 61, 187 94, 183 127 C 179 156, 167 176, 157 190" className="mind-gyrus-ridge" />
-              <path d="M 200 44 C 217 70, 222 100, 215 130 C 207 158, 190 173, 174 184" className="mind-gyrus-ridge" />
-              {/* Left crests (mirror) */}
-              <path d="M 127 31 C 122 64, 121 100, 123 134 C 125 160, 129 180, 132 195" className="mind-gyrus-ridge" />
-              <path d="M 108 33 C 98 61, 93 94, 97 127 C 101 156, 113 176, 123 190" className="mind-gyrus-ridge" />
-              <path d="M 80 44 C 63 70, 58 100, 65 130 C 73 158, 90 173, 106 184" className="mind-gyrus-ridge" />
+              {/* Gyral ridges */}
+              <path d="M 159 39 C 170 60, 174 88, 171 119 C 168 147, 161 170, 154 188" className="mind-gyrus-ridge" />
+              <path d="M 183 46 C 198 67, 205 93, 203 122 C 201 146, 192 165, 178 179" className="mind-gyrus-ridge" />
+              <path d="M 121 39 C 110 60, 106 88, 109 119 C 112 147, 119 170, 126 188" className="mind-gyrus-ridge" />
+              <path d="M 97 46 C 82 67, 75 93, 77 122 C 79 146, 88 165, 102 179" className="mind-gyrus-ridge" />
 
-              {/* Interhemispheric fissure — midline groove */}
-              <line x1="140" y1="28" x2="140" y2="196" className="mind-sulcus" />
-              {/* Frontal notch where fissure meets frontal pole */}
-              <path d="M 133 28 C 136 22, 144 22, 147 28" className="mind-fold-major" />
+              {/* Frontal notch */}
+              <path d="M 132 27 C 136 21, 144 21, 148 27" className="mind-fold-major" />
 
               {/* ── Neural pathways radiating outward ── */}
-              <line x1="84"  y1="56"  x2="30"  y2="28"  className="mind-syn" />
-              <line x1="40"  y1="112" x2="10"  y2="120" className="mind-syn" />
-              <line x1="68"  y1="178" x2="28"  y2="210" className="mind-syn" />
-              <line x1="196" y1="56"  x2="250" y2="28"  className="mind-syn" />
-              <line x1="240" y1="112" x2="270" y2="120" className="mind-syn" />
-              <line x1="212" y1="178" x2="252" y2="210" className="mind-syn" />
-              <line x1="140" y1="197" x2="140" y2="218" className="mind-syn" />
+              <line x1="78"  y1="60"  x2="28"  y2="34"  className="mind-syn" />
+              <line x1="42"  y1="112" x2="10"  y2="120" className="mind-syn" />
+              <line x1="72"  y1="178" x2="30"  y2="208" className="mind-syn" />
+              <line x1="202" y1="60"  x2="252" y2="34"  className="mind-syn" />
+              <line x1="238" y1="112" x2="270" y2="120" className="mind-syn" />
+              <line x1="208" y1="178" x2="250" y2="208" className="mind-syn" />
+              <line x1="140" y1="199" x2="140" y2="218" className="mind-syn" />
 
               {/* Traveling synaptic pulses */}
-              <path d="M 84 56 L 30 28"   className="mind-pulse pulse-1" />
-              <path d="M 40 112 L 10 120"  className="mind-pulse pulse-2" />
-              <path d="M 68 178 L 28 210"  className="mind-pulse pulse-3" />
-              <path d="M 196 56 L 250 28"  className="mind-pulse pulse-4" />
-              <path d="M 240 112 L 270 120" className="mind-pulse pulse-5" />
-              <path d="M 212 178 L 252 210" className="mind-pulse pulse-6" />
-              <path d="M 140 197 L 140 218" className="mind-pulse pulse-7" />
+              <path d="M 78 60 L 28 34"   className="mind-pulse pulse-1" />
+              <path d="M 42 112 L 10 120"  className="mind-pulse pulse-2" />
+              <path d="M 72 178 L 30 208"  className="mind-pulse pulse-3" />
+              <path d="M 202 60 L 252 34"  className="mind-pulse pulse-4" />
+              <path d="M 238 112 L 270 120" className="mind-pulse pulse-5" />
+              <path d="M 208 178 L 250 208" className="mind-pulse pulse-6" />
+              <path d="M 140 199 L 140 218" className="mind-pulse pulse-7" />
 
               {/* Neural endpoint nodes */}
-              <circle cx="30"  cy="28"  r="2.2" className="mind-nc node-1" />
+              <circle cx="28"  cy="34"  r="2.2" className="mind-nc node-1" />
               <circle cx="10"  cy="120" r="2.2" className="mind-nc node-2" />
-              <circle cx="28"  cy="210" r="2.2" className="mind-nc node-3" />
-              <circle cx="250" cy="28"  r="2.2" className="mind-nc node-4" />
+              <circle cx="30"  cy="208" r="2.2" className="mind-nc node-3" />
+              <circle cx="252" cy="34"  r="2.2" className="mind-nc node-4" />
               <circle cx="270" cy="120" r="2.2" className="mind-nc node-5" />
-              <circle cx="252" cy="210" r="2.2" className="mind-nc node-6" />
+              <circle cx="250" cy="208" r="2.2" className="mind-nc node-6" />
               <circle cx="140" cy="218" r="2.2" className="mind-nc node-7" />
 
               {/* Corpus callosum core glow */}
