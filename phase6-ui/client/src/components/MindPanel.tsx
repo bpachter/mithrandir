@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
-import { RefreshCcw, Sparkles } from 'lucide-react'
-import { fetchHistory, fetchMemory, fetchMind, generateMindReflection } from '../api'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { RefreshCcw, Sparkles, Zap, MapPin, Activity } from 'lucide-react'
+import {
+  fetchHistory, fetchMemory, fetchMind, generateMindReflection,
+  fetchOratorSnapshot, fetchSiteScout, fetchRegimePulse,
+  type MacroSnapshotBrief, type SiteScoutResult, type RegimePulse,
+} from '../api'
 
 interface MindStats {
   total: number
@@ -249,6 +253,314 @@ function buildLocalReflection(data: MindData): Omit<ReflectionEntry, 'id' | 'tim
   }
 }
 
+// ---------------------------------------------------------------------------
+// Live tool widgets
+// ---------------------------------------------------------------------------
+
+type ToolState<T> = { status: 'idle' } | { status: 'loading' } | { status: 'ok'; data: T } | { status: 'error'; msg: string }
+
+function recessionColor(label: string): string {
+  if (label === 'High') return '#c76f5d'
+  if (label === 'Elevated') return '#b7834c'
+  if (label === 'Moderate') return '#cfa75a'
+  return '#6aa58d'
+}
+
+function signalDotColor(state: string): string {
+  if (state === 'critical') return '#c76f5d'
+  if (state === 'warning') return '#b7834c'
+  if (state === 'watch') return '#cfa75a'
+  return '#6aa58d'
+}
+
+function regimeColor(regime: string): string {
+  const r = regime.toLowerCase()
+  if (r.includes('bear') || r.includes('crisis') || r.includes('contraction')) return '#c76f5d'
+  if (r.includes('transition') || r.includes('volatile') || r.includes('risk')) return '#cfa75a'
+  return '#6aa58d'
+}
+
+// ── Tool 1: Orator Macro Brief ──────────────────────────────────────────────
+
+function OratorSnapshotTool() {
+  const [state, setState] = useState<ToolState<MacroSnapshotBrief>>({ status: 'idle' })
+
+  async function run() {
+    setState({ status: 'loading' })
+    try {
+      const data = await fetchOratorSnapshot()
+      setState({ status: 'ok', data })
+    } catch (e) {
+      setState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  const data = state.status === 'ok' ? state.data : null
+
+  return (
+    <div className="mind-tool-card">
+      <div className="mind-tool-header">
+        <Zap className="h-3 w-3" strokeWidth={2.2} />
+        <span className="mind-tool-title">macro brief</span>
+        <button
+          className="mind-tool-run"
+          onClick={run}
+          disabled={state.status === 'loading'}
+        >
+          {state.status === 'loading' ? '…' : <RefreshCcw className="h-2.5 w-2.5" strokeWidth={2.5} />}
+        </button>
+      </div>
+
+      {state.status === 'idle' && (
+        <div className="mind-tool-idle">pull live macro snapshot from orator</div>
+      )}
+      {state.status === 'error' && (
+        <div className="mind-tool-error">{state.msg}</div>
+      )}
+      {data && (
+        <div className="mind-tool-body">
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">date</span>
+            <span className="mind-tool-val">{data.date}</span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">recession risk</span>
+            <span className="mind-tool-val" style={{ color: recessionColor(data.recession_label) }}>
+              {Math.round(data.recession_composite * 100)}% — {data.recession_label}
+            </span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">stagflation</span>
+            <span className="mind-tool-val">{Math.round(data.stagflation_score * 100)}%</span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">2s10s spread</span>
+            <span className="mind-tool-val" style={{ color: data.yield_curve_inverted ? '#c76f5d' : '#6aa58d' }}>
+              {data.yield_curve_inverted ? '⚠ ' : ''}{Math.round(data.yield_curve_spread_2_10 * 100)} bps
+            </span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">vix</span>
+            <span className="mind-tool-val">{data.vix.toFixed(1)} ({data.vix_regime})</span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">hy spread</span>
+            <span className="mind-tool-val">{Math.round(data.hy_spread)} bps</span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">unemployment</span>
+            <span className="mind-tool-val">{data.unemployment.toFixed(1)}%</span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">cpi yoy</span>
+            <span className="mind-tool-val">{data.cpi_yoy.toFixed(1)}%</span>
+          </div>
+          <div className="mind-tool-row">
+            <span className="mind-tool-key">fed funds</span>
+            <span className="mind-tool-val">{data.fed_funds_rate.toFixed(2)}%</span>
+          </div>
+          {data.top_signals.length > 0 && (
+            <div className="mind-tool-signals">
+              {data.top_signals.map((s, i) => (
+                <div key={i} className="mind-tool-signal-row">
+                  <span className="mind-tool-signal-dot" style={{ background: signalDotColor(s.state) }} />
+                  <span className="mind-tool-signal-name">{s.name}</span>
+                  <span className="mind-tool-signal-val">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {data.narrative && (
+            <div className="mind-tool-narrative">{data.narrative}</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Tool 2: Avalon Site Scout ───────────────────────────────────────────────
+
+const ARCHETYPES = ['mixed', 'training', 'inference'] as const
+
+function SiteScoutTool() {
+  const [query, setQuery] = useState('')
+  const [archetype, setArchetype] = useState<typeof ARCHETYPES[number]>('mixed')
+  const [state, setState] = useState<ToolState<SiteScoutResult[]>>({ status: 'idle' })
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function run() {
+    setState({ status: 'loading' })
+    try {
+      const res = await fetchSiteScout(query, archetype)
+      setState({ status: 'ok', data: res.results })
+    } catch (e) {
+      setState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  function handleKey(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') void run()
+  }
+
+  const results = state.status === 'ok' ? state.data : []
+  const maxScore = results.length > 0 ? Math.max(...results.map((r) => r.composite)) : 1
+
+  return (
+    <div className="mind-tool-card">
+      <div className="mind-tool-header">
+        <MapPin className="h-3 w-3" strokeWidth={2.2} />
+        <span className="mind-tool-title">site scout</span>
+      </div>
+      <div className="mind-tool-controls">
+        <input
+          ref={inputRef}
+          className="mind-tool-input"
+          placeholder="state, region, or keyword…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKey}
+        />
+        <select
+          className="mind-tool-select"
+          value={archetype}
+          onChange={(e) => setArchetype(e.target.value as typeof ARCHETYPES[number])}
+        >
+          {ARCHETYPES.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+        <button
+          className="mind-tool-run-btn"
+          onClick={run}
+          disabled={state.status === 'loading'}
+        >
+          {state.status === 'loading' ? '…' : 'scout'}
+        </button>
+      </div>
+
+      {state.status === 'idle' && (
+        <div className="mind-tool-idle">filter + rank avalon sample sites by archetype</div>
+      )}
+      {state.status === 'error' && (
+        <div className="mind-tool-error">{state.msg}</div>
+      )}
+      {results.length > 0 && (
+        <div className="mind-tool-site-list">
+          {results.map((r, i) => (
+            <div key={r.site_id} className="mind-tool-site-row">
+              <span className="mind-tool-site-rank">#{i + 1}</span>
+              <div className="mind-tool-site-info">
+                <span className="mind-tool-site-name">{r.name}</span>
+                <span className="mind-tool-site-state">{r.state}</span>
+              </div>
+              <div className="mind-tool-site-score-wrap">
+                <div
+                  className="mind-tool-site-bar"
+                  style={{ width: `${Math.round((r.composite / maxScore) * 100)}%` }}
+                />
+                <span className="mind-tool-site-score">{(r.composite * 100).toFixed(0)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Tool 3: Regime Pulse ────────────────────────────────────────────────────
+
+function RegimePulseTool() {
+  const [state, setState] = useState<ToolState<RegimePulse>>({ status: 'idle' })
+
+  async function run() {
+    setState({ status: 'loading' })
+    try {
+      const data = await fetchRegimePulse()
+      setState({ status: 'ok', data })
+    } catch (e) {
+      setState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  const data = state.status === 'ok' ? state.data : null
+  const pct = data ? Math.round(data.confidence * 100) : 0
+
+  return (
+    <div className="mind-tool-card">
+      <div className="mind-tool-header">
+        <Activity className="h-3 w-3" strokeWidth={2.2} />
+        <span className="mind-tool-title">regime pulse</span>
+        <button
+          className="mind-tool-run"
+          onClick={run}
+          disabled={state.status === 'loading'}
+        >
+          {state.status === 'loading' ? '…' : <RefreshCcw className="h-2.5 w-2.5" strokeWidth={2.5} />}
+        </button>
+      </div>
+
+      {state.status === 'idle' && (
+        <div className="mind-tool-idle">read current hmm market regime classification</div>
+      )}
+      {state.status === 'error' && (
+        <div className="mind-tool-error">{state.msg}</div>
+      )}
+      {data && (
+        <div className="mind-tool-body">
+          <div className="mind-tool-regime-hero">
+            <span className="mind-tool-regime-label" style={{ color: regimeColor(data.regime) }}>
+              {data.regime}
+            </span>
+            <div className="mind-tool-confidence-bar-wrap">
+              <div
+                className="mind-tool-confidence-bar"
+                style={{
+                  width: `${pct}%`,
+                  background: regimeColor(data.regime),
+                }}
+              />
+            </div>
+            <span className="mind-tool-confidence-pct">{pct}% confidence</span>
+          </div>
+          {data.signals.length > 0 && (
+            <div className="mind-tool-regime-signals">
+              {data.signals.map((s, i) => (
+                <div key={i} className="mind-tool-row">
+                  <span className="mind-tool-key">{s.name}</span>
+                  <span className="mind-tool-val">{s.value} {s.direction !== '—' ? `(${s.direction})` : ''}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {data.updated && (
+            <div className="mind-tool-updated">updated {data.updated.slice(0, 10)}</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Container section ───────────────────────────────────────────────────────
+
+function LiveToolsSection() {
+  return (
+    <div className="mind-section">
+      <div className="mind-section-head">
+        <div className="mind-section-label">LIVE TOOLS</div>
+        <div className="mind-section-meta">interact directly</div>
+      </div>
+      <div className="mind-tools-grid">
+        <OratorSnapshotTool />
+        <SiteScoutTool />
+        <RegimePulseTool />
+      </div>
+    </div>
+  )
+}
+
 export default function MindPanel() {
   const [data, setData] = useState<MindData | null>(null)
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null)
@@ -350,111 +662,116 @@ export default function MindPanel() {
           >
             <div className="mind-neural-ambient" aria-hidden="true" />
             <svg viewBox="0 0 280 220" className="mind-neural-svg" aria-hidden="true">
-              {/* Sagittal (true side profile) brain with clear unified outline */}
-              
+              {/* Top-down (dorsal) anatomical brain view */}
+
               <defs>
-                <filter id="brainGlow2">
-                  <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                <filter id="brainGlowA">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
                   <feMerge>
-                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+                <filter id="coreGlowA">
+                  <feGaussianBlur stdDeviation="2" result="blur"/>
+                  <feMerge>
+                    <feMergeNode in="blur"/>
                     <feMergeNode in="SourceGraphic"/>
                   </feMerge>
                 </filter>
               </defs>
-              
-              {/* Main cerebral hemisphere — unified sagittal outline */}
-              {/* Starts at temporal (lower front), curves up to frontal point, over parietal dome, back to occipital, down to temporal */}
-              <path d="M 75 125 
-                       Q 70 115, 72 100
-                       Q 74 80, 82 65
-                       Q 90 45, 105 38
-                       Q 118 35, 130 35
-                       Q 150 33, 165 45
-                       Q 178 58, 185 75
-                       Q 188 95, 188 115
-                       Q 188 135, 183 152
-                       Q 175 168, 162 175
-                       Q 148 180, 132 178
-                       Q 120 177, 110 180
-                       Q 95 183, 85 185
-                       Q 78 185, 75 175
-                       Q 73 155, 75 125 Z" 
-                   className="mind-hemi" filter="url(#brainGlow2)" />
-              
-              {/* Major sulci — internal folds */}
-              
-              {/* Central sulcus (Rolandic) — divides motor/sensory */}
-              <path d="M 120 40 Q 122 80, 125 130 Q 127 160, 130 175" className="mind-fold-major" />
-              
-              {/* Lateral sulcus (Sylvian) — temporal separation */}
-              <path d="M 82 130 Q 105 140, 140 145 Q 160 142, 175 130" className="mind-fold-major" />
-              
-              {/* Parieto-occipital sulcus — upper back division */}
-              <path d="M 155 60 Q 165 90, 170 130" className="mind-fold-major" />
-              
-              {/* Calcarine sulcus — occipital visual cortex */}
-              <path d="M 160 155 Q 158 168, 152 178" className="mind-fold-major" />
-              
-              {/* Cingulate gyrus — inner sagittal hint */}
-              <path d="M 95 75 Q 110 70, 125 72 Q 140 75, 155 85" className="mind-fold" />
-              
-              {/* Frontal gyri — anterior texture */}
-              <path d="M 85 85 Q 95 75, 105 80" className="mind-fold" />
-              <path d="M 88 105 Q 100 100, 110 107" className="mind-fold" />
-              <path d="M 90 125 Q 105 125, 115 132" className="mind-fold" />
-              
-              {/* Parietal gyri — upper middle folds */}
-              <path d="M 135 50 Q 150 55, 165 68" className="mind-fold" />
-              <path d="M 140 75 Q 160 85, 175 100" className="mind-fold" />
-              <path d="M 145 120 Q 165 128, 178 140" className="mind-fold" />
-              
-              {/* Occipital gyri — back folds */}
-              <path d="M 165 145 Q 170 160, 165 172" className="mind-fold" />
-              <path d="M 158 165 Q 150 175, 140 178" className="mind-fold" />
-              
-              {/* Cerebellum — distinct rounded bulb below main brain */}
-              <path d="M 95 180 Q 80 182, 72 195 Q 72 210, 88 215 Q 110 218, 130 215 Q 145 210, 147 195 Q 145 180, 130 177 Q 115 176, 95 180 Z" 
-                    className="mind-cerebellum" filter="url(#brainGlow2)" />
-              
-              {/* Cerebellar folia — vertical ridges */}
-              <path d="M 88 195 L 85 210" className="mind-fold" />
-              <path d="M 100 182 L 100 212" className="mind-fold" />
-              <path d="M 113 178 L 113 215" className="mind-fold" />
-              <path d="M 127 179 L 127 213" className="mind-fold" />
-              <path d="M 140 185 L 142 208" className="mind-fold" />
-              
-              {/* Brainstem — connector between brain and cerebellum */}
-              <line x1="110" y1="180" x2="110" y2="189" className="mind-brainstem" />
-              
-              {/* Neural pathways radiating outward */}
-              <line x1="85" y1="70" x2="35" y2="40" className="mind-syn" />
-              <line x1="80" y1="110" x2="25" y2="130" className="mind-syn" />
-              <line x1="105" y1="175" x2="60" y2="200" className="mind-syn" />
-              <line x1="175" y1="85" x2="235" y2="60" className="mind-syn" />
-              <line x1="182" y1="135" x2="240" y2="145" className="mind-syn" />
-              <line x1="160" y1="175" x2="225" y2="205" className="mind-syn" />
-              <line x1="110" y1="218" x2="110" y2="260" className="mind-syn" />
-              
+
+              {/* Ambient field glow */}
+              <ellipse cx="140" cy="112" rx="96" ry="76" fill="rgba(80,140,220,0.07)" filter="url(#brainGlowA)" />
+
+              {/* ── Right cerebral hemisphere ── */}
+              <path
+                d="M 140 28 C 175 24, 222 46, 245 84 C 258 110, 252 148, 230 172 C 210 190, 176 198, 148 197 L 140 196 Z"
+                className="mind-hemi" filter="url(#brainGlowA)"
+              />
+
+              {/* ── Left cerebral hemisphere ── */}
+              <path
+                d="M 140 28 C 105 24, 58 46, 35 84 C 22 110, 28 148, 50 172 C 70 190, 104 198, 132 197 L 140 196 Z"
+                className="mind-hemi" filter="url(#brainGlowA)"
+              />
+
+              {/* ── Right hemisphere sulci (grooves between gyri) ── */}
+              {/* Medial sulcus R — just right of midline */}
+              <path d="M 146 32 C 150 68, 150 105, 148 138 C 146 163, 142 183, 140 196" className="mind-fold-major" />
+              {/* Superior frontal sulcus R */}
+              <path d="M 160 30 C 168 60, 170 95, 167 130 C 163 158, 155 180, 149 195" className="mind-fold" />
+              {/* Intraparietal sulcus R */}
+              <path d="M 185 36 C 200 63, 206 94, 201 126 C 195 154, 180 172, 166 186" className="mind-fold-major" />
+              {/* Lateral groove R */}
+              <path d="M 218 56 C 234 80, 240 108, 231 136 C 221 160, 200 175, 183 185" className="mind-fold" />
+              {/* Central sulcus R — transverse landmark separating frontal from parietal */}
+              <path d="M 148 74 C 166 69, 190 67, 213 70 C 228 73, 240 79, 245 88" className="mind-fold-major" />
+              {/* Post-central sulcus R */}
+              <path d="M 148 92 C 164 88, 185 87, 206 90 C 222 93, 234 99, 241 108" className="mind-fold" />
+              {/* Parieto-occipital sulcus R */}
+              <path d="M 148 154 C 165 151, 186 147, 205 142 C 222 137, 234 131, 241 122" className="mind-fold" />
+
+              {/* ── Left hemisphere sulci (mirror) ── */}
+              {/* Medial sulcus L */}
+              <path d="M 134 32 C 130 68, 130 105, 132 138 C 134 163, 138 183, 140 196" className="mind-fold-major" />
+              {/* Superior frontal sulcus L */}
+              <path d="M 120 30 C 112 60, 110 95, 113 130 C 117 158, 125 180, 131 195" className="mind-fold" />
+              {/* Intraparietal sulcus L */}
+              <path d="M 95 36 C 80 63, 74 94, 79 126 C 85 154, 100 172, 114 186" className="mind-fold-major" />
+              {/* Lateral groove L */}
+              <path d="M 62 56 C 46 80, 40 108, 49 136 C 59 160, 80 175, 97 185" className="mind-fold" />
+              {/* Central sulcus L */}
+              <path d="M 132 74 C 114 69, 90 67, 67 70 C 52 73, 40 79, 35 88" className="mind-fold-major" />
+              {/* Post-central sulcus L */}
+              <path d="M 132 92 C 116 88, 95 87, 74 90 C 58 93, 46 99, 39 108" className="mind-fold" />
+              {/* Parieto-occipital sulcus L */}
+              <path d="M 132 154 C 115 151, 94 147, 75 142 C 58 137, 46 131, 39 122" className="mind-fold" />
+
+              {/* ── Gyral ridge highlights — bright ridge crests ── */}
+              {/* Right crests */}
+              <path d="M 153 31 C 158 64, 159 100, 157 134 C 155 160, 151 180, 148 195" className="mind-gyrus-ridge" />
+              <path d="M 172 33 C 182 61, 187 94, 183 127 C 179 156, 167 176, 157 190" className="mind-gyrus-ridge" />
+              <path d="M 200 44 C 217 70, 222 100, 215 130 C 207 158, 190 173, 174 184" className="mind-gyrus-ridge" />
+              {/* Left crests (mirror) */}
+              <path d="M 127 31 C 122 64, 121 100, 123 134 C 125 160, 129 180, 132 195" className="mind-gyrus-ridge" />
+              <path d="M 108 33 C 98 61, 93 94, 97 127 C 101 156, 113 176, 123 190" className="mind-gyrus-ridge" />
+              <path d="M 80 44 C 63 70, 58 100, 65 130 C 73 158, 90 173, 106 184" className="mind-gyrus-ridge" />
+
+              {/* Interhemispheric fissure — midline groove */}
+              <line x1="140" y1="28" x2="140" y2="196" className="mind-sulcus" />
+              {/* Frontal notch where fissure meets frontal pole */}
+              <path d="M 133 28 C 136 22, 144 22, 147 28" className="mind-fold-major" />
+
+              {/* ── Neural pathways radiating outward ── */}
+              <line x1="84"  y1="56"  x2="30"  y2="28"  className="mind-syn" />
+              <line x1="40"  y1="112" x2="10"  y2="120" className="mind-syn" />
+              <line x1="68"  y1="178" x2="28"  y2="210" className="mind-syn" />
+              <line x1="196" y1="56"  x2="250" y2="28"  className="mind-syn" />
+              <line x1="240" y1="112" x2="270" y2="120" className="mind-syn" />
+              <line x1="212" y1="178" x2="252" y2="210" className="mind-syn" />
+              <line x1="140" y1="197" x2="140" y2="218" className="mind-syn" />
+
               {/* Traveling synaptic pulses */}
-              <path d="M 85 70 L 35 40" className="mind-pulse pulse-1" />
-              <path d="M 80 110 L 25 130" className="mind-pulse pulse-2" />
-              <path d="M 105 175 L 60 200" className="mind-pulse pulse-3" />
-              <path d="M 175 85 L 235 60" className="mind-pulse pulse-4" />
-              <path d="M 182 135 L 240 145" className="mind-pulse pulse-5" />
-              <path d="M 160 175 L 225 205" className="mind-pulse pulse-6" />
-              <path d="M 110 218 L 110 260" className="mind-pulse pulse-7" />
-              
-              {/* Neural nodes */}
-              <circle cx="35" cy="40"  r="2.2" className="mind-nc node-1" />
-              <circle cx="25" cy="130" r="2.2" className="mind-nc node-2" />
-              <circle cx="60" cy="200" r="2.2" className="mind-nc node-3" />
-              <circle cx="235" cy="60"  r="2.2" className="mind-nc node-4" />
-              <circle cx="240" cy="145" r="2.2" className="mind-nc node-5" />
-              <circle cx="225" cy="205" r="2.2" className="mind-nc node-6" />
-              <circle cx="110" cy="260" r="2.2" className="mind-nc node-7" />
-              
-              {/* Thalamus core — central processing hub */}
-              <circle cx="120" cy="115" r="5.5" className="mind-nc mind-nc-core" filter="url(#brainGlow2)" />
+              <path d="M 84 56 L 30 28"   className="mind-pulse pulse-1" />
+              <path d="M 40 112 L 10 120"  className="mind-pulse pulse-2" />
+              <path d="M 68 178 L 28 210"  className="mind-pulse pulse-3" />
+              <path d="M 196 56 L 250 28"  className="mind-pulse pulse-4" />
+              <path d="M 240 112 L 270 120" className="mind-pulse pulse-5" />
+              <path d="M 212 178 L 252 210" className="mind-pulse pulse-6" />
+              <path d="M 140 197 L 140 218" className="mind-pulse pulse-7" />
+
+              {/* Neural endpoint nodes */}
+              <circle cx="30"  cy="28"  r="2.2" className="mind-nc node-1" />
+              <circle cx="10"  cy="120" r="2.2" className="mind-nc node-2" />
+              <circle cx="28"  cy="210" r="2.2" className="mind-nc node-3" />
+              <circle cx="250" cy="28"  r="2.2" className="mind-nc node-4" />
+              <circle cx="270" cy="120" r="2.2" className="mind-nc node-5" />
+              <circle cx="252" cy="210" r="2.2" className="mind-nc node-6" />
+              <circle cx="140" cy="218" r="2.2" className="mind-nc node-7" />
+
+              {/* Corpus callosum core glow */}
+              <circle cx="140" cy="112" r="5.5" className="mind-nc mind-nc-core" filter="url(#coreGlowA)" />
             </svg>
             <div className="mind-neural-chips">
               <button
@@ -594,6 +911,8 @@ export default function MindPanel() {
         )}
 
         {!data && <div className="mind-offline">Mithrandir backend offline — memory unavailable</div>}
+
+        <LiveToolsSection />
       </div>
     </div>
   )

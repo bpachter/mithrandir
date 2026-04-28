@@ -251,3 +251,54 @@ export async function scoreSites(body: {
     body: JSON.stringify(body),
   })
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mind panel live tools — Orator snapshot, Avalon site scout, regime pulse
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface MacroSnapshotBrief {
+  date: string
+  recession_composite: number
+  recession_label: string
+  stagflation_score: number
+  yield_curve_spread_2_10: number
+  yield_curve_inverted: boolean
+  vix: number
+  vix_regime: string
+  hy_spread: number
+  unemployment: number
+  cpi_yoy: number
+  fed_funds_rate: number
+  top_signals: Array<{ name: string; value: string; state: string }>
+  narrative: string
+}
+
+export async function fetchOratorSnapshot(): Promise<MacroSnapshotBrief> {
+  return fetchJsonWithRetry(`${API_BASE}/api/mind/orator-snapshot`, 'mind/orator-snapshot')
+}
+
+export interface SiteScoutResult {
+  site_id: string
+  name: string
+  state: string
+  composite: number
+  archetype: string
+}
+
+export async function fetchSiteScout(query: string, archetype: string): Promise<{ results: SiteScoutResult[]; query: string }> {
+  return fetchJsonWithRetry(
+    `${API_BASE}/api/mind/site-scout?q=${encodeURIComponent(query)}&archetype=${encodeURIComponent(archetype)}`,
+    'mind/site-scout',
+  )
+}
+
+export interface RegimePulse {
+  regime: string
+  confidence: number
+  signals: Array<{ name: string; value: string; direction: string }>
+  updated: string
+}
+
+export async function fetchRegimePulse(): Promise<RegimePulse> {
+  return fetchJsonWithRetry(`${API_BASE}/api/mind/regime-pulse`, 'mind/regime-pulse')
+}

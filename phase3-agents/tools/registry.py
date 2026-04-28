@@ -1064,3 +1064,90 @@ register(
     },
     fn=_dev_list_files,
 )
+
+
+# ---------------------------------------------------------------------------
+# Orator — macroeconomic data (Railway-hosted FRED/BEA/EIA/CBOE platform)
+# ---------------------------------------------------------------------------
+
+_orator_path = os.path.join(os.path.dirname(__file__), "orator_client.py")
+_orator_spec = importlib.util.spec_from_file_location("orator_client", _orator_path)
+_orator_mod = importlib.util.module_from_spec(_orator_spec)
+_orator_spec.loader.exec_module(_orator_mod)
+
+register(
+    name="orator_macro",
+    description=(
+        "Fetch live macroeconomic data from Orator — Ben's Railway-hosted macro platform. "
+        "Returns recession composite score (0-1), yield curve shape, credit spreads, "
+        "volatility (VIX/VVIX/SKEW), labor market, and inflation indicators sourced from "
+        "FRED, BEA, EIA, CBOE, Treasury, World Bank, and more. "
+        "Use when the user asks: 'What is the macro backdrop?', 'Is the economy in recession?', "
+        "'What does the yield curve look like?', 'Are credit conditions tightening?', "
+        "'What is the VIX doing?', 'Should I be buying value stocks right now?', "
+        "'What is the Fed doing?', 'What is stagflation risk?', "
+        "or any question requiring current macroeconomic context. "
+        "Also use to enrich QV stock picks with regime-appropriate framing. "
+        "Do NOT use for individual stock data (use edgar_screener), "
+        "GPU stats (use system_info), or HMM market regime (use market_regime)."
+    ),
+    parameters={
+        "query": (
+            "str — plain language macro question, e.g. 'current recession risk', "
+            "'yield curve inversion', 'inflation outlook', 'credit conditions', "
+            "'VIX and volatility regime'"
+        )
+    },
+    fn=_orator_mod.get_macro_context,
+)
+
+register(
+    name="orator_snapshot",
+    description=(
+        "Fetch Orator's condensed daily macro snapshot — a single-call summary of "
+        "all key macro signals: recession composite, stagflation score, yield curve spread, "
+        "VIX regime, HY spread, unemployment, CPI YoY, Fed funds rate, and a plain-English "
+        "narrative. Use for the morning brief, a quick overall read, or portfolio updates. "
+        "Requires the /api/snapshot endpoint to be deployed in Orator (Phase 3 of plan)."
+    ),
+    parameters={
+        "query": "str — optional context, e.g. 'daily snapshot' or 'morning brief'"
+    },
+    fn=lambda query="": _orator_mod.get_daily_snapshot(),
+)
+
+
+# ---------------------------------------------------------------------------
+# Avalon — datacenter siting (Railway-hosted site-selection platform)
+# ---------------------------------------------------------------------------
+
+_avalon_path = os.path.join(os.path.dirname(__file__), "avalon_client.py")
+_avalon_spec = importlib.util.spec_from_file_location("avalon_client", _avalon_path)
+_avalon_mod = importlib.util.module_from_spec(_avalon_spec)
+_avalon_spec.loader.exec_module(_avalon_mod)
+
+register(
+    name="avalon_siting",
+    description=(
+        "Query the Avalon datacenter siting platform. Can: score a candidate site by "
+        "lat/lon coordinates, return top-scored sites for an archetype (hyperscale / "
+        "colocation / enterprise / edge), list scoring factors and their weights, "
+        "and return state-level siting summaries. "
+        "Use when the user asks: 'Score this site at lat=X lon=Y', "
+        "'What are the best data center locations in Texas?', "
+        "'How does Avalon weight power vs. fiber?', "
+        "'Which states are hyperscaler-friendly?', "
+        "'What is the Avalon score for Charlotte, NC?' (lat=35.2 lon=-80.8), "
+        "or any data center siting or site selection question. "
+        "Note: Avalon already uses Mithrandir's GPU for AI narrative generation — "
+        "this is the reverse link to query Avalon's scoring engine from Mithrandir."
+    ),
+    parameters={
+        "query": (
+            "str — plain language siting question. Include 'lat=X lon=Y' to score a "
+            "specific site. Include archetype to filter: hyperscale, colocation, "
+            "enterprise, or edge."
+        )
+    },
+    fn=_avalon_mod.query_siting,
+)

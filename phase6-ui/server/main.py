@@ -780,6 +780,125 @@ async def delete_memory(exchange_id: str):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+# ---------------------------------------------------------------------------
+# Mind panel live tool routes
+# ---------------------------------------------------------------------------
+
+@app.get("/api/mind/orator-snapshot")
+def mind_orator_snapshot():
+    """Proxy Orator's /api/snapshot for the Mind panel live macro brief."""
+    import httpx
+    orator_url = os.environ.get("ORATOR_URL", "").rstrip("/")
+    if not orator_url:
+        return JSONResponse(
+            {"error": "ORATOR_URL not configured — add it to Mithrandir .env"},
+            status_code=503,
+        )
+    try:
+        r = httpx.get(f"{orator_url}/api/snapshot", timeout=15.0)
+        r.raise_for_status()
+        return r.json()
+    except httpx.TimeoutException:
+        return JSONResponse({"error": "Orator request timed out"}, status_code=504)
+    except httpx.HTTPStatusError as e:
+        return JSONResponse({"error": f"Orator returned {e.response.status_code}"}, status_code=502)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+
+
+@app.get("/api/mind/site-scout")
+def mind_site_scout(q: str = "", archetype: str = "mixed"):
+    """Filter + score sample sites matching a state abbreviation or name query."""
+    bundle = _import_siting()
+    if not bundle:
+        return JSONResponse({"error": "Avalon siting engine unavailable"}, status_code=503)
+    try:
+        sites = _load_sample_sites()
+        if not sites:
+            return JSONResponse({"error": "No sample sites loaded"}, status_code=404)
+
+        q_lower = q.strip().lower()
+        if q_lower:
+            filtered = [
+                s for s in sites
+                if q_lower in s.get("state", "").lower()
+                or q_lower in s.get("name", "").lower()
+                or q_lower in s.get("notes", "").lower()
+            ]
+            # Fallback: all sites if nothing matches the query
+            if not filtered:
+                filtered = sites
+        else:
+            filtered = sites
+
+        Site = bundle["Site"]
+        score_sites = bundle["score_sites"]
+        site_objs = [Site(**{k: v for k, v in s.items() if k in ("site_id", "name", "lat", "lon", "acres", "state", "notes")}) for s in filtered]
+        results = score_sites(site_objs, archetype=archetype)
+
+        top = sorted(results, key=lambda r: r.composite, reverse=True)[:8]
+        return {
+            "query": q,
+            "archetype": archetype,
+            "results": [
+                {
+                    "site_id": r.site_id,
+                    "name": r.name,
+                    "state": r.state,
+                    "composite": round(r.composite, 3),
+                    "archetype": r.archetype,
+                }
+                for r in top
+            ],
+        }
+    except Exception as e:
+        logger.error(f"mind site-scout error: {e}", exc_info=True)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/mind/regime-pulse")
+def mind_regime_pulse():
+    """Return a compact regime + signal summary for the Mind panel."""
+    mod = _import_regime_mod()
+    if mod is None:
+        return JSONResponse({"error": "regime_detector unavailable"}, status_code=503)
+    try:
+        raw = mod.detect_regime() if hasattr(mod, "detect_regime") else mod.get_regime()
+        regime = raw.get("regime", "Unknown")
+        confidence = raw.get("confidence", 0)
+        # Build a compact signals list from whatever fields are available
+        signals = []
+        for key in ("signals", "indicators", "features"):
+            if isinstance(raw.get(key), list):
+                for s in raw[key][:6]:
+                    if isinstance(s, dict):
+                        signals.append({
+                            "name": s.get("name", s.get("id", "?")),
+                            "value": str(s.get("value", s.get("val", "?"))),
+                            "direction": s.get("direction", s.get("trend", "—")),
+                        })
+                break
+        if not signals:
+            # Flatten top-level numeric fields as signals
+            skip = {"regime", "confidence", "error", "updated", "trained_at"}
+            for k, v in raw.items():
+                if k in skip:
+                    continue
+                if isinstance(v, (int, float)):
+                    signals.append({"name": k, "value": f"{v:.3f}", "direction": "—"})
+                if len(signals) >= 6:
+                    break
+        return {
+            "regime": regime,
+            "confidence": confidence,
+            "signals": signals,
+            "updated": raw.get("updated", raw.get("trained_at", "")),
+        }
+    except Exception as e:
+        logger.error(f"mind regime-pulse error: {e}", exc_info=True)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.get("/api/freshness")
 def get_freshness():
     """Return a data freshness audit for all Mithrandir data sources."""
