@@ -453,12 +453,17 @@ export default function ChatPanel() {
 
   // ── Speech energy → CSS driving ambient animation ─────────────────────
   useEffect(() => {
-    return subscribeSpeechEnergy((energy, isSpeaking) => {
+    return subscribeSpeechEnergy((energy) => {
       document.documentElement.style.setProperty('--speech-energy', energy.toFixed(3))
-      if (isSpeaking) document.documentElement.setAttribute('data-speaking', '')
-      else            document.documentElement.removeAttribute('data-speaking')
     })
   }, [])
+
+  // Toggle speaking state from voice state so star flash is guaranteed while TTS is active.
+  useEffect(() => {
+    if (voiceState === 'speaking') document.documentElement.setAttribute('data-speaking', '')
+    else                           document.documentElement.removeAttribute('data-speaking')
+    return () => document.documentElement.removeAttribute('data-speaking')
+  }, [voiceState])
 
   const submitFeedback = useCallback(async (messageId: string, approved: boolean) => {
     const message = useStore.getState().messages.find((entry) => entry.id === messageId)

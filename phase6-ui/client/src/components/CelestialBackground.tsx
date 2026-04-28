@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { subscribeSpeechEnergy } from '../lib/speechEnergy'
 
 interface Star {
   x: number; y: number
@@ -237,12 +236,10 @@ function buildGalaxyCanvas(): HTMLCanvasElement {
 
 export default function CelestialBackground() {
   const canvasRef       = useRef<HTMLCanvasElement>(null)
-  const speechEnergyRef = useRef(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const unsub = subscribeSpeechEnergy((e) => { speechEnergyRef.current = e })
     const ctx = canvas.getContext('2d')!
     const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2))
 
@@ -273,7 +270,6 @@ export default function CelestialBackground() {
     const draw = () => {
       frameId = requestAnimationFrame(draw)
       t += 0.008
-      const speech = speechEnergyRef.current
       const W = canvas.width / dpr
       const H = canvas.height / dpr
 
@@ -307,16 +303,15 @@ export default function CelestialBackground() {
       // ── Day: heavenly light ────────────────────────────────────
       if (p > 0.001) {
         const pulse = 0.88 + 0.12 * Math.sin(t * 0.22)
-        const sg    = 1 + speech * 0.70
 
         const bloom = ctx.createRadialGradient(W*0.50, H*0.16, H*0.02, W*0.50, H*0.34, H*0.78)
-        bloom.addColorStop(0,    `rgba(255,255,255,${Math.min(0.90, 0.48*pulse*sg*p).toFixed(3)})`)
-        bloom.addColorStop(0.35, `rgba(246,249,255,${Math.min(0.55, 0.23*pulse*sg*p).toFixed(3)})`)
+        bloom.addColorStop(0,    `rgba(255,255,255,${Math.min(0.90, 0.48*pulse*p).toFixed(3)})`)
+        bloom.addColorStop(0.35, `rgba(246,249,255,${Math.min(0.55, 0.23*pulse*p).toFixed(3)})`)
         bloom.addColorStop(1,    'rgba(255,255,255,0)')
         ctx.fillStyle = bloom; ctx.fillRect(0, 0, W, H)
 
         const aur = ctx.createRadialGradient(W*0.5, H*0.12, H*0.01, W*0.5, H*0.12, H*0.18)
-        aur.addColorStop(0, `rgba(255,255,255,${Math.min(0.80, 0.34*pulse*sg*p).toFixed(3)})`)
+        aur.addColorStop(0, `rgba(255,255,255,${Math.min(0.80, 0.34*pulse*p).toFixed(3)})`)
         aur.addColorStop(1, 'rgba(255,255,255,0)')
         ctx.fillStyle = aur; ctx.fillRect(0, 0, W, H)
       }
@@ -332,15 +327,14 @@ export default function CelestialBackground() {
           const ry  = neb.ry * W
           const op  = Math.min(neb.opacity * breathe, 0.54) * (1 - p)
           if (op < 0.001) continue
-          const snb = 1 + speech * 0.35
 
           ctx.save()
           ctx.translate(ncx, ncy)
           ctx.scale(1, ry / rx)
           const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx)
-          g.addColorStop(0,    `rgba(${neb.r},${neb.g},${neb.b},${Math.min(0.72, op*snb*0.85).toFixed(3)})`)
-          g.addColorStop(0.38, `rgba(${neb.r},${neb.g},${neb.b},${Math.min(0.44, op*snb*0.50).toFixed(3)})`)
-          g.addColorStop(0.72, `rgba(${neb.r},${neb.g},${neb.b},${Math.min(0.16, op*snb*0.18).toFixed(3)})`)
+          g.addColorStop(0,    `rgba(${neb.r},${neb.g},${neb.b},${Math.min(0.72, op*0.85).toFixed(3)})`)
+          g.addColorStop(0.38, `rgba(${neb.r},${neb.g},${neb.b},${Math.min(0.44, op*0.50).toFixed(3)})`)
+          g.addColorStop(0.72, `rgba(${neb.r},${neb.g},${neb.b},${Math.min(0.16, op*0.18).toFixed(3)})`)
           g.addColorStop(1,    `rgba(${neb.r},${neb.g},${neb.b},0)`)
           ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI*2); ctx.fill()
           ctx.restore()
@@ -524,7 +518,6 @@ export default function CelestialBackground() {
       cancelAnimationFrame(frameId)
       themeObserver.disconnect()
       window.removeEventListener('resize', resize)
-      unsub()
     }
   }, [])
 
