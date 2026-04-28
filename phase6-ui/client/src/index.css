@@ -748,42 +748,6 @@ html, body, #root {
   animation: blink 0.9s step-end infinite;
 }
 
-/* While Mithrandir is actively responding, move flashing emphasis to the
-   lower voice-response panel and keep the main chat panel visually steady. */
-html[data-mithrandir-responding] .col-chat .msg-typing {
-  animation: none;
-  opacity: 0.78;
-}
-
-html[data-mithrandir-responding] .col-chat .panel-title::before {
-  animation: none;
-}
-
-html[data-mithrandir-responding] .col-chat {
-  box-shadow:
-    inset 0 0 0 1px rgb(var(--nebula-azure) / 0.05),
-    0 12px 34px rgba(120,160,210,0.06) !important;
-}
-
-.voice-response-panel.is-active {
-  animation: response-panel-flash 0.9s step-end infinite;
-}
-
-@keyframes response-panel-flash {
-  0%, 100% {
-    box-shadow:
-      inset 0 0 0 0 rgba(189, 197, 206, 0.00),
-      0 -1px 0 rgba(189, 197, 206, 0.18);
-    filter: brightness(1);
-  }
-  50% {
-    box-shadow:
-      inset 0 0 18px rgba(189, 197, 206, 0.18),
-      0 -1px 0 rgba(189, 197, 206, 0.40);
-    filter: brightness(1.08);
-  }
-}
-
 /* ── Chat input — scrying pool ─────────────────────────────── */
 .chat-input-row {
   display: flex;
@@ -1599,58 +1563,60 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
   transform-box: fill-box;
   transform-origin: center;
 }
-/* Brain hemispheres */
-.mind-hemi {
-  fill: rgba(80, 140, 210, 0.14);
-  stroke: rgba(180, 220, 255, 0.90);
-  stroke-width: 2.6;
+/* Ethereal star sphere */
+.mind-star-halo {
+  fill: url(#starHaloA);
+  opacity: 0.86;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mindStarHaloDrift 7.2s ease-in-out infinite;
+}
+.mind-star-rings {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mindStarFieldRotate 38s linear infinite;
+}
+.mind-star-rayfield {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mindStarRaySweep 18s linear infinite;
+}
+.mind-star-ray {
+  stroke: rgba(174, 224, 255, 0.48);
+  stroke-width: 1.45;
   stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 8px rgba(140, 200, 255, 0.48)) drop-shadow(0 0 14px rgba(100, 170, 240, 0.24));
+  filter: drop-shadow(0 0 6px rgba(132, 192, 255, 0.42));
 }
-/* Midline */
-.mind-sulcus {
-  stroke: rgba(140, 190, 255, 0.28);
-  stroke-width: 1;
-  stroke-dasharray: 3 5;
-}
-/* Cerebral folds */
-.mind-fold {
-  fill: none;
-  stroke: rgba(140, 190, 255, 0.48);
-  stroke-width: 1.3;
-  stroke-linecap: round;
-}
-/* Major sulci — deeper, more prominent */
-.mind-fold-major {
-  fill: none;
-  stroke: rgba(140, 190, 255, 0.82);
-  stroke-width: 2.0;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 3px rgba(120, 180, 255, 0.45));
-}
-/* Cerebellum — smaller rounded structure */
-/* Gyral ridge highlights — bright ridge crests between sulci */
-.mind-gyrus-ridge {
-  fill: none;
-  stroke: rgba(200, 232, 255, 0.42);
-  stroke-width: 0.75;
-  stroke-linecap: round;
-}
-/* Cerebellum — smaller rounded structure */
-.mind-cerebellum {
-  fill: rgba(70, 130, 200, 0.10);
-  stroke: rgba(170, 210, 255, 0.75);
+.mind-star-sphere {
+  stroke: rgba(204, 236, 255, 0.92);
   stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgba(130, 190, 255, 0.42)) drop-shadow(0 0 10px rgba(100, 160, 240, 0.18));
+  filter: drop-shadow(0 0 16px rgba(138, 204, 255, 0.50));
 }
-/* Brainstem — connector path */
-.mind-brainstem {
-  stroke: rgba(150, 195, 255, 0.45);
-  stroke-width: 1.2;
+.mind-star-highlight {
+  fill: rgba(238, 248, 255, 0.30);
+  filter: blur(1px);
+}
+.mind-star-lat,
+.mind-star-meridian {
+  fill: none;
+  stroke: rgba(188, 224, 255, 0.34);
+  stroke-width: 1;
   stroke-linecap: round;
+}
+.mind-star-burst {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mindStarBurstBreath 4.8s ease-in-out infinite;
+}
+.mind-star-burst-main {
+  fill: rgba(214, 241, 255, 0.22);
+  stroke: rgba(208, 236, 255, 0.72);
+  stroke-width: 1.1;
+}
+.mind-star-burst-inner {
+  fill: rgba(236, 250, 255, 0.16);
+  stroke: rgba(222, 244, 255, 0.60);
+  stroke-width: 0.9;
 }
 /* Synaptic base connections */
 .mind-syn {
@@ -1686,9 +1652,9 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
   fill: rgba(148, 206, 255, 0.80);
   filter: drop-shadow(0 0 4px rgba(120, 185, 255, 0.45));
 }
-.mind-nc-core {
-  fill: rgba(210, 240, 255, 0.97);
-  filter: drop-shadow(0 0 12px rgba(165, 225, 255, 0.75));
+.mind-star-core {
+  fill: rgba(236, 248, 255, 0.98);
+  filter: drop-shadow(0 0 14px rgba(180, 228, 255, 0.88));
   animation: mindCorePulse 2.4s ease-in-out infinite;
   transform-box: fill-box;
   transform-origin: center;
@@ -1700,7 +1666,23 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
 .node-4   { animation: mindNodeFire 3.2s ease-in-out infinite 1.84s; }
 .node-5   { animation: mindNodeFire 3.2s ease-in-out infinite 2.30s; }
 .node-6   { animation: mindNodeFire 3.2s ease-in-out infinite 2.76s; }
-/* Action chips row below brain */
+/* Speaking emphasis now lives in the star, not the panels */
+[data-speaking] .mind-neural-stage .mind-star-halo {
+  opacity: calc(0.92 + var(--speech-energy) * 0.45);
+  transform: scale(calc(1 + var(--speech-energy) * 0.16));
+}
+[data-speaking] .mind-neural-stage .mind-star-core {
+  animation: mindStarVoiceCore 0.56s ease-in-out infinite;
+}
+[data-speaking] .mind-neural-stage .mind-star-ray {
+  stroke: rgba(214, 242, 255, calc(0.56 + var(--speech-energy) * 0.36));
+  filter: drop-shadow(0 0 calc(5px + var(--speech-energy) * 12px) rgba(160, 224, 255, 0.76));
+}
+[data-speaking] .mind-neural-stage .mind-neural-ambient {
+  opacity: calc(1 + var(--speech-energy) * 0.55);
+  filter: blur(calc(16px + var(--speech-energy) * 10px));
+}
+/* Action chips row below star */
 .mind-neural-chips {
   display: flex;
   gap: 8px;
@@ -2446,17 +2428,30 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
   0%, 100%  { opacity: 0.55; }
   46%, 54%  { opacity: 1;    filter: drop-shadow(0 0 7px rgba(165, 225, 255, 0.85)); }
 }
+@keyframes mindStarFieldRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes mindStarRaySweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+@keyframes mindStarHaloDrift {
+  0%, 100% { transform: scale(1); opacity: 0.84; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+@keyframes mindStarBurstBreath {
+  0%, 100% { transform: scale(0.96); opacity: 0.75; }
+  50%      { transform: scale(1.05); opacity: 1; }
+}
+@keyframes mindStarVoiceCore {
+  0%   { transform: scale(1);    opacity: 0.86; }
+  40%  { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.98); opacity: 0.88; }
+}
 
 /* ── Speech animation: wizard-of-oz ambient glow ─────────────── */
 :root { --speech-energy: 0; }
-[data-speaking] .col-chat {
-  border-color: rgba(185,215,255, calc(0.07 + var(--speech-energy) * 0.28)) !important;
-  box-shadow:
-    inset 0 0 0 1px rgb(var(--nebula-azure) / 0.05),
-    0 12px 34px rgba(120,160,210,0.06),
-    0 0 calc(18px + var(--speech-energy) * 64px) rgba(175,210,255, calc(var(--speech-energy) * 0.18)),
-    inset 0 0 calc(var(--speech-energy) * 44px) rgba(195,220,255, calc(var(--speech-energy) * 0.06)) !important;
-}
 
 /* ── Modal-open: suppress hover brightening of background panes ── */
 [data-modal-open] .col-left:hover,

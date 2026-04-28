@@ -780,15 +780,6 @@ export default function ChatPanel() {
   const isResponding = busy || voiceState === 'thinking' || voiceState === 'speaking'
   const micColor    = isRecording ? 'var(--red)' : isSpeaking ? 'var(--green)' : busy ? 'var(--amber-dim)' : 'var(--amber)'
 
-  useEffect(() => {
-    if (isResponding) {
-      document.documentElement.setAttribute('data-mithrandir-responding', '')
-    } else {
-      document.documentElement.removeAttribute('data-mithrandir-responding')
-    }
-    return () => document.documentElement.removeAttribute('data-mithrandir-responding')
-  }, [isResponding])
-
   return (
     <div className={`panel panel-chat ${isResponding ? 'responding' : ''}`} style={{ flex: 1, minHeight: 0 }}>
       <div className="panel-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -916,7 +907,7 @@ export default function ChatPanel() {
 
       {/* Waveform — always visible, mode-driven animation */}
       <div
-        className={`voice-response-panel ${isResponding ? 'is-active' : ''}`}
+        className="voice-response-panel"
         style={{
           flexShrink: 0,
           background: 'linear-gradient(180deg, rgba(188,196,206,0.12), rgba(188,196,206,0.05))',

@@ -568,7 +568,7 @@ export default function MindPanel() {
   const [pulse, setPulse] = useState(false)
   const [reflecting, setReflecting] = useState(false)
   const [localReflections, setLocalReflections] = useState<ReflectionEntry[]>([])
-  const [statusText, setStatusText] = useState('hover the cortex to surface actions')
+  const [statusText, setStatusText] = useState('hover the star to surface actions')
 
   function pulsePanel() {
     setPulse(true)
@@ -658,20 +658,31 @@ export default function MindPanel() {
           <div
             className={`mind-neural-stage ${reflecting ? 'is-reflecting' : ''}`}
             onMouseEnter={() => setStatusText('inspect, refresh, or trigger reflection')}
-            onMouseLeave={() => setStatusText(reflecting ? 'mithrandir is reflecting over recent memory' : 'hover the cortex to surface actions')}
+            onMouseLeave={() => setStatusText(reflecting ? 'mithrandir is reflecting over recent memory' : 'hover the star to surface actions')}
           >
             <div className="mind-neural-ambient" aria-hidden="true" />
             <svg viewBox="0 0 280 220" className="mind-neural-svg" aria-hidden="true">
               <defs>
-                <filter id="brainGlowA">
-                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                <radialGradient id="starSphereA" cx="50%" cy="48%" r="58%">
+                  <stop offset="0%" stopColor="rgba(246,252,255,1)" />
+                  <stop offset="34%" stopColor="rgba(186,228,255,0.95)" />
+                  <stop offset="74%" stopColor="rgba(114,172,235,0.84)" />
+                  <stop offset="100%" stopColor="rgba(72,130,205,0.74)" />
+                </radialGradient>
+                <radialGradient id="starHaloA" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="rgba(174,228,255,0.48)" />
+                  <stop offset="62%" stopColor="rgba(132,186,248,0.18)" />
+                  <stop offset="100%" stopColor="rgba(100,160,240,0)" />
+                </radialGradient>
+                <filter id="starGlowA">
+                  <feGaussianBlur stdDeviation="3.2" result="blur"/>
                   <feMerge>
                     <feMergeNode in="blur"/>
                     <feMergeNode in="SourceGraphic"/>
                   </feMerge>
                 </filter>
-                <filter id="coreGlowA">
-                  <feGaussianBlur stdDeviation="2" result="blur"/>
+                <filter id="starCoreA">
+                  <feGaussianBlur stdDeviation="2.4" result="blur"/>
                   <feMerge>
                     <feMergeNode in="blur"/>
                     <feMergeNode in="SourceGraphic"/>
@@ -679,83 +690,58 @@ export default function MindPanel() {
                 </filter>
               </defs>
 
-              {/* Larger glow so the silhouette reads clearly at panel scale */}
-              <ellipse cx="140" cy="110" rx="112" ry="88" fill="rgba(80,140,220,0.07)" filter="url(#brainGlowA)" />
+              <ellipse cx="140" cy="112" rx="116" ry="88" className="mind-star-halo" filter="url(#starGlowA)" />
 
-              {/* Single dorsal outer silhouette (walnut-like) */}
-              <path
-                d="M 140 24
-                   C 176 20, 214 34, 236 60
-                   C 254 82, 258 112, 248 136
-                   C 240 156, 225 172, 205 183
-                   C 188 193, 168 198, 148 198
-                   C 144 198, 142 196, 140 193
-                   C 138 196, 136 198, 132 198
-                   C 112 198, 92 193, 75 183
-                   C 55 172, 40 156, 32 136
-                   C 22 112, 26 82, 44 60
-                   C 66 34, 104 20, 140 24 Z"
-                className="mind-hemi"
-                filter="url(#brainGlowA)"
-              />
+              <g className="mind-star-rings">
+                <ellipse cx="140" cy="112" rx="98" ry="62" className="mind-ring mind-ring-a" />
+                <ellipse cx="140" cy="112" rx="66" ry="100" className="mind-ring mind-ring-b" />
+                <ellipse cx="140" cy="112" rx="84" ry="84" className="mind-ring mind-ring-c" />
+              </g>
 
-              {/* Interhemispheric fissure */}
-              <path d="M 140 31 C 142 62, 142 94, 140 125 C 138 154, 139 176, 140 193" className="mind-sulcus" />
+              <g className="mind-star-rayfield">
+                <line x1="140" y1="20" x2="140" y2="55" className="mind-star-ray ray-n" />
+                <line x1="140" y1="204" x2="140" y2="169" className="mind-star-ray ray-s" />
+                <line x1="40" y1="112" x2="74" y2="112" className="mind-star-ray ray-w" />
+                <line x1="240" y1="112" x2="206" y2="112" className="mind-star-ray ray-e" />
+                <line x1="72" y1="44" x2="95" y2="67" className="mind-star-ray ray-nw" />
+                <line x1="208" y1="44" x2="185" y2="67" className="mind-star-ray ray-ne" />
+                <line x1="72" y1="180" x2="95" y2="157" className="mind-star-ray ray-sw" />
+                <line x1="208" y1="180" x2="185" y2="157" className="mind-star-ray ray-se" />
+              </g>
 
-              {/* Right sulci */}
-              <path d="M 151 36 C 162 58, 166 87, 163 118 C 160 145, 154 170, 147 190" className="mind-fold-major" />
-              <path d="M 170 40 C 184 62, 190 90, 188 121 C 186 146, 179 167, 168 184" className="mind-fold" />
-              <path d="M 196 51 C 214 72, 222 98, 220 126 C 217 149, 205 167, 189 180" className="mind-fold-major" />
-              <path d="M 149 76 C 173 70, 202 71, 224 80" className="mind-fold-major" />
-              <path d="M 149 98 C 172 94, 198 95, 218 103" className="mind-fold" />
-              <path d="M 149 149 C 170 145, 192 140, 211 131" className="mind-fold" />
+              <circle cx="140" cy="112" r="54" className="mind-star-sphere" fill="url(#starSphereA)" />
+              <ellipse cx="140" cy="98" rx="36" ry="18" className="mind-star-highlight" />
+              <path d="M 88 112 Q 140 88, 192 112" className="mind-star-lat" />
+              <path d="M 88 112 Q 140 136, 192 112" className="mind-star-lat" />
+              <path d="M 106 68 Q 96 112, 106 156" className="mind-star-meridian" />
+              <path d="M 174 68 Q 184 112, 174 156" className="mind-star-meridian" />
+              <line x1="140" y1="58" x2="140" y2="166" className="mind-star-meridian" />
 
-              {/* Left sulci (mirror) */}
-              <path d="M 129 36 C 118 58, 114 87, 117 118 C 120 145, 126 170, 133 190" className="mind-fold-major" />
-              <path d="M 110 40 C 96 62, 90 90, 92 121 C 94 146, 101 167, 112 184" className="mind-fold" />
-              <path d="M 84 51 C 66 72, 58 98, 60 126 C 63 149, 75 167, 91 180" className="mind-fold-major" />
-              <path d="M 131 76 C 107 70, 78 71, 56 80" className="mind-fold-major" />
-              <path d="M 131 98 C 108 94, 82 95, 62 103" className="mind-fold" />
-              <path d="M 131 149 C 110 145, 88 140, 69 131" className="mind-fold" />
+              <g className="mind-star-burst">
+                <path d="M 140 70 L 146 104 L 180 112 L 146 120 L 140 154 L 134 120 L 100 112 L 134 104 Z" className="mind-star-burst-main" />
+                <path d="M 140 82 L 143 102 L 163 112 L 143 122 L 140 142 L 137 122 L 117 112 L 137 102 Z" className="mind-star-burst-inner" />
+              </g>
 
-              {/* Gyral ridges */}
-              <path d="M 159 39 C 170 60, 174 88, 171 119 C 168 147, 161 170, 154 188" className="mind-gyrus-ridge" />
-              <path d="M 183 46 C 198 67, 205 93, 203 122 C 201 146, 192 165, 178 179" className="mind-gyrus-ridge" />
-              <path d="M 121 39 C 110 60, 106 88, 109 119 C 112 147, 119 170, 126 188" className="mind-gyrus-ridge" />
-              <path d="M 97 46 C 82 67, 75 93, 77 122 C 79 146, 88 165, 102 179" className="mind-gyrus-ridge" />
+              {/* Ambient filaments + moving pulses */}
+              <line x1="102" y1="78" x2="52" y2="54" className="mind-syn" />
+              <line x1="88" y1="146" x2="40" y2="172" className="mind-syn" />
+              <line x1="178" y1="78" x2="228" y2="54" className="mind-syn" />
+              <line x1="192" y1="146" x2="240" y2="172" className="mind-syn" />
+              <line x1="140" y1="170" x2="140" y2="214" className="mind-syn" />
 
-              {/* Frontal notch */}
-              <path d="M 132 27 C 136 21, 144 21, 148 27" className="mind-fold-major" />
+              <path d="M 102 78 L 52 54" className="mind-pulse pulse-1" />
+              <path d="M 88 146 L 40 172" className="mind-pulse pulse-2" />
+              <path d="M 178 78 L 228 54" className="mind-pulse pulse-4" />
+              <path d="M 192 146 L 240 172" className="mind-pulse pulse-5" />
+              <path d="M 140 170 L 140 214" className="mind-pulse pulse-7" />
 
-              {/* ── Neural pathways radiating outward ── */}
-              <line x1="78"  y1="60"  x2="28"  y2="34"  className="mind-syn" />
-              <line x1="42"  y1="112" x2="10"  y2="120" className="mind-syn" />
-              <line x1="72"  y1="178" x2="30"  y2="208" className="mind-syn" />
-              <line x1="202" y1="60"  x2="252" y2="34"  className="mind-syn" />
-              <line x1="238" y1="112" x2="270" y2="120" className="mind-syn" />
-              <line x1="208" y1="178" x2="250" y2="208" className="mind-syn" />
-              <line x1="140" y1="199" x2="140" y2="218" className="mind-syn" />
+              <circle cx="52" cy="54" r="2.2" className="mind-nc node-1" />
+              <circle cx="40" cy="172" r="2.2" className="mind-nc node-2" />
+              <circle cx="228" cy="54" r="2.2" className="mind-nc node-4" />
+              <circle cx="240" cy="172" r="2.2" className="mind-nc node-5" />
+              <circle cx="140" cy="214" r="2.2" className="mind-nc node-7" />
 
-              {/* Traveling synaptic pulses */}
-              <path d="M 78 60 L 28 34"   className="mind-pulse pulse-1" />
-              <path d="M 42 112 L 10 120"  className="mind-pulse pulse-2" />
-              <path d="M 72 178 L 30 208"  className="mind-pulse pulse-3" />
-              <path d="M 202 60 L 252 34"  className="mind-pulse pulse-4" />
-              <path d="M 238 112 L 270 120" className="mind-pulse pulse-5" />
-              <path d="M 208 178 L 250 208" className="mind-pulse pulse-6" />
-              <path d="M 140 199 L 140 218" className="mind-pulse pulse-7" />
-
-              {/* Neural endpoint nodes */}
-              <circle cx="28"  cy="34"  r="2.2" className="mind-nc node-1" />
-              <circle cx="10"  cy="120" r="2.2" className="mind-nc node-2" />
-              <circle cx="30"  cy="208" r="2.2" className="mind-nc node-3" />
-              <circle cx="252" cy="34"  r="2.2" className="mind-nc node-4" />
-              <circle cx="270" cy="120" r="2.2" className="mind-nc node-5" />
-              <circle cx="250" cy="208" r="2.2" className="mind-nc node-6" />
-              <circle cx="140" cy="218" r="2.2" className="mind-nc node-7" />
-
-              {/* Corpus callosum core glow */}
-              <circle cx="140" cy="112" r="5.5" className="mind-nc mind-nc-core" filter="url(#coreGlowA)" />
+              <circle cx="140" cy="112" r="6" className="mind-star-core" filter="url(#starCoreA)" />
             </svg>
             <div className="mind-neural-chips">
               <button
