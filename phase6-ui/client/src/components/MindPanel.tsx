@@ -690,7 +690,8 @@ export default function MindPanel() {
                 </filter>
               </defs>
 
-              <ellipse cx="140" cy="112" rx="116" ry="88" className="mind-star-halo" filter="url(#starGlowA)" />
+              <ellipse cx="140" cy="112" rx="124" ry="94" className="mind-star-halo" filter="url(#starGlowA)" />
+              <ellipse cx="140" cy="112" rx="138" ry="104" className="mind-star-halo-outer" filter="url(#starGlowA)" />
 
               <g className="mind-star-rings">
                 <ellipse cx="140" cy="112" rx="98" ry="62" className="mind-ring mind-ring-a" />
@@ -709,17 +710,58 @@ export default function MindPanel() {
                 <line x1="208" y1="180" x2="185" y2="157" className="mind-star-ray ray-se" />
               </g>
 
-              <circle cx="140" cy="112" r="54" className="mind-star-sphere" fill="url(#starSphereA)" />
-              <ellipse cx="140" cy="98" rx="36" ry="18" className="mind-star-highlight" />
-              <path d="M 88 112 Q 140 88, 192 112" className="mind-star-lat" />
-              <path d="M 88 112 Q 140 136, 192 112" className="mind-star-lat" />
-              <path d="M 106 68 Q 96 112, 106 156" className="mind-star-meridian" />
-              <path d="M 174 68 Q 184 112, 174 156" className="mind-star-meridian" />
-              <line x1="140" y1="58" x2="140" y2="166" className="mind-star-meridian" />
+              <circle cx="140" cy="112" r="56" className="mind-star-sphere" fill="url(#starSphereA)" />
+              <ellipse cx="140" cy="98" rx="42" ry="20" className="mind-star-highlight" />
+
+              {/* Ethereal wisps (less geometric, more angelic) */}
+              <path d="M 90 108 C 112 88, 168 86, 194 106" className="mind-star-wisp" />
+              <path d="M 90 118 C 116 132, 166 134, 194 118" className="mind-star-wisp" />
+              <path d="M 104 78 C 120 108, 121 132, 106 154" className="mind-star-wisp" />
+              <path d="M 176 78 C 160 108, 159 132, 174 154" className="mind-star-wisp" />
+
+              {/* Long slow streaks emitted from center */}
+              <g className="mind-star-streaks">
+                <line x1="140" y1="112" x2="140" y2="10" className="mind-star-streak s1" />
+                <line x1="140" y1="112" x2="182" y2="16" className="mind-star-streak s2" />
+                <line x1="140" y1="112" x2="222" y2="44" className="mind-star-streak s3" />
+                <line x1="140" y1="112" x2="264" y2="92" className="mind-star-streak s4" />
+                <line x1="140" y1="112" x2="264" y2="132" className="mind-star-streak s5" />
+                <line x1="140" y1="112" x2="228" y2="186" className="mind-star-streak s6" />
+                <line x1="140" y1="112" x2="184" y2="210" className="mind-star-streak s7" />
+                <line x1="140" y1="112" x2="140" y2="220" className="mind-star-streak s8" />
+                <line x1="140" y1="112" x2="96" y2="210" className="mind-star-streak s9" />
+                <line x1="140" y1="112" x2="52" y2="186" className="mind-star-streak s10" />
+                <line x1="140" y1="112" x2="16" y2="132" className="mind-star-streak s11" />
+                <line x1="140" y1="112" x2="16" y2="92" className="mind-star-streak s12" />
+                <line x1="140" y1="112" x2="58" y2="44" className="mind-star-streak s13" />
+                <line x1="140" y1="112" x2="98" y2="16" className="mind-star-streak s14" />
+              </g>
 
               <g className="mind-star-burst">
                 <path d="M 140 70 L 146 104 L 180 112 L 146 120 L 140 154 L 134 120 L 100 112 L 134 104 Z" className="mind-star-burst-main" />
                 <path d="M 140 82 L 143 102 L 163 112 L 143 122 L 140 142 L 137 122 L 117 112 L 137 102 Z" className="mind-star-burst-inner" />
+              </g>
+
+              {/* Slow drifting light particles */}
+              <g className="mind-star-particles">
+                <circle cx="140" cy="16"  r="1.4" className="mind-star-particle p1" />
+                <circle cx="178" cy="22"  r="1.2" className="mind-star-particle p2" />
+                <circle cx="216" cy="42"  r="1.6" className="mind-star-particle p3" />
+                <circle cx="250" cy="78"  r="1.3" className="mind-star-particle p4" />
+                <circle cx="266" cy="114" r="1.5" className="mind-star-particle p5" />
+                <circle cx="248" cy="148" r="1.2" className="mind-star-particle p6" />
+                <circle cx="220" cy="184" r="1.5" className="mind-star-particle p7" />
+                <circle cx="184" cy="206" r="1.2" className="mind-star-particle p8" />
+                <circle cx="140" cy="216" r="1.6" className="mind-star-particle p9" />
+                <circle cx="98"  cy="206" r="1.3" className="mind-star-particle p10" />
+                <circle cx="60"  cy="184" r="1.4" className="mind-star-particle p11" />
+                <circle cx="32"  cy="148" r="1.2" className="mind-star-particle p12" />
+                <circle cx="14"  cy="114" r="1.5" className="mind-star-particle p13" />
+                <circle cx="30"  cy="78"  r="1.2" className="mind-star-particle p14" />
+                <circle cx="64"  cy="42"  r="1.6" className="mind-star-particle p15" />
+                <circle cx="102" cy="22"  r="1.3" className="mind-star-particle p16" />
+                <circle cx="196" cy="112" r="1.1" className="mind-star-particle p17" />
+                <circle cx="84"  cy="112" r="1.1" className="mind-star-particle p18" />
               </g>
 
               {/* Ambient filaments + moving pulses */}
