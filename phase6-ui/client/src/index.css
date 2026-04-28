@@ -2106,15 +2106,6 @@ html[data-chat-awake] body:not([data-modal-open]) .col-chat :is(.panel-title, .c
   background: rgba(180, 210, 246, 0.28);
 }
 
-}
-:root:not([data-theme='dark']) .mind-topic-bar-wrap {
-  background: rgba(100,140,190,0.16);
-}
-:root:not([data-theme='dark']) .mind-insight-card:hover,
-:root:not([data-theme='dark']) .mind-insight-card.expanded {
-  background: rgba(180, 210, 246, 0.28);
-}
-
 /* ── Mind panel live tools ───────────────────────────────────── */
 .mind-tools-grid {
   display: flex;
