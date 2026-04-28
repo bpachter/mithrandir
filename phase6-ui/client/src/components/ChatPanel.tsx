@@ -162,6 +162,20 @@ function resumePlayCtx() {
   if (ctx.state === 'suspended') ctx.resume()
 }
 
+function playListeningChime(): void {
+  const ctx = getPlayCtx()
+  if (ctx.state === 'suspended') ctx.resume()
+  const osc  = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = 'sine'
+  osc.frequency.setValueAtTime(880, ctx.currentTime)
+  osc.frequency.exponentialRampToValueAtTime(1108, ctx.currentTime + 0.08)
+  gain.gain.setValueAtTime(0.12, ctx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+  osc.connect(gain); gain.connect(ctx.destination)
+  osc.start(); osc.stop(ctx.currentTime + 0.35)
+}
+
 async function playAudio(b64: string, _fmt: string = 'wav'): Promise<void> {
   const ctx = getPlayCtx()
   console.log(`[mithrandir-audio] playAudio: ctx.state=${ctx.state}, bytes=${Math.round(b64.length * 0.75)}`)
@@ -612,7 +626,7 @@ export default function ChatPanel() {
           }
           setVoiceState('idle')
           setTtsStatus('')
-          if (loopRef.current) setTimeout(() => startRecording(), 300)
+          if (loopRef.current) setTimeout(() => { playListeningChime(); startRecording() }, 800)
         }
         waitAndReset()
 
@@ -673,7 +687,7 @@ export default function ChatPanel() {
       setMicError(`No audio captured (${samples} samples). Check mic.`)
       setVoiceState('idle'); return
     }
-    const payload = JSON.stringify({ type: 'audio', data, rate: actualRate, voice_profile: selectedVoice })
+    const payload = JSON.stringify({ type: 'audio', data, rate: actualRate, voice_profile: selectedVoice, loop: loopRef.current })
     if (voiceWsRef.current?.readyState === WebSocket.OPEN) {
       voiceWsRef.current.send(payload)
     } else {

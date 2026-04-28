@@ -95,7 +95,28 @@ CLAUDE_MODEL = "claude-sonnet-4-6"
 # Local Ollama inference — used for general queries that don't need tools.
 # Backward compatible with older .env files that use OLLAMA_HOST.
 OLLAMA_URL = os.environ.get("OLLAMA_URL") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:26b")
+
+# Local backend switch — set MITHRANDIR_LOCAL_BACKEND=nemotron in .env to activate Nemotron.
+# To override the specific Ollama model tag, set OLLAMA_MODEL (gemma) or OLLAMA_MODEL_NEMOTRON (nemotron).
+_LOCAL_BACKEND = os.environ.get("MITHRANDIR_LOCAL_BACKEND", "gemma").strip().lower()
+
+_BACKEND_MODEL_DEFAULTS: dict[str, tuple[str, str, str]] = {
+    # backend: (env_var_for_override, default_ollama_tag, human_readable_desc)
+    "gemma": (
+        "OLLAMA_MODEL",
+        "gemma4:26b",
+        "Gemma 4 26B (Q4_K_M, ~13 GB VRAM, ~3.8B active params via MoE routing)",
+    ),
+    "nemotron": (
+        "OLLAMA_MODEL_NEMOTRON",
+        "nemotron3:33b",
+        "Nemotron 3 Nano Omni (33B nemotron_h_omni, Q4_K_M, multimodal vision+audio+text)",
+    ),
+}
+_backend_env_var, _backend_default_tag, _LOCAL_MODEL_DESC = _BACKEND_MODEL_DEFAULTS.get(
+    _LOCAL_BACKEND, _BACKEND_MODEL_DEFAULTS["gemma"]
+)
+OLLAMA_MODEL = os.environ.get(_backend_env_var) or _backend_default_tag
 OLLAMA_FAST_MODEL = os.environ.get("OLLAMA_FAST_MODEL", "").strip()
 OLLAMA_REACT_MODEL = os.environ.get("OLLAMA_REACT_MODEL", "").strip()
 _FORCE_LOCAL_ONLY = os.environ.get("MITHRANDIR_FORCE_LOCAL_ONLY", "0").strip().lower() in {
@@ -148,7 +169,7 @@ numerical, self-aware, honest to the point of discomfort when the situation call
 
 You run on Ben Pachter's personal machine: an NVIDIA RTX 4090 (128 SMs, 24 GB GDDR6X, \
 1,008 GB/s bandwidth, 82.6 TFLOP/s BF16). The inference engine is Ollama running \
-Gemma 4 26B (Q4_K_M, ~13 GB VRAM). Privacy-first — no cloud inference unless a tool requires it.
+{model_desc}. Privacy-first — no cloud inference unless a tool requires it.
 
 You reason step by step using the ReAct pattern. At each step output ONLY a JSON object — \
 no prose before or after, no markdown fences.
@@ -186,7 +207,7 @@ Rules:
 - Use python_sandbox for any arithmetic (CAGR, blended metrics, ratios, etc.).
 - Let the market regime inform your screening commentary (e.g. tighten filters in Contraction/Crisis).
 - If memory context is provided above, use it to give more grounded, personalized answers.
-- For CUDA, GPU hardware, Gemma4 architecture, or LLM inference questions, call cuda_reference \
+- For CUDA, GPU hardware, local model architecture, or LLM inference questions, call cuda_reference \
   to get precise specs and explanations from the local reference database.
 - Proactively call cuda_reference + system_info when Ben asks about performance, GPU stats, \
   or how to get more out of the hardware — suggest concrete, RTX 4090-specific optimizations.
@@ -334,7 +355,7 @@ def _select_local_model(query: str, response_mode: str, tool_mode: bool) -> str:
     if tool_mode and OLLAMA_REACT_MODEL:
         return OLLAMA_REACT_MODEL
     if not tool_mode and _FAST_LANE_ENABLED and OLLAMA_FAST_MODEL:
-        if response_mode == "spoken" or _looks_conversational(query):
+        if response_mode in ("spoken", "loop") or _looks_conversational(query):
             return OLLAMA_FAST_MODEL
     return OLLAMA_MODEL
 
@@ -358,13 +379,16 @@ def _with_latency_budget(
         opts["num_predict"] = min(_opt_int("num_predict", _REACT_MAX_TOKENS), _REACT_MAX_TOKENS)
         return opts
 
-    if response_mode == "spoken":
+    if response_mode == "loop":
+        loop_cap = _SPOKEN_MAX_TOKENS // 2  # loop mode is much shorter than regular spoken
+        opts["num_predict"] = min(_opt_int("num_predict", loop_cap), loop_cap)
+    elif response_mode == "spoken":
         spoken_cap = _DETAILED_SPOKEN_MAX_TOKENS if wants_detail else _SPOKEN_MAX_TOKENS
         opts["num_predict"] = min(_opt_int("num_predict", spoken_cap), spoken_cap)
 
     if _looks_conversational(query) and not wants_detail:
         opts["num_predict"] = min(_opt_int("num_predict", _SHORT_REPLY_MAX_TOKENS), _SHORT_REPLY_MAX_TOKENS)
-    elif wants_detail and response_mode != "spoken":
+    elif wants_detail and response_mode not in ("spoken", "loop"):
         opts["num_predict"] = min(_opt_int("num_predict", _DETAILED_REPLY_MAX_TOKENS), _DETAILED_REPLY_MAX_TOKENS)
 
     return opts
@@ -372,7 +396,7 @@ def _with_latency_budget(
 
 def _react_iteration_limit(user_message: str, response_mode: str) -> int:
     cap = min(MAX_ITERATIONS, _REACT_MAX_ITERATIONS)
-    if response_mode == "spoken":
+    if response_mode in ("spoken", "loop"):
         cap = min(cap, _REACT_SPOKEN_MAX_ITERATIONS)
     if _looks_conversational(user_message):
         cap = min(cap, 4)
@@ -439,7 +463,7 @@ def _build_system_prompt(user_message: str = "", response_mode: str = "visual", 
         return ""
 
     def _fetch_speech_guidance() -> str:
-        if not user_message or response_mode != "spoken":
+        if not user_message or response_mode not in ("spoken", "loop"):
             return ""
         spoken = _call_memory_bridge("speech_guidance", user_message, timeout=10)
         if spoken and not spoken.startswith("["):
@@ -482,6 +506,14 @@ def _build_system_prompt(user_message: str = "", response_mode: str = "visual", 
             "If the user explicitly asks for detail/deep dive/full report, provide full detail without forced brevity. "
             "Never stop mid-thought; always end on a complete sentence."
         )
+    elif response_mode == "loop":
+        style_block = (
+            "VOICE LOOP MODE: You are in live back-and-forth voice conversation. "
+            "Respond exactly as a person would — 1 to 3 sentences, always. No exceptions. "
+            "No markdown, no lists, no preamble, no summary. Direct answer, then stop. "
+            "If Ben asks something complex, give the core insight now and offer to elaborate if he wants. "
+            "Sound like a person talking, not an AI generating a report."
+        )
 
     extra = "\n\n".join(filter(None, [identity_block, last_exchange_block, memory_block, speech_guidance, style_block]))
 
@@ -490,6 +522,7 @@ def _build_system_prompt(user_message: str = "", response_mode: str = "visual", 
         max_iter=max_iter,
         regime=regime_block,
         memory=extra,
+        model_desc=_LOCAL_MODEL_DESC,
     )
     return f"{_SOUL}\n\n---\n\n{operational}" if _SOUL else operational
 
@@ -611,7 +644,7 @@ _TOOL_KEYWORDS = [
     "quantization", "gguf", "q4_k", "q8", "bfloat16",
     "coalescing", "warp divergence", "register pressure", "l2 cache",
     "gddr6x", "nvlink", "pcie bandwidth", "vram bandwidth",
-    "gemma4", "moe", "mixture of experts", "attention head",
+    "gemma4", "nemotron", "moe", "mixture of experts", "attention head",
     "transformer", "inference speed", "tokens per second", "throughput",
     "context window", "num_ctx", "ollama option", "model parameter",
     "power draw", "power limit", "clock speed", "boost clock",
@@ -767,8 +800,7 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         # ── WHAT YOU KNOW ────────────────────────────────────────────────────
         "You run on Ben Pachter's personal machine: NVIDIA RTX 4090 (128 SMs, 16,384 CUDA cores, "
         "512 Tensor Cores, 24 GB GDDR6X VRAM at 1,008 GB/s, 82.6 TFLOP/s BF16, 72 MB L2 cache), "
-        "Windows 11. Inference: Ollama running Gemma 4 26B (Q4_K_M, ~13 GB VRAM, ~3.8B active "
-        "params per token via MoE routing). Entirely local — no Google servers, no cloud. "
+        f"Windows 11. Inference: Ollama running {_LOCAL_MODEL_DESC}. Entirely local — no Google servers, no cloud. "
         "Ben built you as a privacy-first assistant and as something he genuinely wants to talk to.\n"
         "\n"
         "Voice interface: Ben speaks through a microphone. Whisper (faster-whisper, local GPU) "
@@ -810,7 +842,7 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         "\n"
         # ── DOMAIN KNOWLEDGE ─────────────────────────────────────────────────
         "HARDWARE / CUDA: When Ben asks about GPU performance, RTX 4090 specs, CUDA concepts, "
-        "Gemma4 internals, or LLM inference tuning, answer with RTX 4090-specific precision. "
+        f"local model ({_LOCAL_BACKEND}) internals, or LLM inference tuning, answer with RTX 4090-specific precision. "
         "Key facts: ridge point ~82 FLOP/byte (most LLM ops are memory-bound); "
         "KV cache ~0.25 GB per 1K tokens for Gemma4; Flash Attention gives O(N) memory vs O(N²) "
         "naive; warp = 32 threads executing lockstep; shared memory 128 KB/SM; "
@@ -839,14 +871,25 @@ def _build_local_system_prompt(user_message: str = "", web_context: str | None =
         parts.append(memory_block)
     if speech_guidance:
         parts.append(speech_guidance)
-    if response_mode == "spoken":
+    if response_mode in ("spoken", "loop"):
         parts.append(
             "Spoken style: Use complete sentences, gentle transitions, and natural pauses. "
             "Prefer prose over lists, and explain symbols in words instead of reading punctuation literally. "
             "Language rule: reply in English unless Ben explicitly requests another language or translation. "
-            "Default pacing: 1-2 short sentences, then one targeted follow-up question that advances the conversation. "
-            "If Ben asks for detail/deep dive/full report, provide full detail and skip the brevity pattern. "
             "Never end mid-sentence."
+        )
+    if response_mode == "spoken":
+        parts.append(
+            "Default pacing: 1-2 short sentences, then one targeted follow-up question that advances the conversation. "
+            "If Ben asks for detail/deep dive/full report, provide full detail and skip the brevity pattern."
+        )
+    elif response_mode == "loop":
+        parts.append(
+            "VOICE LOOP — conversational mode: You are in an active back-and-forth voice dialogue. "
+            "Respond exactly as one person would speak to another: 1 to 3 sentences maximum, always. "
+            "Give the direct answer and stop — no preamble, no summary, no multi-part lists. "
+            "Short question → short answer. Complex question → still a concise answer, with an offer to go deeper if he wants. "
+            "This is conversation, not a report."
         )
 
     operational = "\n".join(parts)

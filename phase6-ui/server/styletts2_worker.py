@@ -40,10 +40,11 @@ os.chdir(str(_REPO))  # StyleTTS2 expects to be run from its own directory
 def _find_checkpoint() -> Path:
     """Return the best fine-tuned checkpoint, or the base pretrained model."""
     if _LOGS.exists():
-        # epoch_2nd_00094 = epoch 95, val 0.528 — best saved checkpoint from the run
-        preferred = _LOGS / "epoch_2nd_00094.pth"
-        if preferred.exists():
-            return preferred
+        # epoch_2nd_00039 = epoch 40, val 0.365 — best saved checkpoint from Apr 26 run
+        for name in ["epoch_2nd_00039.pth", "epoch_2nd_00044.pth", "epoch_2nd_00094.pth"]:
+            preferred = _LOGS / name
+            if preferred.exists():
+                return preferred
         ckpts = sorted(_LOGS.glob("epoch_2nd_*.pth"))
         if ckpts:
             return ckpts[-1]

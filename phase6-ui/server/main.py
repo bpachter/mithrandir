@@ -241,8 +241,9 @@ def _system_stats() -> dict:
 # ---------------------------------------------------------------------------
 
 _PARAMS_FILE = Path(__file__).parent / "gemma_params.json"
+_LOCAL_BACKEND = os.environ.get("MITHRANDIR_LOCAL_BACKEND", "gemma").strip().lower()
 
-_DEFAULT_PARAMS = {
+_DEFAULT_PARAMS_GEMMA = {
     "temperature":    0.7,
     "top_p":          0.9,
     "top_k":          40,
@@ -252,6 +253,17 @@ _DEFAULT_PARAMS = {
     "num_predict":    640,
     "seed":           -1,
 }
+_DEFAULT_PARAMS_NEMOTRON = {
+    "temperature":    0.7,
+    "top_p":          0.9,
+    "top_k":          40,
+    "min_p":          0.0,
+    "repeat_penalty": 1.1,
+    "num_ctx":        32768,
+    "num_predict":    640,
+    "seed":           -1,
+}
+_DEFAULT_PARAMS = _DEFAULT_PARAMS_NEMOTRON if _LOCAL_BACKEND == "nemotron" else _DEFAULT_PARAMS_GEMMA
 
 def _load_params() -> dict:
     if _PARAMS_FILE.exists():
@@ -446,7 +458,7 @@ def root():
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "version": "7.0.0"}
+    return {"ok": True, "version": "7.0.0", "backend": _LOCAL_BACKEND}
 
 
 @app.get("/api/health/detailed")
@@ -467,7 +479,7 @@ def health_detailed():
 
 @app.get("/api/params")
 def get_params():
-    return _gemma_params
+    return {**_gemma_params, "_backend": _LOCAL_BACKEND}
 
 
 class ParamsUpdate(BaseModel):
@@ -652,6 +664,103 @@ async def rate_memory(exchange_id: str, body: dict):
         return {"ok": True}
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/mind")
+def get_mind():
+    """Return Mithrandir's consciousness state — memory depth, insights, topic map, recent awareness."""
+    try:
+        import sqlite3
+        import re
+        from collections import Counter
+
+        db_path = _get_db_path()
+        if db_path is None:
+            return {"stats": {}, "insights": [], "recent_topics": [], "topic_map": []}
+
+        conn = sqlite3.connect(db_path)
+
+        total     = conn.execute("SELECT COUNT(*) FROM exchanges").fetchone()[0]
+        rated     = conn.execute("SELECT COUNT(*) FROM exchanges WHERE rating IS NOT NULL").fetchone()[0]
+        thumbs_up = conn.execute("SELECT COUNT(*) FROM exchanges WHERE rating = 1").fetchone()[0]
+        first_ts  = conn.execute("SELECT MIN(timestamp) FROM exchanges").fetchone()[0]
+
+        # Top insights: thumbs-up first, then by auto_score
+        insight_rows = conn.execute(
+            """SELECT id, timestamp, user_msg, asst_msg, rating, auto_score
+               FROM exchanges
+               WHERE rating = 1 OR auto_score IS NOT NULL
+               ORDER BY CASE WHEN rating = 1 THEN 0 ELSE 1 END,
+                        CAST(COALESCE(auto_score, 0) AS REAL) DESC
+               LIMIT 10"""
+        ).fetchall()
+
+        # Recent queries for the awareness stream
+        recent_rows = conn.execute(
+            "SELECT user_msg, timestamp FROM exchanges ORDER BY timestamp DESC LIMIT 25"
+        ).fetchall()
+
+        # All user messages for topic map
+        all_msgs = conn.execute("SELECT user_msg FROM exchanges").fetchall()
+        conn.close()
+
+        # Topic map — word frequency with stopword filter
+        stopwords = {
+            'the','a','an','is','are','was','were','be','been','being','have','has',
+            'had','do','does','did','will','would','could','should','may','might',
+            'shall','can','of','to','in','for','on','with','at','by','from','as',
+            'into','through','during','before','after','above','below','up','down',
+            'out','off','over','under','again','then','once','here','there','when',
+            'where','why','how','all','both','each','few','more','most','other',
+            'some','such','no','nor','not','only','own','same','so','than','too',
+            'very','just','but','and','or','if','i','you','he','she','it','we',
+            'they','me','him','her','us','them','my','your','his','its','our',
+            'their','this','that','these','those','what','which','who','whom',
+            'about','get','got','also','please','let','make','use','using','used',
+            'need','want','help','know','think','see','tell','give','look','going',
+            'gone','come','take','show','keep','say','said','does','much','many',
+            'any','like','well','okay','yeah','sure','right','good','great','true',
+        }
+        word_counts: Counter = Counter()
+        for (msg,) in all_msgs:
+            words = re.findall(r"\b[a-zA-Z]{4,}\b", msg.lower())
+            for w in words:
+                if w not in stopwords:
+                    word_counts[w] += 1
+
+        max_count = max((c for _, c in word_counts.most_common(1)), default=1)
+        topic_map = [
+            {"term": term, "count": count, "pct": round(count / max_count * 100)}
+            for term, count in word_counts.most_common(20)
+        ]
+
+        return {
+            "stats": {
+                "total": total,
+                "rated": rated,
+                "thumbs_up": thumbs_up,
+                "first_exchange": first_ts,
+            },
+            "insights": [
+                {
+                    "id": r[0],
+                    "timestamp": r[1],
+                    "user": r[2][:140],
+                    "assistant": r[3][:320],
+                    "rating": r[4],
+                    "score": r[5],
+                }
+                for r in insight_rows
+            ],
+            "recent_topics": [
+                {"msg": r[0][:100], "timestamp": r[1]}
+                for r in recent_rows
+            ],
+            "topic_map": topic_map,
+        }
+    except Exception as e:
+        logger.error(f"mind endpoint error: {e}", exc_info=True)
+        return {"stats": {}, "insights": [], "recent_topics": [], "topic_map": [], "error": str(e)}
 
 
 @app.delete("/api/memory/{exchange_id}")
@@ -1514,6 +1623,7 @@ async def ws_voice(ws: WebSocket):
                 continue
 
             voice_profile = _effective_voice_profile(data.get("voice_profile"))
+            _loop_mode    = bool(data.get("loop", False))
 
             # ── 1. Transcribe ──────────────────────────────────────────────
             await ws.send_json({"type": "status", "content": "Transcribing…"})
@@ -1637,9 +1747,10 @@ async def ws_voice(ws: WebSocket):
                 await ws.send_json({"type": "response", "content": final_text})
             else:
                 try:
+                    _resp_mode = "loop" if _loop_mode else "spoken"
                     response = await loop.run_in_executor(
                         None,
-                        lambda: run_agent(text, on_step=on_step, on_token=on_token, ollama_options=dict(_gemma_params), response_mode="spoken"),
+                        lambda: run_agent(text, on_step=on_step, on_token=on_token, ollama_options=dict(_gemma_params), response_mode=_resp_mode),
                     )
                     if collected_tokens:
                         final_text = "".join(collected_tokens)

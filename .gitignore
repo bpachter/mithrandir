@@ -63,6 +63,8 @@ server.err.log
 
 # Voice training — ElevenLabs dataset WAVs and training artifacts
 voice-training/elevenlabs_data/
+voice-training/elevenlabs_data_stage1/
+voice-training/elevenlabs_data_stage2/
 voice-training/logs/
 voice-training/pipeline.log
 voice-training/vctk_download.log
