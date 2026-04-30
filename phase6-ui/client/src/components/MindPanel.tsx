@@ -255,7 +255,7 @@ function buildLiveContextBlock(args: {
         'Orator macro brief:',
         `- Recession: ${Math.round(snapshot.recession_composite * 100)}% (${snapshot.recession_label})`,
         `- Stagflation: ${Math.round(snapshot.stagflation_score * 100)}%`,
-        `- VIX: ${snapshot.vix?.toFixed(1) ?? '—'} (${snapshot.vix_regime ?? 'unknown'})`,`
+        `- VIX: ${snapshot.vix?.toFixed(1) ?? '—'} (${snapshot.vix_regime ?? 'unknown'})`,
         `- Yield curve 2s10s: ${Math.round(snapshot.yield_curve_spread_2_10 * 100)} bps${snapshot.yield_curve_inverted ? ' inverted' : ''}`,
         `- Narrative: ${snapshot.narrative}`,
         signals ? `- Top signals: ${signals}` : '',
