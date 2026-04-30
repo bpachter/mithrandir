@@ -255,7 +255,7 @@ function buildLiveContextBlock(args: {
         'Orator macro brief:',
         `- Recession: ${Math.round(snapshot.recession_composite * 100)}% (${snapshot.recession_label})`,
         `- Stagflation: ${Math.round(snapshot.stagflation_score * 100)}%`,
-        `- VIX: ${snapshot.vix.toFixed(1)} (${snapshot.vix_regime})`,
+        `- VIX: ${snapshot.vix?.toFixed(1) ?? '—'} (${snapshot.vix_regime ?? 'unknown'})`,`
         `- Yield curve 2s10s: ${Math.round(snapshot.yield_curve_spread_2_10 * 100)} bps${snapshot.yield_curve_inverted ? ' inverted' : ''}`,
         `- Narrative: ${snapshot.narrative}`,
         signals ? `- Top signals: ${signals}` : '',
@@ -703,7 +703,7 @@ export default function MindPanel() {
                         <div className="mind-orbit-grid">
                           <div className="mind-orbit-grid-cell"><span>recession</span><strong>{Math.round(oratorState.data.recession_composite * 100)}%</strong></div>
                           <div className="mind-orbit-grid-cell"><span>stagflation</span><strong>{Math.round(oratorState.data.stagflation_score * 100)}%</strong></div>
-                          <div className="mind-orbit-grid-cell"><span>vix</span><strong>{oratorState.data.vix.toFixed(1)}</strong></div>
+                          <div className="mind-orbit-grid-cell"><span>vix</span><strong>{oratorState.data.vix?.toFixed(1) ?? '—'}</strong></div>
                           <div className="mind-orbit-grid-cell"><span>2s10s</span><strong>{Math.round(oratorState.data.yield_curve_spread_2_10 * 100)} bps</strong></div>
                         </div>
                         <div className="mind-orbit-copy">{oratorState.data.narrative}</div>
@@ -872,7 +872,7 @@ export default function MindPanel() {
               {oratorState.status === 'ok' && (
                 <>
                   <div className="mind-live-context-title">{oratorState.data.recession_label} recession pulse</div>
-                  <div className="mind-live-context-copy">VIX {oratorState.data.vix.toFixed(1)} with {Math.round(oratorState.data.stagflation_score * 100)}% stagflation risk.</div>
+                  <div className="mind-live-context-copy">VIX {oratorState.data.vix?.toFixed(1) ?? '—'} with {Math.round((oratorState.data.stagflation_score ?? 0) * 100)}% stagflation risk.</div>
                 </>
               )}
               {oratorState.status === 'loading' && <div className="mind-live-context-copy">Pulling macro brief and top signal stack.</div>}

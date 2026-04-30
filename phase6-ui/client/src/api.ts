@@ -309,7 +309,11 @@ export interface MacroSnapshotBrief {
 }
 
 export async function fetchOratorSnapshot(): Promise<MacroSnapshotBrief> {
-  return fetchJsonWithRetry(`${API_BASE}/api/mind/orator-snapshot`, 'mind/orator-snapshot')
+  const data = await fetchJsonWithRetry(`${API_BASE}/api/mind/orator-snapshot`, 'mind/orator-snapshot') as Record<string, unknown>
+  if (data.error || data.gateway_fallback || typeof data.vix !== 'number') {
+    throw new Error(typeof data.error === 'string' ? data.error : 'Orator snapshot unavailable')
+  }
+  return data as unknown as MacroSnapshotBrief
 }
 
 export interface SiteScoutResult {
