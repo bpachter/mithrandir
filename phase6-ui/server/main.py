@@ -2374,12 +2374,46 @@ async def ws_dev(ws: WebSocket):
 if _CLIENT_DIST.exists():
     app.mount("/assets", StaticFiles(directory=str(_CLIENT_DIST / "assets")), name="assets")
 
-    @app.get("/{full_path:path}")
-    def spa_fallback(full_path: str):
+    def _spa_index_response():
         index = _CLIENT_DIST / "index.html"
         if index.exists():
-            return FileResponse(str(index))
+            return FileResponse(str(index), headers={"Cache-Control": "no-store, no-cache, must-revalidate"})
         return JSONResponse({"error": "client not built — run: npm run build"}, status_code=404)
+
+    @app.get("/mithrandir/assets/{asset_path:path}")
+    def spa_prefixed_assets(asset_path: str):
+        asset = (_CLIENT_DIST / "assets" / asset_path).resolve()
+        assets_root = (_CLIENT_DIST / "assets").resolve()
+        if asset.is_file() and (asset == assets_root or assets_root in asset.parents):
+            return FileResponse(str(asset))
+        return _spa_index_response()
+
+    @app.get("/mithrandir")
+    @app.get("/mithrandir/")
+    def spa_prefixed_root():
+        return _spa_index_response()
+
+    @app.get("/mithrandir/favicon.svg")
+    def spa_prefixed_favicon():
+        icon = _CLIENT_DIST / "favicon.svg"
+        if icon.exists():
+            return FileResponse(str(icon))
+        return _spa_index_response()
+
+    @app.get("/mithrandir/icons.svg")
+    def spa_prefixed_icons():
+        icon = _CLIENT_DIST / "icons.svg"
+        if icon.exists():
+            return FileResponse(str(icon))
+        return _spa_index_response()
+
+    @app.get("/mithrandir/{full_path:path}")
+    def spa_prefixed_fallback(full_path: str):
+        return _spa_index_response()
+
+    @app.get("/{full_path:path}")
+    def spa_fallback(full_path: str):
+        return _spa_index_response()
 
 
 # ---------------------------------------------------------------------------

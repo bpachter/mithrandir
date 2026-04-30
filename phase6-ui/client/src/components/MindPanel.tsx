@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { RefreshCcw, Sparkles, Zap, MapPin, Activity } from 'lucide-react'
 import {
   fetchHistory, fetchMemory, fetchMind, generateMindReflection,
@@ -238,6 +238,60 @@ function buildReflectionPrompt(data: MindData) {
   ].join('\n')
 }
 
+function buildLiveContextBlock(args: {
+  orator: ToolState<MacroSnapshotBrief>
+  regime: ToolState<RegimePulse>
+  siteScout: ToolState<SiteScoutResult[]>
+  scoutQuery: string
+  scoutArchetype: typeof ARCHETYPES[number]
+}): string {
+  const parts: string[] = []
+
+  if (args.orator.status === 'ok') {
+    const snapshot = args.orator.data
+    const signals = snapshot.top_signals.slice(0, 4).map((signal) => `${signal.name}: ${signal.value} (${signal.state})`).join('; ')
+    parts.push(
+      [
+        'Orator macro brief:',
+        `- Recession: ${Math.round(snapshot.recession_composite * 100)}% (${snapshot.recession_label})`,
+        `- Stagflation: ${Math.round(snapshot.stagflation_score * 100)}%`,
+        `- VIX: ${snapshot.vix.toFixed(1)} (${snapshot.vix_regime})`,
+        `- Yield curve 2s10s: ${Math.round(snapshot.yield_curve_spread_2_10 * 100)} bps${snapshot.yield_curve_inverted ? ' inverted' : ''}`,
+        `- Narrative: ${snapshot.narrative}`,
+        signals ? `- Top signals: ${signals}` : '',
+      ].filter(Boolean).join('\n'),
+    )
+  }
+
+  if (args.regime.status === 'ok') {
+    const regime = args.regime.data
+    const signals = regime.signals.slice(0, 4).map((signal) => `${signal.name}: ${signal.value}${signal.direction !== '—' ? ` (${signal.direction})` : ''}`).join('; ')
+    parts.push(
+      [
+        'Regime pulse:',
+        `- Regime: ${regime.regime}`,
+        `- Confidence: ${Math.round(regime.confidence * 100)}%`,
+        signals ? `- Drivers: ${signals}` : '',
+      ].filter(Boolean).join('\n'),
+    )
+  }
+
+  if (args.siteScout.status === 'ok' && args.siteScout.data.length > 0) {
+    const topSites = args.siteScout.data.slice(0, 3)
+      .map((site) => `${site.name}, ${site.state} (${Math.round(site.composite * 100)})`)
+      .join('; ')
+    parts.push(
+      [
+        'Avalon site scout:',
+        `- Query: ${args.scoutQuery || 'default'} / archetype ${args.scoutArchetype}`,
+        `- Best matches: ${topSites}`,
+      ].join('\n'),
+    )
+  }
+
+  return parts.length > 0 ? `\n\nLive system context:\n${parts.join('\n\n')}` : ''
+}
+
 function buildLocalReflection(data: MindData): Omit<ReflectionEntry, 'id' | 'timestamp' | 'source'> {
   const dominant = data.topic_map.slice(0, 3).map((entry) => entry.term)
   const latest = data.recent_topics[0]?.msg ?? 'recent conversation'
@@ -259,307 +313,7 @@ function buildLocalReflection(data: MindData): Omit<ReflectionEntry, 'id' | 'tim
 
 type ToolState<T> = { status: 'idle' } | { status: 'loading' } | { status: 'ok'; data: T } | { status: 'error'; msg: string }
 
-function recessionColor(label: string): string {
-  if (label === 'High') return '#c76f5d'
-  if (label === 'Elevated') return '#b7834c'
-  if (label === 'Moderate') return '#cfa75a'
-  return '#6aa58d'
-}
-
-function signalDotColor(state: string): string {
-  if (state === 'critical') return '#c76f5d'
-  if (state === 'warning') return '#b7834c'
-  if (state === 'watch') return '#cfa75a'
-  return '#6aa58d'
-}
-
-function regimeColor(regime: string): string {
-  const r = regime.toLowerCase()
-  if (r.includes('bear') || r.includes('crisis') || r.includes('contraction')) return '#c76f5d'
-  if (r.includes('transition') || r.includes('volatile') || r.includes('risk')) return '#cfa75a'
-  return '#6aa58d'
-}
-
-// ── Tool 1: Orator Macro Brief ──────────────────────────────────────────────
-
-function OratorSnapshotTool() {
-  const [state, setState] = useState<ToolState<MacroSnapshotBrief>>({ status: 'idle' })
-
-  async function run() {
-    setState({ status: 'loading' })
-    try {
-      const data = await fetchOratorSnapshot()
-      setState({ status: 'ok', data })
-    } catch (e) {
-      setState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
-    }
-  }
-
-  const data = state.status === 'ok' ? state.data : null
-
-  return (
-    <div className="mind-tool-card">
-      <div className="mind-tool-header">
-        <Zap className="h-3 w-3" strokeWidth={2.2} />
-        <span className="mind-tool-title">macro brief</span>
-        <button
-          className="mind-tool-run"
-          onClick={run}
-          disabled={state.status === 'loading'}
-        >
-          {state.status === 'loading' ? '…' : <RefreshCcw className="h-2.5 w-2.5" strokeWidth={2.5} />}
-        </button>
-      </div>
-
-      {state.status === 'idle' && (
-        <div className="mind-tool-idle">pull live macro snapshot from orator</div>
-      )}
-      {state.status === 'error' && (
-        <div className="mind-tool-error">{state.msg}</div>
-      )}
-      {data && (
-        <div className="mind-tool-body">
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">date</span>
-            <span className="mind-tool-val">{data.date}</span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">recession risk</span>
-            <span className="mind-tool-val" style={{ color: recessionColor(data.recession_label) }}>
-              {Math.round(data.recession_composite * 100)}% — {data.recession_label}
-            </span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">stagflation</span>
-            <span className="mind-tool-val">{Math.round(data.stagflation_score * 100)}%</span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">2s10s spread</span>
-            <span className="mind-tool-val" style={{ color: data.yield_curve_inverted ? '#c76f5d' : '#6aa58d' }}>
-              {data.yield_curve_inverted ? '⚠ ' : ''}{Math.round(data.yield_curve_spread_2_10 * 100)} bps
-            </span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">vix</span>
-            <span className="mind-tool-val">{data.vix.toFixed(1)} ({data.vix_regime})</span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">hy spread</span>
-            <span className="mind-tool-val">{Math.round(data.hy_spread)} bps</span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">unemployment</span>
-            <span className="mind-tool-val">{data.unemployment.toFixed(1)}%</span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">cpi yoy</span>
-            <span className="mind-tool-val">{data.cpi_yoy.toFixed(1)}%</span>
-          </div>
-          <div className="mind-tool-row">
-            <span className="mind-tool-key">fed funds</span>
-            <span className="mind-tool-val">{data.fed_funds_rate.toFixed(2)}%</span>
-          </div>
-          {data.top_signals.length > 0 && (
-            <div className="mind-tool-signals">
-              {data.top_signals.map((s, i) => (
-                <div key={i} className="mind-tool-signal-row">
-                  <span className="mind-tool-signal-dot" style={{ background: signalDotColor(s.state) }} />
-                  <span className="mind-tool-signal-name">{s.name}</span>
-                  <span className="mind-tool-signal-val">{s.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {data.narrative && (
-            <div className="mind-tool-narrative">{data.narrative}</div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Tool 2: Avalon Site Scout ───────────────────────────────────────────────
-
 const ARCHETYPES = ['mixed', 'training', 'inference'] as const
-
-function SiteScoutTool() {
-  const [query, setQuery] = useState('')
-  const [archetype, setArchetype] = useState<typeof ARCHETYPES[number]>('mixed')
-  const [state, setState] = useState<ToolState<SiteScoutResult[]>>({ status: 'idle' })
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  async function run() {
-    setState({ status: 'loading' })
-    try {
-      const res = await fetchSiteScout(query, archetype)
-      setState({ status: 'ok', data: res.results })
-    } catch (e) {
-      setState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
-    }
-  }
-
-  function handleKey(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') void run()
-  }
-
-  const results = state.status === 'ok' ? state.data : []
-  const maxScore = results.length > 0 ? Math.max(...results.map((r) => r.composite)) : 1
-
-  return (
-    <div className="mind-tool-card">
-      <div className="mind-tool-header">
-        <MapPin className="h-3 w-3" strokeWidth={2.2} />
-        <span className="mind-tool-title">site scout</span>
-      </div>
-      <div className="mind-tool-controls">
-        <input
-          ref={inputRef}
-          className="mind-tool-input"
-          placeholder="state, region, or keyword…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKey}
-        />
-        <select
-          className="mind-tool-select"
-          value={archetype}
-          onChange={(e) => setArchetype(e.target.value as typeof ARCHETYPES[number])}
-        >
-          {ARCHETYPES.map((a) => (
-            <option key={a} value={a}>{a}</option>
-          ))}
-        </select>
-        <button
-          className="mind-tool-run-btn"
-          onClick={run}
-          disabled={state.status === 'loading'}
-        >
-          {state.status === 'loading' ? '…' : 'scout'}
-        </button>
-      </div>
-
-      {state.status === 'idle' && (
-        <div className="mind-tool-idle">filter + rank avalon sample sites by archetype</div>
-      )}
-      {state.status === 'error' && (
-        <div className="mind-tool-error">{state.msg}</div>
-      )}
-      {results.length > 0 && (
-        <div className="mind-tool-site-list">
-          {results.map((r, i) => (
-            <div key={r.site_id} className="mind-tool-site-row">
-              <span className="mind-tool-site-rank">#{i + 1}</span>
-              <div className="mind-tool-site-info">
-                <span className="mind-tool-site-name">{r.name}</span>
-                <span className="mind-tool-site-state">{r.state}</span>
-              </div>
-              <div className="mind-tool-site-score-wrap">
-                <div
-                  className="mind-tool-site-bar"
-                  style={{ width: `${Math.round((r.composite / maxScore) * 100)}%` }}
-                />
-                <span className="mind-tool-site-score">{(r.composite * 100).toFixed(0)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Tool 3: Regime Pulse ────────────────────────────────────────────────────
-
-function RegimePulseTool() {
-  const [state, setState] = useState<ToolState<RegimePulse>>({ status: 'idle' })
-
-  async function run() {
-    setState({ status: 'loading' })
-    try {
-      const data = await fetchRegimePulse()
-      setState({ status: 'ok', data })
-    } catch (e) {
-      setState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
-    }
-  }
-
-  const data = state.status === 'ok' ? state.data : null
-  const pct = data ? Math.round(data.confidence * 100) : 0
-
-  return (
-    <div className="mind-tool-card">
-      <div className="mind-tool-header">
-        <Activity className="h-3 w-3" strokeWidth={2.2} />
-        <span className="mind-tool-title">regime pulse</span>
-        <button
-          className="mind-tool-run"
-          onClick={run}
-          disabled={state.status === 'loading'}
-        >
-          {state.status === 'loading' ? '…' : <RefreshCcw className="h-2.5 w-2.5" strokeWidth={2.5} />}
-        </button>
-      </div>
-
-      {state.status === 'idle' && (
-        <div className="mind-tool-idle">read current hmm market regime classification</div>
-      )}
-      {state.status === 'error' && (
-        <div className="mind-tool-error">{state.msg}</div>
-      )}
-      {data && (
-        <div className="mind-tool-body">
-          <div className="mind-tool-regime-hero">
-            <span className="mind-tool-regime-label" style={{ color: regimeColor(data.regime) }}>
-              {data.regime}
-            </span>
-            <div className="mind-tool-confidence-bar-wrap">
-              <div
-                className="mind-tool-confidence-bar"
-                style={{
-                  width: `${pct}%`,
-                  background: regimeColor(data.regime),
-                }}
-              />
-            </div>
-            <span className="mind-tool-confidence-pct">{pct}% confidence</span>
-          </div>
-          {data.signals.length > 0 && (
-            <div className="mind-tool-regime-signals">
-              {data.signals.map((s, i) => (
-                <div key={i} className="mind-tool-row">
-                  <span className="mind-tool-key">{s.name}</span>
-                  <span className="mind-tool-val">{s.value} {s.direction !== '—' ? `(${s.direction})` : ''}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {data.updated && (
-            <div className="mind-tool-updated">updated {data.updated.slice(0, 10)}</div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Container section ───────────────────────────────────────────────────────
-
-function LiveToolsSection() {
-  return (
-    <div className="mind-section">
-      <div className="mind-section-head">
-        <div className="mind-section-label">LIVE TOOLS</div>
-        <div className="mind-section-meta">interact directly</div>
-      </div>
-      <div className="mind-tools-grid">
-        <OratorSnapshotTool />
-        <SiteScoutTool />
-        <RegimePulseTool />
-      </div>
-    </div>
-  )
-}
 
 export default function MindPanel() {
   const [data, setData] = useState<MindData | null>(null)
@@ -569,6 +323,12 @@ export default function MindPanel() {
   const [reflecting, setReflecting] = useState(false)
   const [localReflections, setLocalReflections] = useState<ReflectionEntry[]>([])
   const [statusText, setStatusText] = useState('hover the star to surface actions')
+  const [activeTool, setActiveTool] = useState<'reflect' | 'orator' | 'avalon' | 'regime'>('reflect')
+  const [oratorState, setOratorState] = useState<ToolState<MacroSnapshotBrief>>({ status: 'idle' })
+  const [siteScoutState, setSiteScoutState] = useState<ToolState<SiteScoutResult[]>>({ status: 'idle' })
+  const [regimeState, setRegimeState] = useState<ToolState<RegimePulse>>({ status: 'idle' })
+  const [scoutQuery, setScoutQuery] = useState('texas')
+  const [scoutArchetype, setScoutArchetype] = useState<typeof ARCHETYPES[number]>('mixed')
 
   function pulsePanel() {
     setPulse(true)
@@ -602,6 +362,8 @@ export default function MindPanel() {
   useEffect(() => {
     setLocalReflections(readStoredReflections())
     void load()
+    void loadOratorSnapshot()
+    void loadRegimePulse()
     const intervalId = setInterval(() => {
       void load()
     }, 12_000)
@@ -614,14 +376,76 @@ export default function MindPanel() {
   const topics = data?.recent_topics ?? []
   const topicMap = data?.topic_map ?? []
 
+  async function loadOratorSnapshot() {
+    setOratorState({ status: 'loading' })
+    setActiveTool('orator')
+    setStatusText('drawing Orator macro brief into active awareness')
+    try {
+      const result = await fetchOratorSnapshot()
+      setOratorState({ status: 'ok', data: result })
+      setStatusText('Orator macro brief aligned with reflection layer')
+      pulsePanel()
+      return result
+    } catch (e) {
+      setOratorState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
+      setStatusText('Orator brief unavailable')
+      return null
+    }
+  }
+
+  async function loadRegimePulse() {
+    setRegimeState({ status: 'loading' })
+    setActiveTool('regime')
+    setStatusText('reading regime pulse from live market state')
+    try {
+      const result = await fetchRegimePulse()
+      setRegimeState({ status: 'ok', data: result })
+      setStatusText('regime pulse is now feeding the star')
+      pulsePanel()
+      return result
+    } catch (e) {
+      setRegimeState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
+      setStatusText('regime pulse unavailable')
+      return null
+    }
+  }
+
+  async function runSiteScout(nextQuery = scoutQuery, nextArchetype = scoutArchetype) {
+    setSiteScoutState({ status: 'loading' })
+    setActiveTool('avalon')
+    setStatusText('scouting Avalon sites into the reflection stream')
+    try {
+      const result = await fetchSiteScout(nextQuery, nextArchetype)
+      setSiteScoutState({ status: 'ok', data: result.results })
+      setStatusText(`Avalon scout resolved ${result.results.length} candidate sites`)
+      pulsePanel()
+      return result.results
+    } catch (e) {
+      setSiteScoutState({ status: 'error', msg: e instanceof Error ? e.message : String(e) })
+      setStatusText('Avalon scout unavailable')
+      return null
+    }
+  }
+
   async function handleReflect() {
     if (!data || reflecting) return
     setReflecting(true)
+    setActiveTool('reflect')
     setStatusText('mithrandir is reflecting over recent memory')
     try {
       let parsed: Omit<ReflectionEntry, 'id' | 'timestamp' | 'source'>
       try {
-        const raw = await generateMindReflection(buildReflectionPrompt(data))
+        const oratorData = oratorState.status === 'ok' ? oratorState.data : await loadOratorSnapshot()
+        const regimeData = regimeState.status === 'ok' ? regimeState.data : await loadRegimePulse()
+        const raw = await generateMindReflection(
+          `${buildReflectionPrompt(data)}${buildLiveContextBlock({
+            orator: oratorData ? { status: 'ok', data: oratorData } : oratorState,
+            regime: regimeData ? { status: 'ok', data: regimeData } : regimeState,
+            siteScout: siteScoutState,
+            scoutQuery,
+            scoutArchetype,
+          })}`,
+        )
         parsed = parseReflection(raw)
       } catch {
         parsed = buildLocalReflection(data)
@@ -762,6 +586,20 @@ export default function MindPanel() {
                 <circle cx="102" cy="22"  r="1.3" className="mind-star-particle p16" />
                 <circle cx="196" cy="112" r="1.1" className="mind-star-particle p17" />
                 <circle cx="84"  cy="112" r="1.1" className="mind-star-particle p18" />
+                <circle cx="232" cy="64"  r="1.1" className="mind-star-particle p19" />
+                <circle cx="246" cy="102" r="1.0" className="mind-star-particle p20" />
+                <circle cx="236" cy="160" r="1.2" className="mind-star-particle p21" />
+                <circle cx="204" cy="194" r="1.0" className="mind-star-particle p22" />
+                <circle cx="166" cy="212" r="1.1" className="mind-star-particle p23" />
+                <circle cx="116" cy="212" r="1.0" className="mind-star-particle p24" />
+                <circle cx="76"  cy="196" r="1.2" className="mind-star-particle p25" />
+                <circle cx="44"  cy="162" r="1.0" className="mind-star-particle p26" />
+                <circle cx="34"  cy="102" r="1.2" className="mind-star-particle p27" />
+                <circle cx="48"  cy="64"  r="1.0" className="mind-star-particle p28" />
+                <circle cx="78"  cy="30"  r="1.1" className="mind-star-particle p29" />
+                <circle cx="116" cy="12"  r="1.0" className="mind-star-particle p30" />
+                <circle cx="166" cy="12"  r="1.0" className="mind-star-particle p31" />
+                <circle cx="204" cy="30"  r="1.1" className="mind-star-particle p32" />
               </g>
 
               {/* Ambient filaments + moving pulses */}
@@ -787,17 +625,170 @@ export default function MindPanel() {
             </svg>
             <div className="mind-neural-chips">
               <button
-                className="mind-neural-chip"
+                className={`mind-neural-chip ${activeTool === 'reflect' ? 'is-active' : ''}`}
                 onClick={handleReflect}
                 disabled={reflecting || !data}
               >
                 <Sparkles className="h-3 w-3" strokeWidth={2.2} />
                 {reflecting ? 'Reflecting…' : 'Reflect'}
               </button>
+              <button
+                className={`mind-neural-chip ${activeTool === 'orator' ? 'is-active' : ''}`}
+                onClick={() => void loadOratorSnapshot()}
+                disabled={oratorState.status === 'loading'}
+              >
+                <Zap className="h-3 w-3" strokeWidth={2.2} />
+                {oratorState.status === 'loading' ? 'Syncing…' : 'Orator'}
+              </button>
+              <button
+                className={`mind-neural-chip ${activeTool === 'avalon' ? 'is-active' : ''}`}
+                onClick={() => void runSiteScout()}
+                disabled={siteScoutState.status === 'loading'}
+              >
+                <MapPin className="h-3 w-3" strokeWidth={2.2} />
+                {siteScoutState.status === 'loading' ? 'Scouting…' : 'Avalon'}
+              </button>
+              <button
+                className={`mind-neural-chip ${activeTool === 'regime' ? 'is-active' : ''}`}
+                onClick={() => void loadRegimePulse()}
+                disabled={regimeState.status === 'loading'}
+              >
+                <Activity className="h-3 w-3" strokeWidth={2.2} />
+                {regimeState.status === 'loading' ? 'Reading…' : 'Regime'}
+              </button>
               <button className="mind-neural-chip" onClick={() => void load()}>
                 <RefreshCcw className="h-3 w-3" strokeWidth={2.2} />
                 Refresh
               </button>
+            </div>
+            <div className={`mind-tool-orbit mind-tool-orbit--${activeTool}`}>
+              <div className="mind-tool-orbit-glow" aria-hidden="true" />
+              <div className="mind-tool-orbit-panel">
+                {activeTool === 'reflect' && (
+                  <div className="mind-orbit-feed">
+                    <div className="mind-orbit-head">
+                      <span className="mind-orbit-kicker">reflection input</span>
+                      <span className="mind-orbit-badge">live synthesis</span>
+                    </div>
+                    <div className="mind-orbit-copy">
+                      Reflection now blends memory patterns with Orator macro context and any active Avalon scout results before generating a new thought.
+                    </div>
+                    <div className="mind-orbit-stats">
+                      <div className="mind-orbit-stat">
+                        <span className="mind-orbit-stat-key">orator</span>
+                        <span className={`mind-orbit-stat-val state-${oratorState.status}`}>{oratorState.status}</span>
+                      </div>
+                      <div className="mind-orbit-stat">
+                        <span className="mind-orbit-stat-key">avalon</span>
+                        <span className={`mind-orbit-stat-val state-${siteScoutState.status}`}>{siteScoutState.status}</span>
+                      </div>
+                      <div className="mind-orbit-stat">
+                        <span className="mind-orbit-stat-key">regime</span>
+                        <span className={`mind-orbit-stat-val state-${regimeState.status}`}>{regimeState.status}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTool === 'orator' && (
+                  <div className="mind-orbit-feed">
+                    <div className="mind-orbit-head">
+                      <span className="mind-orbit-kicker">Orator stream</span>
+                      {oratorState.status === 'ok' && <span className="mind-orbit-badge">{oratorState.data.recession_label}</span>}
+                    </div>
+                    {oratorState.status === 'error' && <div className="mind-orbit-copy mind-orbit-copy--error">{oratorState.msg}</div>}
+                    {oratorState.status === 'loading' && <div className="mind-orbit-copy">Pulling macro pulse, term structure, volatility, and signal stack.</div>}
+                    {oratorState.status === 'ok' && (
+                      <>
+                        <div className="mind-orbit-grid">
+                          <div className="mind-orbit-grid-cell"><span>recession</span><strong>{Math.round(oratorState.data.recession_composite * 100)}%</strong></div>
+                          <div className="mind-orbit-grid-cell"><span>stagflation</span><strong>{Math.round(oratorState.data.stagflation_score * 100)}%</strong></div>
+                          <div className="mind-orbit-grid-cell"><span>vix</span><strong>{oratorState.data.vix.toFixed(1)}</strong></div>
+                          <div className="mind-orbit-grid-cell"><span>2s10s</span><strong>{Math.round(oratorState.data.yield_curve_spread_2_10 * 100)} bps</strong></div>
+                        </div>
+                        <div className="mind-orbit-copy">{oratorState.data.narrative}</div>
+                        <div className="mind-orbit-pill-row">
+                          {oratorState.data.top_signals.slice(0, 4).map((signal) => (
+                            <span key={signal.name} className={`mind-orbit-pill state-${signal.state.toLowerCase()}`}>{signal.name}: {signal.value}</span>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {activeTool === 'avalon' && (
+                  <div className="mind-orbit-feed">
+                    <div className="mind-orbit-head">
+                      <span className="mind-orbit-kicker">Avalon scout</span>
+                      <span className="mind-orbit-badge">interactive</span>
+                    </div>
+                    <div className="mind-orbit-controls">
+                      <input
+                        className="mind-orbit-input"
+                        value={scoutQuery}
+                        placeholder="state, region, or keyword"
+                        onChange={(event) => setScoutQuery(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') void runSiteScout()
+                        }}
+                      />
+                      <select
+                        className="mind-orbit-select"
+                        value={scoutArchetype}
+                        onChange={(event) => setScoutArchetype(event.target.value as typeof ARCHETYPES[number])}
+                      >
+                        {ARCHETYPES.map((archetype) => (
+                          <option key={archetype} value={archetype}>{archetype}</option>
+                        ))}
+                      </select>
+                      <button className="mind-orbit-run" onClick={() => void runSiteScout()} disabled={siteScoutState.status === 'loading'}>
+                        scan
+                      </button>
+                    </div>
+                    {siteScoutState.status === 'error' && <div className="mind-orbit-copy mind-orbit-copy--error">{siteScoutState.msg}</div>}
+                    {siteScoutState.status === 'loading' && <div className="mind-orbit-copy">Scoring candidate sites and pushing the best matches into the reflection layer.</div>}
+                    {siteScoutState.status === 'ok' && (
+                      <div className="mind-orbit-list">
+                        {siteScoutState.data.slice(0, 4).map((site, index) => (
+                          <div key={site.site_id} className="mind-orbit-list-row">
+                            <span className="mind-orbit-rank">#{index + 1}</span>
+                            <span className="mind-orbit-name">{site.name}</span>
+                            <span className="mind-orbit-meta">{site.state}</span>
+                            <span className="mind-orbit-score">{Math.round(site.composite * 100)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTool === 'regime' && (
+                  <div className="mind-orbit-feed">
+                    <div className="mind-orbit-head">
+                      <span className="mind-orbit-kicker">regime pulse</span>
+                      {regimeState.status === 'ok' && <span className="mind-orbit-badge">{Math.round(regimeState.data.confidence * 100)}%</span>}
+                    </div>
+                    {regimeState.status === 'error' && <div className="mind-orbit-copy mind-orbit-copy--error">{regimeState.msg}</div>}
+                    {regimeState.status === 'loading' && <div className="mind-orbit-copy">Reading live HMM classification and confidence drivers.</div>}
+                    {regimeState.status === 'ok' && (
+                      <>
+                        <div className="mind-orbit-regime">{regimeState.data.regime}</div>
+                        <div className="mind-orbit-bar"><span style={{ width: `${Math.round(regimeState.data.confidence * 100)}%` }} /></div>
+                        <div className="mind-orbit-list">
+                          {regimeState.data.signals.slice(0, 4).map((signal) => (
+                            <div key={signal.name} className="mind-orbit-list-row">
+                              <span className="mind-orbit-name">{signal.name}</span>
+                              <span className="mind-orbit-meta">{signal.direction}</span>
+                              <span className="mind-orbit-score">{signal.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="mind-neural-status">{statusText}</div>
           </div>
@@ -863,6 +854,79 @@ export default function MindPanel() {
           </div>
         )}
 
+        <div className="mind-section">
+          <div className="mind-section-head">
+            <div className="mind-section-label">LIVE CONTEXT</div>
+            <div className="mind-section-meta">orator, avalon, regime</div>
+          </div>
+          <div className="mind-live-context-grid">
+            <button
+              className={`mind-live-context-card ${activeTool === 'orator' ? 'is-active' : ''}`}
+              onClick={() => void loadOratorSnapshot()}
+              disabled={oratorState.status === 'loading'}
+            >
+              <div className="mind-live-context-head">
+                <span className="mind-live-context-kicker">orator</span>
+                <span className={`mind-live-context-state state-${oratorState.status}`}>{oratorState.status}</span>
+              </div>
+              {oratorState.status === 'ok' && (
+                <>
+                  <div className="mind-live-context-title">{oratorState.data.recession_label} recession pulse</div>
+                  <div className="mind-live-context-copy">VIX {oratorState.data.vix.toFixed(1)} with {Math.round(oratorState.data.stagflation_score * 100)}% stagflation risk.</div>
+                </>
+              )}
+              {oratorState.status === 'loading' && <div className="mind-live-context-copy">Pulling macro brief and top signal stack.</div>}
+              {oratorState.status === 'error' && <div className="mind-live-context-copy mind-live-context-copy--error">{oratorState.msg}</div>}
+              {oratorState.status === 'idle' && <div className="mind-live-context-copy">Sync the latest Orator macro brief into awareness.</div>}
+            </button>
+
+            <button
+              className={`mind-live-context-card ${activeTool === 'avalon' ? 'is-active' : ''}`}
+              onClick={() => {
+                setActiveTool('avalon')
+                if (siteScoutState.status === 'idle') void runSiteScout()
+              }}
+              disabled={siteScoutState.status === 'loading'}
+            >
+              <div className="mind-live-context-head">
+                <span className="mind-live-context-kicker">avalon</span>
+                <span className={`mind-live-context-state state-${siteScoutState.status}`}>{siteScoutState.status}</span>
+              </div>
+              {siteScoutState.status === 'ok' && siteScoutState.data[0] && (
+                <>
+                  <div className="mind-live-context-title">{siteScoutState.data[0].name}</div>
+                  <div className="mind-live-context-copy">Top {scoutArchetype} match for "{scoutQuery}" in {siteScoutState.data[0].state}.</div>
+                </>
+              )}
+              {siteScoutState.status === 'loading' && <div className="mind-live-context-copy">Scoring candidate sites and staging them for reflection.</div>}
+              {siteScoutState.status === 'error' && <div className="mind-live-context-copy mind-live-context-copy--error">{siteScoutState.msg}</div>}
+              {(siteScoutState.status === 'idle' || (siteScoutState.status === 'ok' && !siteScoutState.data[0])) && (
+                <div className="mind-live-context-copy">Open the Avalon scout panel to search and rank sites.</div>
+              )}
+            </button>
+
+            <button
+              className={`mind-live-context-card ${activeTool === 'regime' ? 'is-active' : ''}`}
+              onClick={() => void loadRegimePulse()}
+              disabled={regimeState.status === 'loading'}
+            >
+              <div className="mind-live-context-head">
+                <span className="mind-live-context-kicker">regime</span>
+                <span className={`mind-live-context-state state-${regimeState.status}`}>{regimeState.status}</span>
+              </div>
+              {regimeState.status === 'ok' && (
+                <>
+                  <div className="mind-live-context-title">{regimeState.data.regime}</div>
+                  <div className="mind-live-context-copy">Confidence {Math.round(regimeState.data.confidence * 100)}% with live driver readout.</div>
+                </>
+              )}
+              {regimeState.status === 'loading' && <div className="mind-live-context-copy">Reading HMM regime classification and signal drivers.</div>}
+              {regimeState.status === 'error' && <div className="mind-live-context-copy mind-live-context-copy--error">{regimeState.msg}</div>}
+              {regimeState.status === 'idle' && <div className="mind-live-context-copy">Pull the current regime pulse into the live context layer.</div>}
+            </button>
+          </div>
+        </div>
+
         {topicMap.length > 0 && (
           <div className="mind-section">
             <div className="mind-section-label">KNOWLEDGE MAP</div>
@@ -923,8 +987,6 @@ export default function MindPanel() {
         )}
 
         {!data && <div className="mind-offline">Mithrandir backend offline — memory unavailable</div>}
-
-        <LiveToolsSection />
       </div>
     </div>
   )

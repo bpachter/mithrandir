@@ -6,8 +6,6 @@ interface Star {
   baseOpacity: number
   twinkleSpeed: number
   twinklePhase: number
-  glintFreq: number     // rare bright-flash frequency
-  glintPhase: number
   color: [number, number, number]
   isHero: boolean
 }
@@ -97,10 +95,8 @@ function buildStars(count: number): Star[] {
       y:            Math.random(),
       radius:       isHero ? 1.1 + Math.random() * 0.8 : isMid ? 0.55 + Math.random() * 0.45 : 0.22 + Math.random() * 0.32,
       baseOpacity:  isHero ? 0.70 + Math.random() * 0.30 : 0.28 + Math.random() * 0.52,
-      twinkleSpeed: 0.55 + Math.random() * 2.20,     // faster than before for livelier scintillation
+      twinkleSpeed: 0.40 + Math.random() * 1.15,     // calmer ambience to avoid full-page flash perception
       twinklePhase: Math.random() * Math.PI * 2,
-      glintFreq:    0.010 + Math.random() * 0.018,   // one glint cycle every 60-120 s
-      glintPhase:   Math.random() * Math.PI * 2,
       color,
       isHero,
     }
@@ -302,16 +298,14 @@ export default function CelestialBackground() {
 
       // ── Day: heavenly light ────────────────────────────────────
       if (p > 0.001) {
-        const pulse = 0.88 + 0.12 * Math.sin(t * 0.22)
-
         const bloom = ctx.createRadialGradient(W*0.50, H*0.16, H*0.02, W*0.50, H*0.34, H*0.78)
-        bloom.addColorStop(0,    `rgba(255,255,255,${Math.min(0.90, 0.48*pulse*p).toFixed(3)})`)
-        bloom.addColorStop(0.35, `rgba(246,249,255,${Math.min(0.55, 0.23*pulse*p).toFixed(3)})`)
+        bloom.addColorStop(0,    `rgba(255,255,255,${Math.min(0.90, 0.44*p).toFixed(3)})`)
+        bloom.addColorStop(0.35, `rgba(246,249,255,${Math.min(0.55, 0.20*p).toFixed(3)})`)
         bloom.addColorStop(1,    'rgba(255,255,255,0)')
         ctx.fillStyle = bloom; ctx.fillRect(0, 0, W, H)
 
         const aur = ctx.createRadialGradient(W*0.5, H*0.12, H*0.01, W*0.5, H*0.12, H*0.18)
-        aur.addColorStop(0, `rgba(255,255,255,${Math.min(0.80, 0.34*pulse*p).toFixed(3)})`)
+        aur.addColorStop(0, `rgba(255,255,255,${Math.min(0.80, 0.30*p).toFixed(3)})`)
         aur.addColorStop(1, 'rgba(255,255,255,0)')
         ctx.fillStyle = aur; ctx.fillRect(0, 0, W, H)
       }
@@ -436,22 +430,18 @@ export default function CelestialBackground() {
         }
       }
 
-      // ── Stars: multi-freq twinkle, glints, diffraction spikes ──
+      // ── Stars: gentle twinkle only (no glint flashes) ───────────
       ctx.globalCompositeOperation = 'source-over'
       const starScale = Math.max(0, 1 - p * 1.6)   // fully hidden once day > ~62%
 
       for (const star of STARS) {
-        // Multi-frequency scintillation (primary + 2.4× harmonic)
+        // Multi-frequency scintillation tuned to avoid flash-like spikes
         const f1 = Math.sin(t * star.twinkleSpeed + star.twinklePhase)
-        const f2 = Math.sin(t * star.twinkleSpeed * 2.42 + star.twinklePhase * 1.37) * 0.38
+        const f2 = Math.sin(t * star.twinkleSpeed * 1.62 + star.twinklePhase * 1.21) * 0.20
         const twinkle = 0.5 + 0.5 * ((f1 + f2) / 1.38)
 
-        // Rare glint flash — sharpened sin^28 so only the crest fires
-        const glintRaw = Math.max(0, Math.sin(t * star.glintFreq + star.glintPhase))
-        const glint    = star.isHero ? Math.pow(glintRaw, 28) : 0
-
-        const baseOp = star.baseOpacity * (0.50 + 0.50 * twinkle) * starScale
-        const op     = Math.min(baseOp + glint * 0.75, 1.0)
+        const baseOp = star.baseOpacity * (0.66 + 0.34 * twinkle) * starScale
+        const op     = Math.min(baseOp, 1.0)
         if (op < 0.01) continue
 
         const x = star.x * W
@@ -465,7 +455,7 @@ export default function CelestialBackground() {
 
         // ── Hero star: soft halo ──────────────────────────────
         if (star.isHero) {
-          const haloR = rad * (5.5 + 2.0 * twinkle + glint * 3.0)
+          const haloR = rad * (5.5 + 1.6 * twinkle)
           const halo = ctx.createRadialGradient(x, y, 0, x, y, haloR)
           halo.addColorStop(0,   `rgba(${r},${g},${b},${(op * 0.38).toFixed(3)})`)
           halo.addColorStop(0.45,`rgba(${r},${g},${b},${(op * 0.12).toFixed(3)})`)
@@ -473,9 +463,9 @@ export default function CelestialBackground() {
           ctx.fillStyle = halo
           ctx.beginPath(); ctx.arc(x, y, haloR, 0, Math.PI*2); ctx.fill()
 
-          // Diffraction spike cross — elongates on glint/bright twinkle
-          const spikeLen = rad * (4.5 + 3.5 * twinkle + glint * 6.0) * starScale
-          const spikeOp  = Math.min(0.55, op * 0.28 * twinkle * twinkle + glint * 0.40)
+          // Diffraction spike cross — gentle and stable
+          const spikeLen = rad * (4.0 + 2.2 * twinkle) * starScale
+          const spikeOp  = Math.min(0.32, op * 0.18 * twinkle * twinkle)
           if (spikeOp > 0.02) {
             ctx.strokeStyle = `rgba(${r},${g},${b},${spikeOp.toFixed(3)})`
             ctx.lineWidth = 0.55

@@ -5,6 +5,25 @@
 const _raw = (import.meta.env.VITE_API_BASE ?? '').trim()
 export const API_BASE = _raw && !_raw.startsWith('http') ? `https://${_raw}` : _raw
 
+function inferredBackendBase(): string {
+  if (API_BASE || typeof window === 'undefined') return ''
+
+  const { protocol, host, hostname, port } = window.location
+  if (port === '8000') return `${protocol}//${host}`
+  return `${protocol}//${hostname}:8000`
+}
+
+function candidateApiUrls(url: string): string[] {
+  const candidates = [url]
+  const fallbackBase = inferredBackendBase()
+
+  if (fallbackBase && url.startsWith('/')) {
+    candidates.push(`${fallbackBase}${url}`)
+  }
+
+  return [...new Set(candidates)]
+}
+
 export function wsBase(): string {
   if (API_BASE) {
     return API_BASE.replace('https://', 'wss://').replace('http://', 'ws://')
@@ -45,16 +64,32 @@ async function fetchJsonWithRetry<T>(
   init?: RequestInit,
   attempts = 3,
 ): Promise<T> {
-  for (let i = 0; i < attempts; i++) {
-    const r = await fetch(url, init)
-    try {
-      return await parseJsonOrThrow<T>(r, endpointLabel)
-    } catch (e) {
-      const isHtml = e instanceof Error && e.message.includes('returned HTML instead of JSON')
-      if (!isHtml || i === attempts - 1) throw e
-      await new Promise(res => setTimeout(res, 120 * (i + 1)))
+  let lastError: unknown = null
+
+  for (const candidateUrl of candidateApiUrls(url)) {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const r = await fetch(candidateUrl, init)
+        return await parseJsonOrThrow<T>(r, endpointLabel)
+      } catch (e) {
+        lastError = e
+        const isHtml = e instanceof Error && e.message.includes('returned HTML instead of JSON')
+        const isNetwork = e instanceof TypeError
+
+        if ((isHtml || isNetwork) && candidateUrl !== candidateApiUrls(url).slice(-1)[0]) {
+          break
+        }
+
+        if (!isHtml || i === attempts - 1) {
+          break
+        }
+
+        await new Promise(res => setTimeout(res, 120 * (i + 1)))
+      }
     }
   }
+
+  if (lastError instanceof Error) throw lastError
   throw new Error(`${endpointLabel}: exhausted ${attempts} attempts`)
 }
 
