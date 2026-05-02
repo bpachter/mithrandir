@@ -4,12 +4,18 @@ repo_watcher.py — Monitor other repos on this machine for agent activity.
 Two modes:
   snapshot        — instant read: recent commits, status, recently changed files,
                     diff stat. Fits cleanly in the 1600-char observation window.
-  poll_until_idle — blocks until the repo goes quiet (no new commits + no file
-                    modifications for idle_secs), then returns a change summary.
-                    Use when the user says "tell me when the agent is done."
 
-After either mode, Mithrandir can call dev_read_file / dev_list_files to inspect
-specific changed files before synthesizing its answer.
+  poll_until_idle — blocks until the repo goes quiet (no new commits or file
+                    changes for idle_secs), then returns a full change summary.
+                    At max_wait - 60 seconds the tool returns a PRE_TIMEOUT
+                    result instead of silently stopping, so the agent can speak
+                    a 60-second warning to the user and ask whether to continue.
+                    Continuation is supported via the since_sha parameter, which
+                    anchors the diff baseline to the original session start SHA
+                    across multiple calls.
+
+After either mode, Mithrandir should call dev_read_file / dev_list_files to
+inspect specific changed files before synthesising its answer.
 """
 
 import os
@@ -97,7 +103,6 @@ def _recent_files(root: Path, window_secs: int) -> list[tuple[str, int]]:
 # ── Agent activity detection ──────────────────────────────────────────────────
 
 def _activity(root: Path) -> dict:
-    """Quick signals that an agent is actively working in this repo."""
     recent30 = _recent_files(root, 30)
     commits5m = [l for l in _git(["log", "--oneline", "--since=5 minutes ago"], root).splitlines() if l.strip()]
     status_lines = [l for l in _git(["status", "--porcelain"], root).splitlines() if l.strip()]
@@ -121,7 +126,6 @@ def _snapshot(root: Path, since_sha: str = "") -> str:
 
     lines: list[str] = [f"=== {name} snapshot ({ts}) ==="]
 
-    # Agent status line
     if act["active"]:
         parts = []
         if act["commits_5m"]:
@@ -139,7 +143,6 @@ def _snapshot(root: Path, since_sha: str = "") -> str:
 
     lines.append("")
 
-    # Recent commits — most useful for understanding what was built
     log = _git(["log", "--format=%h  %ar  %s", "-10"], root)
     lines.append("Recent commits:")
     if log and not log.startswith("["):
@@ -150,7 +153,6 @@ def _snapshot(root: Path, since_sha: str = "") -> str:
 
     lines.append("")
 
-    # Git status (uncommitted work in progress)
     status = _git(["status", "--short"], root)
     if status and not status.startswith("["):
         lines.append("Working tree:")
@@ -161,7 +163,6 @@ def _snapshot(root: Path, since_sha: str = "") -> str:
 
     lines.append("")
 
-    # Recently modified files (last 2 min) — shows what the agent is touching right now
     recent = _recent_files(root, 120)
     if recent:
         lines.append("Modified last 2min:")
@@ -171,7 +172,6 @@ def _snapshot(root: Path, since_sha: str = "") -> str:
             lines.append(f"  ... +{len(recent) - 8} more")
         lines.append("")
 
-    # Diff stat
     base = since_sha if since_sha else "HEAD~5"
     diff = _git(["diff", f"{base}..HEAD", "--stat"], root)
     label = f"since {since_sha[:8]}" if since_sha else "last 5 commits"
@@ -190,28 +190,61 @@ def _snapshot(root: Path, since_sha: str = "") -> str:
 
 # ── poll_until_idle ───────────────────────────────────────────────────────────
 
-def _poll_until_idle(root: Path, max_wait: int, idle_secs: int) -> str:
+def _poll_until_idle(
+    root: Path,
+    max_wait: int,
+    idle_secs: int,
+    since_sha: str = "",
+) -> str:
+    """
+    Poll until agent finishes or the pre-timeout window fires.
+
+    Stops at max_wait - 60 seconds (finish='pre_timeout') so the agent
+    can speak a 60-second warning and ask the user whether to continue.
+    The caller should pass since_sha on continuation so the diff baseline
+    stays anchored to the very beginning of the original session.
+    """
     max_wait  = max(30,  min(max_wait,  600))
     idle_secs = max(20,  min(idle_secs, 120))
     poll_interval = 8
 
+    # When to fire the pre-timeout warning (60s before the hard limit)
+    warn_at = max(0, max_wait - 60)
+
     name = root.name
-    start_sha  = _head_sha(root)
+
+    # Per-call start SHA — used to find commits that landed during THIS call
+    call_start_sha = _head_sha(root)
+
+    # Diff baseline — anchored to the original session start across continuations
+    diff_base_sha = since_sha if (since_sha and not since_sha.startswith("[")) else call_start_sha
+
     t_start    = time.time()
     t_last_act = t_start
-    last_sha   = start_sha
+    last_sha   = call_start_sha
     new_commits: list[str] = []
 
     log_lines: list[str] = [
-        f"Monitoring {name} (max {max_wait}s, idle threshold {idle_secs}s)"
+        f"Monitoring {name} (max {max_wait}s, idle threshold {idle_secs}s, "
+        f"pre-timeout warning at {warn_at}s)"
     ]
 
     finish = "timeout"
 
     while True:
         elapsed = time.time() - t_start
+
+        # Pre-timeout: return 60 seconds before the hard limit so the agent
+        # can vocally warn the user and ask whether to continue.
+        if elapsed >= warn_at:
+            finish = "pre_timeout"
+            log_lines.append(f"  [{int(elapsed)}s] pre-timeout — returning for user check-in")
+            break
+
+        # Safety fallback (should not normally be reached given warn_at logic)
         if elapsed > max_wait:
-            log_lines.append(f"  [{int(elapsed)}s] max_wait reached")
+            log_lines.append(f"  [{int(elapsed)}s] hard timeout reached")
+            finish = "timeout"
             break
 
         # New commits?
@@ -231,40 +264,59 @@ def _poll_until_idle(root: Path, max_wait: int, idle_secs: int) -> str:
 
         idle = time.time() - t_last_act
         if idle >= idle_secs:
-            log_lines.append(f"  [{int(elapsed)}s] idle for {int(idle)}s — done")
+            log_lines.append(f"  [{int(elapsed)}s] idle for {int(idle)}s — agent finished")
             finish = "idle"
             break
 
         time.sleep(poll_interval)
 
-    total = int(time.time() - t_start)
-    lines: list[str] = [
-        f"=== {name} watch complete — {total}s, reason: {finish} ===",
-        "",
-    ]
+    total_secs = int(time.time() - t_start)
+
+    # ── Build result ──────────────────────────────────────────────────────────
+
+    if finish == "pre_timeout":
+        lines: list[str] = [
+            f"=== {name} watch — PRE-TIMEOUT (60 seconds remaining) ===",
+            f"Monitored this call: {total_secs}s",
+            f"Session start SHA:   {diff_base_sha[:12]}  "
+            f"(pass as since_sha to continue from the same baseline)",
+            "",
+            "ACTION REQUIRED: Speak a 60-second warning to the user and ask whether",
+            "to continue monitoring. If yes, call repo_watch again with",
+            f"action='poll_until_idle' and since_sha='{diff_base_sha}'.",
+            "",
+        ]
+    else:
+        lines = [
+            f"=== {name} watch — {'AGENT FINISHED' if finish == 'idle' else 'TIMED OUT'} ===",
+            f"Monitored: {total_secs}s  |  Session diff from: {diff_base_sha[:12]}",
+            "",
+        ]
 
     if new_commits:
-        lines.append(f"Commits landed ({len(new_commits)}):")
+        lines.append(f"Commits this call ({len(new_commits)}):")
         for c in new_commits:
             lines.append(f"  {c}")
     else:
-        lines.append("No new commits during watch.")
+        lines.append("No new commits during this monitoring call.")
 
     lines.append("")
 
-    # File-level diff stat from start → end
-    if start_sha and not start_sha.startswith("["):
-        stat = _git(["diff", f"{start_sha}..HEAD", "--stat"], root)
+    # Diff stat — always from the original session baseline
+    if diff_base_sha and not diff_base_sha.startswith("["):
+        stat = _git(["diff", f"{diff_base_sha}..HEAD", "--stat"], root)
         if stat and not stat.startswith("["):
-            lines.append("Files changed since watch began:")
+            lines.append(f"Files changed since session start ({diff_base_sha[:8]}):")
             for l in stat.splitlines()[:20]:
                 lines.append(f"  {l}")
             lines.append("")
 
     lines.append("Monitor log:")
-    lines.extend(log_lines[:25])
-    lines.append("")
-    lines.append("Use dev_read_file to inspect specific changed files for bug analysis.")
+    lines.extend(log_lines[:20])
+
+    if finish != "pre_timeout":
+        lines.append("")
+        lines.append("Use dev_read_file to inspect specific changed files for deeper analysis.")
 
     return "\n".join(lines)
 
@@ -275,14 +327,18 @@ def watch_repo(
     repo: str,
     action: str = "snapshot",
     since_sha: str = "",
-    max_wait: int = 300,
+    max_wait: int = 600,
     idle_secs: int = 45,
 ) -> str:
     """
     Monitor a repo on this machine for agent activity.
 
-    action='snapshot'       — immediate state report (fast)
-    action='poll_until_idle'— block until the agent goes quiet, then summarise
+    action='snapshot'        — immediate state report (fast)
+    action='poll_until_idle' — block until the agent goes quiet; at max_wait-60s
+                               returns a PRE_TIMEOUT result so the agent can speak
+                               a warning and ask the user whether to continue.
+                               Pass since_sha from a prior call to keep the diff
+                               baseline anchored across continuation calls.
     """
     root = _resolve(repo)
     if root is None:
@@ -297,6 +353,6 @@ def watch_repo(
     if action == "snapshot":
         return _snapshot(root, since_sha=since_sha)
     if action in ("poll_until_idle", "poll", "monitor", "wait"):
-        return _poll_until_idle(root, max_wait=max_wait, idle_secs=idle_secs)
+        return _poll_until_idle(root, max_wait=max_wait, idle_secs=idle_secs, since_sha=since_sha)
 
     return f"Unknown action '{action}'. Use 'snapshot' or 'poll_until_idle'."

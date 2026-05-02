@@ -1133,17 +1133,22 @@ register(
         "Two modes: "
         "(1) action='snapshot' — instant report: recent commits, git status, recently modified files, "
         "and a diff stat. Use to see what an agent has been building or to identify bugs mid-work. "
-        "(2) action='poll_until_idle' — blocks until the repo goes quiet (no new commits or file "
-        "changes for idle_secs seconds), then returns a full change summary. Use when the user says "
-        "'tell me when the agent is done' or 'notify me when Claude finishes in avalon'. "
+        "(2) action='poll_until_idle' — polls until the repo goes quiet (agent finished), then returns "
+        "a full change summary. Default max 10 minutes (600s). IMPORTANT: at max_wait-60 seconds the "
+        "tool returns a PRE_TIMEOUT result instead of silently stopping. When you receive PRE_TIMEOUT, "
+        "you MUST speak a vocal warning to the user ('I have 60 seconds left on my watch...'), deliver "
+        "the partial report, and ask whether to continue monitoring. If the user says yes, call "
+        "repo_watch again with the same repo, action='poll_until_idle', and pass the 'Session start SHA' "
+        "from the PRE_TIMEOUT result as since_sha — this keeps the diff baseline anchored to the "
+        "original session start across multiple continuation calls. "
         "Known repo aliases: avalon, orator, mithrandir, longinus, zeus, babylon, aristotle, chronos, aegis. "
-        "After either mode, call dev_read_file to inspect specific changed files for deeper analysis."
+        "After a completed watch, call dev_read_file to inspect specific changed files for deeper analysis."
     ),
     parameters={
         "repo":      "str — repo alias or absolute path, e.g. 'avalon'",
         "action":    "str — 'snapshot' (fast, default) or 'poll_until_idle' (blocks until agent finishes)",
-        "since_sha": "str — optional base git SHA for snapshot diffs, e.g. 'abc1234'",
-        "max_wait":  "int — max seconds to block in poll_until_idle (30–600, default 300)",
+        "since_sha": "str — for poll_until_idle continuations: the session start SHA from the prior PRE_TIMEOUT result; also used as the diff base for snapshots",
+        "max_wait":  "int — max seconds to block in poll_until_idle (30–600, default 600)",
         "idle_secs": "int — seconds of quiet to declare the agent done (20–120, default 45)",
     },
     fn=_repo_watcher_mod.watch_repo,
