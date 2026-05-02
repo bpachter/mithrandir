@@ -1184,25 +1184,13 @@
     }
 
     function drawMap() {
+      const gen = ++drawGeneration;
       routeLayer.clearLayers();
       state.markersByNode.clear();
       const route = getRoute();
 
-      for (let index = 1; index < route.nodes.length; index += 1) {
-        const prev = route.nodes[index - 1];
-        const node = route.nodes[index];
-        if (!state.activeStages.has(prev.stage) || !state.activeStages.has(node.stage)) continue;
-        const color = stageColor(node.stage);
-        L.polyline([prev.coords, node.coords], {
-          color,
-          weight: 5,
-          opacity: 0.82,
-          smoothFactor: 1.1,
-          className: 'route-segment',
-        }).addTo(routeLayer);
-      }
-
-      route.nodes.forEach((node) => {
+      // Draw markers synchronously so they're immediately visible
+      route.nodes.forEach(function(node) {
         if (!state.activeStages.has(node.stage)) return;
         const popup = [
           '<h3 class="popup-title">' + escapeHtml(node.name) + '</h3>',
@@ -1213,6 +1201,27 @@
           .addTo(routeLayer);
         state.markersByNode.set(node.id, marker);
       });
+
+      // Fetch and progressively draw snapped route segments
+      (async function() {
+        for (let index = 1; index < route.nodes.length; index += 1) {
+          if (gen !== drawGeneration) return;
+          const prev = route.nodes[index - 1];
+          const node = route.nodes[index];
+          if (!state.activeStages.has(prev.stage) || !state.activeStages.has(node.stage)) continue;
+          const mode = inferLegMode(prev, node);
+          const color = stageColor(node.stage);
+          const coords = await getSegmentGeom(prev, node, mode);
+          if (gen !== drawGeneration) return;
+          L.polyline(coords, {
+            color: color,
+            weight: 5,
+            opacity: 0.82,
+            smoothFactor: 1.1,
+            className: 'route-segment',
+          }).addTo(routeLayer);
+        }
+      })();
     }
 
     function renderSearchResults() {
@@ -1267,10 +1276,10 @@
     }
 
     function routeSourceForMode(mode) {
-      if (mode === 'sea') return 'maritime graph fixture';
-      if (mode === 'rail') return 'rail graph fixture';
+      if (mode === 'sea') return 'maritime corridor graph';
+      if (mode === 'rail') return 'OSRM road approx.';
       if (mode === 'air') return 'great-circle arc';
-      return 'snapped-road fixture';
+      return 'OSRM road network';
     }
 
     function renderLegTable() {
@@ -1441,6 +1450,191 @@
         renderMapMode();
       });
       window.addEventListener('resize', () => setTimeout(fitToRoute, 120));
+    }
+
+    // ─── Phase 1: Realistic Route Geometry ──────────────────────────────────
+    const routeGeomCache = new Map();
+    let drawGeneration = 0;
+
+    function geomCacheKey(from, to, mode) {
+      return from.coords[0] + ',' + from.coords[1] + '|' + to.coords[0] + ',' + to.coords[1] + '|' + mode;
+    }
+
+    function loadStoredGeom(key) {
+      try {
+        const val = sessionStorage.getItem('hg_' + key);
+        return val ? JSON.parse(val) : null;
+      } catch (_) { return null; }
+    }
+
+    function saveStoredGeom(key, coords) {
+      try { sessionStorage.setItem('hg_' + key, JSON.stringify(coords)); } catch (_) {}
+    }
+
+    async function fetchOSRM(fromNode, toNode) {
+      const controller = new AbortController();
+      const timer = setTimeout(function() { controller.abort(); }, 8000);
+      try {
+        const url = 'https://router.project-osrm.org/route/v1/driving/'
+          + fromNode.coords[1] + ',' + fromNode.coords[0] + ';'
+          + toNode.coords[1] + ',' + toNode.coords[0]
+          + '?overview=full&geometries=geojson';
+        const resp = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (data.routes && data.routes[0]) {
+          return data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+        }
+      } catch (_) { clearTimeout(timer); }
+      return null;
+    }
+
+    // ── Maritime corridor waypoint graph ─────────────────────────────────────
+    const SEA_WP = {
+      aktau:        [43.65,  51.16],
+      bosphorus:    [41.00,  29.00],
+      black_sea:    [43.00,  33.00],
+      med_e:        [34.00,  26.00],
+      suez_n:       [31.30,  32.30],
+      suez_s:       [29.90,  32.55],
+      red_sea:      [15.00,  42.00],
+      aden:         [11.50,  44.00],
+      ind_nw:       [12.00,  58.00],
+      hormuz:       [26.50,  56.50],
+      ind_mid:      [-10.00, 68.00],
+      malacca:      [ 1.30, 103.80],
+      ind_se:       [-25.00, 90.00],
+      cape_goh:     [-34.40, 18.50],
+      atl_sw:       [-30.00,  -8.00],
+      atl_s:        [ -5.00, -22.00],
+      atl_mid:      [ 15.00, -35.00],
+      gibraltar:    [ 36.00,  -5.50],
+      med_w:        [ 38.00,   4.00],
+      atl_n:        [ 40.00, -30.00],
+      atl_n2:       [ 50.00, -40.00],
+      atl_nw:       [ 42.00, -55.00],
+      nuuk:         [ 64.18, -51.72],
+      cape_horn:    [-55.80, -67.00],
+      s_atl_w:      [-35.00, -50.00],
+      atl_w:        [  5.00, -55.00],
+      panama:       [  9.10, -79.90],
+      gulf_mex:     [ 22.00, -88.00],
+      p_houston:    [ 29.73, -95.26],
+      p_savannah:   [ 32.08, -81.09],
+      p_charleston: [ 32.78, -79.93],
+      p_wilmington: [ 34.23, -77.95],
+      san_antonio:  [-33.58, -71.61],
+      p_adelaide:   [-34.84, 138.50],
+    };
+
+    const SEA_EDGES = [
+      ['aktau','bosphorus'],
+      ['bosphorus','black_sea'],['bosphorus','med_e'],
+      ['med_e','suez_n'],['med_e','med_w'],
+      ['med_w','gibraltar'],
+      ['suez_n','suez_s'],['suez_s','red_sea'],
+      ['red_sea','aden'],['aden','ind_nw'],
+      ['hormuz','ind_nw'],['ind_nw','ind_mid'],
+      ['ind_mid','malacca'],['ind_mid','ind_se'],
+      ['ind_mid','cape_goh'],['ind_se','cape_goh'],
+      ['ind_se','p_adelaide'],['p_adelaide','ind_mid'],
+      ['cape_goh','atl_sw'],['atl_sw','atl_s'],
+      ['atl_s','atl_mid'],['atl_mid','gibraltar'],
+      ['gibraltar','atl_n'],['atl_n','atl_n2'],
+      ['atl_n2','nuuk'],['atl_n2','atl_nw'],
+      ['atl_nw','p_savannah'],['atl_nw','p_charleston'],['atl_nw','p_wilmington'],
+      ['atl_s','atl_w'],['atl_w','panama'],
+      ['atl_sw','s_atl_w'],['s_atl_w','cape_horn'],
+      ['cape_horn','san_antonio'],['san_antonio','panama'],
+      ['panama','gulf_mex'],['gulf_mex','p_houston'],
+    ];
+
+    function wpDist(a, b) {
+      const R = 6371, r = Math.PI / 180;
+      const dLat = (b[0] - a[0]) * r, dLon = (b[1] - a[1]) * r;
+      const x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+    }
+
+    function nearestWP(coords) {
+      let best = null, bestD = Infinity;
+      for (const [id, wp] of Object.entries(SEA_WP)) {
+        const d = wpDist(coords, wp);
+        if (d < bestD) { bestD = d; best = id; }
+      }
+      return best;
+    }
+
+    function seaDijkstra(fromCoords, toCoords) {
+      const startId = nearestWP(fromCoords);
+      const endId = nearestWP(toCoords);
+      if (startId === endId) return [fromCoords, SEA_WP[startId], toCoords];
+
+      const adj = {};
+      for (const id of Object.keys(SEA_WP)) adj[id] = [];
+      for (const [a, b] of SEA_EDGES) { adj[a].push(b); adj[b].push(a); }
+
+      const dist = {}, prev = {}, visited = new Set();
+      for (const id of Object.keys(SEA_WP)) dist[id] = Infinity;
+      dist[startId] = 0;
+      const pq = [[0, startId]];
+      while (pq.length) {
+        pq.sort(function(a, b) { return a[0] - b[0]; });
+        const [d, u] = pq.shift();
+        if (visited.has(u)) continue;
+        visited.add(u);
+        if (u === endId) break;
+        for (const v of adj[u]) {
+          const w = d + wpDist(SEA_WP[u], SEA_WP[v]);
+          if (w < dist[v]) { dist[v] = w; prev[v] = u; pq.push([w, v]); }
+        }
+      }
+
+      const path = [];
+      let cur = endId;
+      while (cur) { path.unshift(SEA_WP[cur]); cur = prev[cur]; }
+      return path.length ? [fromCoords, ...path, toCoords] : [fromCoords, toCoords];
+    }
+
+    function arcPoints(from, to, steps) {
+      const pts = [], r = Math.PI / 180;
+      const lat1 = from[0] * r, lon1 = from[1] * r;
+      const lat2 = to[0] * r, lon2 = to[1] * r;
+      const d = 2 * Math.asin(Math.sqrt(
+        Math.sin((lat2 - lat1) / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin((lon2 - lon1) / 2) ** 2
+      ));
+      for (let i = 0; i <= steps; i++) {
+        if (d < 0.0001) { pts.push([from[0], from[1]]); continue; }
+        const f = i / steps;
+        const A = Math.sin((1 - f) * d) / Math.sin(d), B = Math.sin(f * d) / Math.sin(d);
+        const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+        const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+        const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+        pts.push([Math.atan2(z, Math.sqrt(x * x + y * y)) / r, Math.atan2(y, x) / r]);
+      }
+      return pts;
+    }
+
+    async function getSegmentGeom(fromNode, toNode, mode) {
+      const key = geomCacheKey(fromNode, toNode, mode);
+      if (routeGeomCache.has(key)) return routeGeomCache.get(key);
+      const stored = loadStoredGeom(key);
+      if (stored) { routeGeomCache.set(key, stored); return stored; }
+
+      let coords;
+      if (mode === 'road' || mode === 'rail') {
+        coords = await fetchOSRM(fromNode, toNode) || [fromNode.coords, toNode.coords];
+      } else if (mode === 'sea') {
+        coords = seaDijkstra(fromNode.coords, toNode.coords);
+      } else if (mode === 'air') {
+        coords = arcPoints(fromNode.coords, toNode.coords, 32);
+      } else {
+        coords = [fromNode.coords, toNode.coords];
+      }
+      routeGeomCache.set(key, coords);
+      saveStoredGeom(key, coords);
+      return coords;
     }
 
     bindEvents();
