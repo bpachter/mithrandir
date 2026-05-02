@@ -1,0 +1,365 @@
+lab_name,model_name,release_date,context_window_tokens,input_cost_usd_per_1m,output_cost_usd_per_1m,throughput_tokens_per_sec,swe_bench_verified_pct,mmlu_pct,weights,status,source_url,notes
+Anthropic,claude sonnet 4 20250514,2026-06-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude opus 4 20250514,2026-06-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,gemini 2.0 flash,2026-06-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash 001,2026-06-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash lite,2026-06-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash lite 001,2026-06-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+DeepSeek,DeepSeek: DeepSeek V4 Pro,2026-04-24,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-v4-pro,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-v4-pro-20260423.
+DeepSeek,DeepSeek: DeepSeek V4 Flash,2026-04-24,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-v4-flash,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-v4-flash-20260423.
+Google DeepMind,gemini api,2026-04-24,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Anthropic,claude 3 haiku 20240307,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude opus 4 7,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude sonnet 4 20250514,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude opus 4 20250514,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 7 sonnet 20250219,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 5 haiku 20241022,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude sonnet 4 6,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude opus 4 6,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 opus 20240229,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude opus 4 5,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude haiku 4 5,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude sonnet 4 5,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 5 sonnet 20240620,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 5 sonnet 20241022,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude sonnet 4 5 20250929,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude opus 4 1,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 7 sonnet,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 5 sonnet,2026-04-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,gemini embedding 2,2026-04-22,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT-5.4 Image 2,2026-04-21,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.4-image-2,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.4-image-2-20260421.
+Anthropic,Anthropic: Claude Opus Latest,2026-04-21,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/~anthropic/claude-opus-latest,OpenRouter models API auto-detected. canonical_slug=~anthropic/claude-opus-latest.
+Moonshot AI,MoonshotAI: Kimi K2.6,2026-04-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/moonshotai/kimi-k2.6,OpenRouter models API auto-detected. canonical_slug=moonshotai/kimi-k2.6-20260420.
+Anthropic,claude 3 haiku 20240307,2026-04-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 haiku 20240307,2026-04-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,Anthropic: Claude Opus 4.7,2026-04-16,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-opus-4.7,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.7-opus-20260416.
+Anthropic,claude opus 4 7,2026-04-16,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,gemini robotics er 1.6 preview,2026-04-14,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini robotics er 1.5 preview,2026-04-14,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Anthropic,Anthropic: Claude Opus 4.6 (Fast),2026-04-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-opus-4.6-fast,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.6-opus-fast-20260407.
+Z Ai,Z.ai: GLM 5.1,2026-04-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-5.1,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-5.1-20260406.
+Google DeepMind,Google: Gemma 4 26B A4B (free),2026-04-03,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-4-26b-a4b-it:free,OpenRouter models API auto-detected. canonical_slug=google/gemma-4-26b-a4b-it-20260403.
+Google DeepMind,Google: Gemma 4 26B A4B,2026-04-03,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-4-26b-a4b-it,OpenRouter models API auto-detected. canonical_slug=google/gemma-4-26b-a4b-it-20260403.
+Google DeepMind,Google: Gemma 4 31B (free),2026-04-02,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-4-31b-it:free,OpenRouter models API auto-detected. canonical_slug=google/gemma-4-31b-it-20260402.
+Google DeepMind,Google: Gemma 4 31B,2026-04-02,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-4-31b-it,OpenRouter models API auto-detected. canonical_slug=google/gemma-4-31b-it-20260402.
+Alibaba,Qwen: Qwen3.6 Plus,2026-04-02,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.6-plus,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.6-plus-04-02.
+Google DeepMind,gemma 4 26b a4b it,2026-04-02,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemma 4 31b it,2026-04-02,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Z Ai,Z.ai: GLM 5V Turbo,2026-04-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-5v-turbo,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-5v-turbo-20260401.
+xAI,xAI: Grok 4.20 Multi-Agent,2026-03-31,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-4.20-multi-agent,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-4.20-multi-agent-20260309.
+xAI,xAI: Grok 4.20,2026-03-31,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-4.20,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-4.20-20260309.
+Google DeepMind,veo 3.1 lite generate preview,2026-03-31,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash lite preview 09 2025,2026-03-31,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 3.1 flash lite preview,2026-03-31,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,Google: Lyria 3 Pro Preview,2026-03-30,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/lyria-3-pro-preview,OpenRouter models API auto-detected. canonical_slug=google/lyria-3-pro-preview-20260330.
+Google DeepMind,Google: Lyria 3 Clip Preview,2026-03-30,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/lyria-3-clip-preview,OpenRouter models API auto-detected. canonical_slug=google/lyria-3-clip-preview-20260330.
+Google DeepMind,gemini 3.1 flash live preview,2026-03-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,lyria 3 clip preview,2026-03-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,lyria 3 pro preview,2026-03-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT-5.4 Nano,2026-03-17,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.4-nano,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.4-nano-20260317.
+OpenAI,OpenAI: GPT-5.4 Mini,2026-03-17,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.4-mini,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.4-mini-20260317.
+Mistral AI,Mistral: Mistral Small 4,2026-03-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/mistral-small-2603,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-small-2603.
+Z Ai,Z.ai: GLM 5 Turbo,2026-03-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-5-turbo,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-5-turbo-20260315.
+NVIDIA,NVIDIA: Nemotron 3 Super (free),2026-03-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-3-super-120b-a12b:free,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-3-super-120b-a12b-20230311.
+NVIDIA,NVIDIA: Nemotron 3 Super,2026-03-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-3-super-120b-a12b,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-3-super-120b-a12b-20230311.
+Alibaba,Qwen: Qwen3.5-9B,2026-03-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.5-9b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.5-9b-20260310.
+Google DeepMind,gemini embedding 2 preview,2026-03-10,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash lite preview 09 2025,2026-03-10,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 3 pro preview,2026-03-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 3.1 pro preview,2026-03-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT-5.4 Pro,2026-03-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.4-pro,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.4-pro-20260305.
+OpenAI,OpenAI: GPT-5.4,2026-03-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.4,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.4-20260305.
+OpenAI,OpenAI: GPT-5.3 Chat,2026-03-03,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.3-chat,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.3-chat-20260303.
+Google DeepMind,Google: Gemini 3.1 Flash Lite Preview,2026-03-03,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-3.1-flash-lite-preview,OpenRouter models API auto-detected. canonical_slug=google/gemini-3.1-flash-lite-preview-20260303.
+Google DeepMind,Google: Nano Banana 2 (Gemini 3.1 Flash Image Preview),2026-02-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-3.1-flash-image-preview,OpenRouter models API auto-detected. canonical_slug=google/gemini-3.1-flash-image-preview-20260226.
+Google DeepMind,gemini 3 pro preview,2026-02-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: Qwen3.5-35B-A3B,2026-02-25,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.5-35b-a3b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.5-35b-a3b-20260224.
+Alibaba,Qwen: Qwen3.5-27B,2026-02-25,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.5-27b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.5-27b-20260224.
+Alibaba,Qwen: Qwen3.5-122B-A10B,2026-02-25,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.5-122b-a10b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.5-122b-a10b-20260224.
+Alibaba,Qwen: Qwen3.5-Flash,2026-02-25,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.5-flash-02-23,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.5-flash-20260224.
+Google DeepMind,Google: Gemini 3.1 Pro Preview Custom Tools,2026-02-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-3.1-pro-preview-customtools,OpenRouter models API auto-detected. canonical_slug=google/gemini-3.1-pro-preview-customtools-20260219.
+OpenAI,OpenAI: GPT-5.3-Codex,2026-02-24,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.3-codex,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.3-codex-20260224.
+Google DeepMind,Google: Gemini 3.1 Pro Preview,2026-02-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-3.1-pro-preview,OpenRouter models API auto-detected. canonical_slug=google/gemini-3.1-pro-preview-20260219.
+Anthropic,claude 3 7 sonnet 20250219,2026-02-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 5 haiku 20241022,2026-02-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,gemini 3.1 pro preview customtools,2026-02-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Anthropic,Anthropic: Claude Sonnet 4.6,2026-02-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-sonnet-4.6,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.6-sonnet-20260217.
+Anthropic,claude sonnet 4 6,2026-02-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,gemini 2.5 flash preview 09 25,2026-02-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,imagen 4.0 generate preview 06 06,2026-02-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,imagen 4.0 ultra generate preview 06 06,2026-02-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash image preview,2026-02-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: Qwen3.5 Plus 2026-02-15,2026-02-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.5-plus-02-15,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.5-plus-20260216.
+Alibaba,Qwen: Qwen3.5 397B A17B,2026-02-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3.5-397b-a17b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3.5-397b-a17b-20260216.
+Z Ai,Z.ai: GLM 5,2026-02-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-5,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-5-20260211.
+Alibaba,Qwen: Qwen3 Max Thinking,2026-02-09,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-max-thinking,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-max-thinking-20260123.
+Anthropic,claude opus 4 6,2026-02-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,deprecated,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,Anthropic: Claude Opus 4.6,2026-02-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-opus-4.6,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.6-opus-20260205.
+Alibaba,Qwen: Qwen3 Coder Next,2026-02-04,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-coder-next,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-coder-next-2025-02-03.
+Google DeepMind,gemini 3 pro preview,2026-01-29,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 3 flash preview,2026-01-29,N/A,N/A,N/A,N/A,N/A,N/A,closed,deprecated,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Moonshot AI,MoonshotAI: Kimi K2.5,2026-01-27,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/moonshotai/kimi-k2.5,OpenRouter models API auto-detected. canonical_slug=moonshotai/kimi-k2.5-0127.
+Google DeepMind,gemini pro latest,2026-01-21,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 3 pro preview,2026-01-21,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini flash latest,2026-01-21,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 3 flash preview,2026-01-21,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT Audio,2026-01-19,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-audio,OpenRouter models API auto-detected. canonical_slug=openai/gpt-audio.
+OpenAI,OpenAI: GPT Audio Mini,2026-01-19,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-audio-mini,OpenRouter models API auto-detected. canonical_slug=openai/gpt-audio-mini.
+Z Ai,Z.ai: GLM 4.7 Flash,2026-01-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.7-flash,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.7-flash-20260119.
+OpenAI,OpenAI: GPT-5.2-Codex,2026-01-14,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.2-codex,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.2-codex-20260114.
+Google DeepMind,text embedding 004,2026-01-14,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Anthropic,claude 3 opus 20240229,2026-01-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Z Ai,Z.ai: GLM 4.7,2025-12-22,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.7,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.7-20251222.
+Google DeepMind,Google: Gemini 3 Flash Preview,2025-12-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-3-flash-preview,OpenRouter models API auto-detected. canonical_slug=google/gemini-3-flash-preview-20251217.
+Google DeepMind,gemini 3 flash preview,2025-12-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Mistral AI,Mistral: Mistral Small Creative,2025-12-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/mistral-small-creative,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-small-creative-20251216.
+NVIDIA,NVIDIA: Nemotron 3 Nano 30B A3B (free),2025-12-14,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-3-nano-30b-a3b:free,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-3-nano-30b-a3b.
+NVIDIA,NVIDIA: Nemotron 3 Nano 30B A3B,2025-12-14,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-3-nano-30b-a3b,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-3-nano-30b-a3b.
+Google DeepMind,gemini 2.5 flash native audio preview 12 2025,2025-12-12,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT-5.2 Chat,2025-12-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.2-chat,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.2-chat-20251211.
+OpenAI,OpenAI: GPT-5.2 Pro,2025-12-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.2-pro,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.2-pro-20251211.
+OpenAI,OpenAI: GPT-5.2,2025-12-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.2,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.2-20251211.
+Mistral AI,Mistral: Devstral 2 2512,2025-12-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/devstral-2512,OpenRouter models API auto-detected. canonical_slug=mistralai/devstral-2512.
+Google DeepMind,gemini 2.0 flash live 001,2025-12-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini live 2.5 flash preview,2025-12-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Z Ai,Z.ai: GLM 4.6V,2025-12-08,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.6v,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.6-20251208.
+OpenAI,OpenAI: GPT-5.1-Codex-Max,2025-12-04,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.1-codex-max,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.1-codex-max-20251204.
+Google DeepMind,gemini 2.5 flash image preview,2025-12-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,text embedding 004,2025-12-03,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Amazon,Amazon: Nova 2 Lite,2025-12-02,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/amazon/nova-2-lite-v1,OpenRouter models API auto-detected. canonical_slug=amazon/nova-2-lite-v1.
+Mistral AI,Mistral: Ministral 3 14B 2512,2025-12-02,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/ministral-14b-2512,OpenRouter models API auto-detected. canonical_slug=mistralai/ministral-14b-2512.
+Mistral AI,Mistral: Ministral 3 8B 2512,2025-12-02,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/ministral-8b-2512,OpenRouter models API auto-detected. canonical_slug=mistralai/ministral-8b-2512.
+Mistral AI,Mistral: Ministral 3 3B 2512,2025-12-02,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/ministral-3b-2512,OpenRouter models API auto-detected. canonical_slug=mistralai/ministral-3b-2512.
+Mistral AI,Mistral: Mistral Large 3 2512,2025-12-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/mistral-large-2512,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-large-2512.
+DeepSeek,DeepSeek: DeepSeek V3.2 Speciale,2025-12-01,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-v3.2-speciale,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-v3.2-speciale-20251201.
+DeepSeek,DeepSeek: DeepSeek V3.2,2025-12-01,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-v3.2,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-v3.2-20251201.
+Anthropic,Anthropic: Claude Opus 4.5,2025-11-24,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-opus-4.5,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.5-opus-20251124.
+Anthropic,claude opus 4 5,2025-11-24,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,Google: Nano Banana Pro (Gemini 3 Pro Image Preview),2025-11-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-3-pro-image-preview,OpenRouter models API auto-detected. canonical_slug=google/gemini-3-pro-image-preview-20251120.
+Google DeepMind,gemini 3 pro image preview,2025-11-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+xAI,xAI: Grok 4.1 Fast,2025-11-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-4.1-fast,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-4.1-fast.
+Google DeepMind,gemini 3 pro preview,2025-11-18,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT-5.1,2025-11-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.1,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.1-20251113.
+OpenAI,OpenAI: GPT-5.1 Chat,2025-11-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.1-chat,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.1-chat-20251113.
+OpenAI,OpenAI: GPT-5.1-Codex,2025-11-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.1-codex,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.1-codex-20251113.
+OpenAI,OpenAI: GPT-5.1-Codex-Mini,2025-11-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5.1-codex-mini,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5.1-codex-mini-20251113.
+Google DeepMind,veo 3.0 fast generate preview,2025-11-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,veo 3.0 generate preview,2025-11-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash exp image generation,2025-11-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash preview image generation,2025-11-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,imagen 3.0 generate 002,2025-11-10,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Moonshot AI,MoonshotAI: Kimi K2 Thinking,2025-11-06,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/moonshotai/kimi-k2-thinking,OpenRouter models API auto-detected. canonical_slug=moonshotai/kimi-k2-thinking-20251106.
+Google DeepMind,gemini 2.5 flash lite preview 06 17,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash preview 05 20,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash thinking exp,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash thinking exp 01 21,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash thinking exp 1219,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 03 25,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 05 06,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 06 05,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash lite preview,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash lite preview 02 05,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash exp,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 pro exp,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 pro exp 02 05,2025-11-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Amazon,Amazon: Nova Premier 1.0,2025-10-31,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/amazon/nova-premier-v1,OpenRouter models API auto-detected. canonical_slug=amazon/nova-premier-v1.
+Mistral AI,Mistral: Voxtral Small 24B 2507,2025-10-30,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/voxtral-small-24b-2507,OpenRouter models API auto-detected. canonical_slug=mistralai/voxtral-small-24b-2507.
+OpenAI,OpenAI: gpt-oss-safeguard-20b,2025-10-29,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-oss-safeguard-20b,OpenRouter models API auto-detected. canonical_slug=openai/gpt-oss-safeguard-20b.
+NVIDIA,NVIDIA: Nemotron Nano 12B 2 VL (free),2025-10-28,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-nano-12b-v2-vl:free,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-nano-12b-v2-vl.
+NVIDIA,NVIDIA: Nemotron Nano 12B 2 VL,2025-10-28,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-nano-12b-v2-vl,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-nano-12b-v2-vl.
+Anthropic,claude 3 5 sonnet 20240620,2025-10-28,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 5 sonnet 20241022,2025-10-28,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude sonnet 4 5 20250929,2025-10-28,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Alibaba,Qwen: Qwen3 VL 32B Instruct,2025-10-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-vl-32b-instruct,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-vl-32b-instruct.
+Google DeepMind,gemini 2.5 flash preview native audio dialog,2025-10-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash exp native audio thinking dialog,2025-10-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash native audio preview 09 2025,2025-10-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash live 001,2025-10-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini live 2.5 flash preview,2025-10-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT-5 Image Mini,2025-10-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5-image-mini,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-image-mini.
+Anthropic,Anthropic: Claude Haiku 4.5,2025-10-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-haiku-4.5,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.5-haiku-20251001.
+Anthropic,claude haiku 4 5,2025-10-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,Veo created,2025-10-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,veo 3.0 generate preview,2025-10-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,veo 3.0 fast generate preview,2025-10-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: Qwen3 VL 8B Thinking,2025-10-14,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-vl-8b-thinking,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-vl-8b-thinking.
+Alibaba,Qwen: Qwen3 VL 8B Instruct,2025-10-14,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-vl-8b-instruct,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-vl-8b-instruct.
+OpenAI,OpenAI: GPT-5 Image,2025-10-14,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5-image,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-image.
+OpenAI,OpenAI: o3 Deep Research,2025-10-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o3-deep-research,OpenRouter models API auto-detected. canonical_slug=openai/o3-deep-research-2025-06-26.
+OpenAI,OpenAI: o4 Mini Deep Research,2025-10-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o4-mini-deep-research,OpenRouter models API auto-detected. canonical_slug=openai/o4-mini-deep-research-2025-06-26.
+NVIDIA,NVIDIA: Llama 3.3 Nemotron Super 49B V1.5,2025-10-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/nvidia/llama-3.3-nemotron-super-49b-v1.5,OpenRouter models API auto-detected. canonical_slug=nvidia/llama-3.3-nemotron-super-49b-v1.5.
+Google DeepMind,Google: Nano Banana (Gemini 2.5 Flash Image),2025-10-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.5-flash-image,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.5-flash-image.
+Alibaba,Qwen: Qwen3 VL 30B A3B Thinking,2025-10-06,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-vl-30b-a3b-thinking,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-vl-30b-a3b-thinking.
+Alibaba,Qwen: Qwen3 VL 30B A3B Instruct,2025-10-06,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-vl-30b-a3b-instruct,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-vl-30b-a3b-instruct.
+OpenAI,OpenAI: GPT-5 Pro,2025-10-06,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5-pro,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-pro-2025-10-06.
+Z Ai,Z.ai: GLM 4.6,2025-09-30,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.6,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.6.
+Anthropic,Anthropic: Claude Sonnet 4.5,2025-09-29,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-sonnet-4.5,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.5-sonnet-20250929.
+DeepSeek,DeepSeek: DeepSeek V3.2 Exp,2025-09-29,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-v3.2-exp,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-v3.2-exp.
+Anthropic,claude sonnet 4 5,2025-09-29,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Google DeepMind,gemini 1.5 pro,2025-09-29,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 1.5 flash 8b,2025-09-29,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 1.5 flash,2025-09-29,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,Google: Gemini 2.5 Flash Lite Preview 09-2025,2025-09-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.5-flash-lite-preview-09-2025,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.5-flash-lite-preview-09-2025.
+Google DeepMind,gemini 2.5 flash preview 09 2025,2025-09-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash lite preview 09 2025,2025-09-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: Qwen3 VL 235B A22B Thinking,2025-09-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-vl-235b-a22b-thinking,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-vl-235b-a22b-thinking.
+Alibaba,Qwen: Qwen3 VL 235B A22B Instruct,2025-09-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-vl-235b-a22b-instruct,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-vl-235b-a22b-instruct.
+Alibaba,Qwen: Qwen3 Max,2025-09-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-max,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-max.
+Alibaba,Qwen: Qwen3 Coder Plus,2025-09-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-coder-plus,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-coder-plus.
+OpenAI,OpenAI: GPT-5 Codex,2025-09-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5-codex,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-codex.
+Google DeepMind,gemini 2.5 flash native audio preview 09 2025,2025-09-23,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+DeepSeek,DeepSeek: DeepSeek V3.1 Terminus,2025-09-22,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-v3.1-terminus,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-v3.1-terminus.
+xAI,xAI: Grok 4 Fast,2025-09-19,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-4-fast,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-4-fast.
+Alibaba,Tongyi DeepResearch 30B A3B,2025-09-18,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/alibaba/tongyi-deepresearch-30b-a3b,OpenRouter models API auto-detected. canonical_slug=alibaba/tongyi-deepresearch-30b-a3b.
+Alibaba,Qwen: Qwen3 Coder Flash,2025-09-17,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-coder-flash,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-coder-flash.
+Google DeepMind,embedding 001,2025-09-16,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,embedding gecko 001,2025-09-16,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini embedding exp 03 07,2025-09-16,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini embedding exp,2025-09-16,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: Qwen3 Next 80B A3B Thinking,2025-09-11,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-next-80b-a3b-thinking,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-next-80b-a3b-thinking-2509.
+Alibaba,Qwen: Qwen3 Next 80B A3B Instruct (free),2025-09-11,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-next-80b-a3b-instruct:free,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-next-80b-a3b-instruct-2509.
+Alibaba,Qwen: Qwen3 Next 80B A3B Instruct,2025-09-11,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-next-80b-a3b-instruct,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-next-80b-a3b-instruct-2509.
+Alibaba,Qwen: Qwen Plus 0728 (thinking),2025-09-08,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen-plus-2025-07-28:thinking,OpenRouter models API auto-detected. canonical_slug=qwen/qwen-plus-2025-07-28.
+Alibaba,Qwen: Qwen Plus 0728,2025-09-08,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen-plus-2025-07-28,OpenRouter models API auto-detected. canonical_slug=qwen/qwen-plus-2025-07-28.
+NVIDIA,NVIDIA: Nemotron Nano 9B V2 (free),2025-09-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-nano-9b-v2:free,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-nano-9b-v2.
+NVIDIA,NVIDIA: Nemotron Nano 9B V2,2025-09-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/nvidia/nemotron-nano-9b-v2,OpenRouter models API auto-detected. canonical_slug=nvidia/nemotron-nano-9b-v2.
+Moonshot AI,MoonshotAI: Kimi K2 0905,2025-09-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/moonshotai/kimi-k2-0905,OpenRouter models API auto-detected. canonical_slug=moonshotai/kimi-k2-0905.
+Alibaba,Qwen: Qwen3 30B A3B Thinking 2507,2025-08-28,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-30b-a3b-thinking-2507,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-30b-a3b-thinking-2507.
+xAI,xAI: Grok Code Fast 1,2025-08-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-code-fast-1,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-code-fast-1.
+DeepSeek,DeepSeek: DeepSeek V3.1,2025-08-21,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-chat-v3.1,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-chat-v3.1.
+Google DeepMind,gemini 2.0 flash,2025-08-18,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: GPT-4o Audio,2025-08-15,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-4o-audio-preview,OpenRouter models API auto-detected. canonical_slug=openai/gpt-4o-audio-preview.
+Mistral AI,Mistral: Mistral Medium 3.1,2025-08-13,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/mistral-medium-3.1,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-medium-3.1.
+Z Ai,Z.ai: GLM 4.5V,2025-08-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.5v,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.5v.
+OpenAI,OpenAI: GPT-5 Chat,2025-08-07,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5-chat,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-chat-2025-08-07.
+OpenAI,OpenAI: GPT-5,2025-08-07,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-2025-08-07.
+OpenAI,OpenAI: GPT-5 Mini,2025-08-07,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5-mini,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-mini-2025-08-07.
+OpenAI,OpenAI: GPT-5 Nano,2025-08-07,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-5-nano,OpenRouter models API auto-detected. canonical_slug=openai/gpt-5-nano-2025-08-07.
+OpenAI,OpenAI: gpt-oss-120b (free),2025-08-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-oss-120b:free,OpenRouter models API auto-detected. canonical_slug=openai/gpt-oss-120b.
+OpenAI,OpenAI: gpt-oss-120b,2025-08-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-oss-120b,OpenRouter models API auto-detected. canonical_slug=openai/gpt-oss-120b.
+OpenAI,OpenAI: gpt-oss-20b (free),2025-08-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-oss-20b:free,OpenRouter models API auto-detected. canonical_slug=openai/gpt-oss-20b.
+OpenAI,OpenAI: gpt-oss-20b,2025-08-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-oss-20b,OpenRouter models API auto-detected. canonical_slug=openai/gpt-oss-20b.
+Anthropic,Anthropic: Claude Opus 4.1,2025-08-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-opus-4.1,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4.1-opus-20250805.
+Anthropic,claude opus 4 1,2025-08-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Mistral AI,Mistral: Codestral 2508,2025-08-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/codestral-2508,OpenRouter models API auto-detected. canonical_slug=mistralai/codestral-2508.
+Alibaba,Qwen: Qwen3 Coder 30B A3B Instruct,2025-07-31,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-coder-30b-a3b-instruct,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-coder-30b-a3b-instruct.
+Alibaba,Qwen: Qwen3 30B A3B Instruct 2507,2025-07-29,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-30b-a3b-instruct-2507,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-30b-a3b-instruct-2507.
+Z Ai,Z.ai: GLM 4.5,2025-07-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.5,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.5.
+Z Ai,Z.ai: GLM 4.5 Air (free),2025-07-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.5-air:free,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.5-air.
+Z Ai,Z.ai: GLM 4.5 Air,2025-07-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4.5-air,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4.5-air.
+Alibaba,Qwen: Qwen3 235B A22B Thinking 2507,2025-07-25,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-235b-a22b-thinking-2507,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-235b-a22b-thinking-2507.
+Z Ai,Z.ai: GLM 4 32B,2025-07-24,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/z-ai/glm-4-32b,OpenRouter models API auto-detected. canonical_slug=z-ai/glm-4-32b-0414.
+Alibaba,Qwen: Qwen3 Coder 480B A35B (free),2025-07-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-coder:free,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-coder-480b-a35b-07-25.
+Alibaba,Qwen: Qwen3 Coder 480B A35B,2025-07-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-coder,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-coder-480b-a35b-07-25.
+Google DeepMind,Google: Gemini 2.5 Flash Lite,2025-07-22,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.5-flash-lite,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.5-flash-lite.
+Google DeepMind,gemini 2.5 flash lite,2025-07-22,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: Qwen3 235B A22B Instruct 2507,2025-07-21,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-235b-a22b-2507,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-235b-a22b-07-25.
+Google DeepMind,veo 3.0 generate preview,2025-07-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash lite preview 06 17,2025-07-15,N/A,N/A,N/A,N/A,N/A,N/A,closed,deprecated,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini embedding 001,2025-07-14,N/A,N/A,N/A,N/A,N/A,N/A,closed,deprecated,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini embedding exp 03 07,2025-07-14,N/A,N/A,N/A,N/A,N/A,N/A,closed,deprecated,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Moonshot AI,MoonshotAI: Kimi K2 0711,2025-07-11,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/moonshotai/kimi-k2,OpenRouter models API auto-detected. canonical_slug=moonshotai/kimi-k2.
+Mistral AI,Mistral: Devstral Medium,2025-07-10,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/devstral-medium,OpenRouter models API auto-detected. canonical_slug=mistralai/devstral-medium-2507.
+Mistral AI,Mistral: Devstral Small 1.1,2025-07-10,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/devstral-small,OpenRouter models API auto-detected. canonical_slug=mistralai/devstral-small-2507.
+xAI,xAI: Grok 4,2025-07-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-4,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-4-07-09.
+Google DeepMind,Google: Gemma 3n 2B (free),2025-07-09,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3n-e2b-it:free,OpenRouter models API auto-detected. canonical_slug=google/gemma-3n-e2b-it.
+Google DeepMind,gemini 2.5 pro preview 05 06,2025-06-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 03 25,2025-06-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro,2025-06-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro exp 03 25,2025-06-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash,2025-06-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,deprecated,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash preview 04 17,2025-06-26,N/A,N/A,N/A,N/A,N/A,N/A,closed,deprecated,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Mistral AI,Mistral: Mistral Small 3.2 24B,2025-06-20,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/mistral-small-3.2-24b-instruct,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-small-3.2-24b-instruct-2506.
+Google DeepMind,Google: Gemini 2.5 Flash,2025-06-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.5-flash,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.5-flash.
+Google DeepMind,Google: Gemini 2.5 Pro,2025-06-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.5-pro,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.5-pro.
+Google DeepMind,gemini 2.5 pro,2025-06-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 05 06,2025-06-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: o3 Pro,2025-06-10,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o3-pro,OpenRouter models API auto-detected. canonical_slug=openai/o3-pro-2025-06-10.
+xAI,xAI: Grok 3 Mini,2025-06-10,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-3-mini,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-3-mini.
+xAI,xAI: Grok 3,2025-06-10,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-3,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-3.
+Google DeepMind,Google: Gemini 2.5 Pro Preview 06-05,2025-06-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.5-pro-preview,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.5-pro-preview-06-05.
+Google DeepMind,gemini 2.5 pro preview 06 05,2025-06-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 05 06,2025-06-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro,2025-06-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,retired,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+DeepSeek,DeepSeek: R1 0528,2025-05-28,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-r1-0528,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-r1-0528.
+Anthropic,Anthropic: Claude Opus 4,2025-05-22,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-opus-4,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4-opus-20250522.
+Anthropic,Anthropic: Claude Sonnet 4,2025-05-22,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-sonnet-4,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-4-sonnet-20250522.
+Google DeepMind,Google: Gemma 3n 4B (free),2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3n-e4b-it:free,OpenRouter models API auto-detected. canonical_slug=google/gemma-3n-e4b-it.
+Google DeepMind,Google: Gemma 3n 4B,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3n-e4b-it,OpenRouter models API auto-detected. canonical_slug=google/gemma-3n-e4b-it.
+Google DeepMind,gemini 2.5 flash preview 05 20,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview tts,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash preview tts,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,lyria realtime exp,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash preview native audio dialog,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 flash exp native audio thinking dialog,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemma 3n e4b it,2025-05-20,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Mistral AI,Mistral: Mistral Medium 3,2025-05-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/mistral-medium-3,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-medium-3.
+Google DeepMind,Google: Gemini 2.5 Pro Preview 05-06,2025-05-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.5-pro-preview-05-06,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.5-pro-preview-03-25.
+Google DeepMind,gemini 2.0 flash preview image generation,2025-05-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 05 06,2025-05-06,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro preview 03 25,2025-05-06,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Anthropic,claude 3 7 sonnet,2025-05-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Anthropic,claude 3 5 sonnet,2025-05-01,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://platform.claude.com/docs/en/release-notes/api,Anthropic API release notes extraction.
+Meta AI,Meta: Llama Guard 4 12B,2025-04-30,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/meta-llama/llama-guard-4-12b,OpenRouter models API auto-detected. canonical_slug=meta-llama/llama-guard-4-12b.
+Alibaba,Qwen: Qwen3 30B A3B,2025-04-28,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-30b-a3b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-30b-a3b-04-28.
+Alibaba,Qwen: Qwen3 8B,2025-04-28,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-8b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-8b-04-28.
+Alibaba,Qwen: Qwen3 14B,2025-04-28,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-14b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-14b-04-28.
+Alibaba,Qwen: Qwen3 32B,2025-04-28,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-32b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-32b-04-28.
+Alibaba,Qwen: Qwen3 235B A22B,2025-04-28,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen3-235b-a22b,OpenRouter models API auto-detected. canonical_slug=qwen/qwen3-235b-a22b-04-28.
+Google DeepMind,gemini 2.5 flash preview 04 17,2025-04-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+OpenAI,OpenAI: o4 Mini High,2025-04-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o4-mini-high,OpenRouter models API auto-detected. canonical_slug=openai/o4-mini-high-2025-04-16.
+OpenAI,OpenAI: o3,2025-04-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o3,OpenRouter models API auto-detected. canonical_slug=openai/o3-2025-04-16.
+OpenAI,OpenAI: o4 Mini,2025-04-16,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o4-mini,OpenRouter models API auto-detected. canonical_slug=openai/o4-mini-2025-04-16.
+OpenAI,OpenAI: GPT-4.1,2025-04-14,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-4.1,OpenRouter models API auto-detected. canonical_slug=openai/gpt-4.1-2025-04-14.
+OpenAI,OpenAI: GPT-4.1 Mini,2025-04-14,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-4.1-mini,OpenRouter models API auto-detected. canonical_slug=openai/gpt-4.1-mini-2025-04-14.
+OpenAI,OpenAI: GPT-4.1 Nano,2025-04-14,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-4.1-nano,OpenRouter models API auto-detected. canonical_slug=openai/gpt-4.1-nano-2025-04-14.
+xAI,xAI: Grok 3 Mini Beta,2025-04-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-3-mini-beta,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-3-mini-beta.
+xAI,xAI: Grok 3 Beta,2025-04-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/x-ai/grok-3-beta,OpenRouter models API auto-detected. canonical_slug=x-ai/grok-3-beta.
+Google DeepMind,veo 2.0 generate 001,2025-04-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash live 001,2025-04-09,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Meta AI,Meta: Llama 4 Maverick,2025-04-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/meta-llama/llama-4-maverick,OpenRouter models API auto-detected. canonical_slug=meta-llama/llama-4-maverick-17b-128e-instruct.
+Meta AI,Meta: Llama 4 Scout,2025-04-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/meta-llama/llama-4-scout,OpenRouter models API auto-detected. canonical_slug=meta-llama/llama-4-scout-17b-16e-instruct.
+Google DeepMind,gemini 2.5 pro preview 03 25,2025-04-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro exp 03 25,2025-04-04,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.5 pro exp 03 25,2025-03-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+DeepSeek,DeepSeek: DeepSeek V3 0324,2025-03-24,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-chat-v3-0324,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-chat-v3-0324.
+OpenAI,OpenAI: o1-pro,2025-03-19,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o1-pro,OpenRouter models API auto-detected. canonical_slug=openai/o1-pro.
+Mistral AI,Mistral: Mistral Small 3.1 24B,2025-03-17,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/mistral-small-3.1-24b-instruct,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-small-3.1-24b-instruct-2503.
+Google DeepMind,Google: Gemma 3 4B (free),2025-03-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3-4b-it:free,OpenRouter models API auto-detected. canonical_slug=google/gemma-3-4b-it.
+Google DeepMind,Google: Gemma 3 4B,2025-03-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3-4b-it,OpenRouter models API auto-detected. canonical_slug=google/gemma-3-4b-it.
+Google DeepMind,Google: Gemma 3 12B (free),2025-03-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3-12b-it:free,OpenRouter models API auto-detected. canonical_slug=google/gemma-3-12b-it.
+Google DeepMind,Google: Gemma 3 12B,2025-03-13,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3-12b-it,OpenRouter models API auto-detected. canonical_slug=google/gemma-3-12b-it.
+Cohere,Cohere: Command A,2025-03-13,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/cohere/command-a,OpenRouter models API auto-detected. canonical_slug=cohere/command-a-03-2025.
+OpenAI,OpenAI: GPT-4o-mini Search Preview,2025-03-12,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-4o-mini-search-preview,OpenRouter models API auto-detected. canonical_slug=openai/gpt-4o-mini-search-preview-2025-03-11.
+OpenAI,OpenAI: GPT-4o Search Preview,2025-03-12,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/gpt-4o-search-preview,OpenRouter models API auto-detected. canonical_slug=openai/gpt-4o-search-preview-2025-03-11.
+Google DeepMind,Google: Gemma 3 27B (free),2025-03-12,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3-27b-it:free,OpenRouter models API auto-detected. canonical_slug=google/gemma-3-27b-it.
+Google DeepMind,Google: Gemma 3 27B,2025-03-12,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/google/gemma-3-27b-it,OpenRouter models API auto-detected. canonical_slug=google/gemma-3-27b-it.
+Google DeepMind,gemma 3 27b it,2025-03-12,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini embedding exp 03 07,2025-03-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,Gemini based,2025-03-07,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: QwQ 32B,2025-03-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwq-32b,OpenRouter models API auto-detected. canonical_slug=qwen/qwq-32b.
+Google DeepMind,gemini 2.0 pro exp 02 05,2025-02-28,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,Google: Gemini 2.0 Flash Lite,2025-02-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.0-flash-lite-001,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.0-flash-lite-001.
+Google DeepMind,gemini 2.0 flash lite,2025-02-25,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Anthropic,Anthropic: Claude 3.7 Sonnet,2025-02-24,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-3.7-sonnet,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-3-7-sonnet-20250219.
+Anthropic,Anthropic: Claude 3.7 Sonnet (thinking),2025-02-24,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/anthropic/claude-3.7-sonnet:thinking,OpenRouter models API auto-detected. canonical_slug=anthropic/claude-3-7-sonnet-20250219.
+Mistral AI,Mistral: Saba,2025-02-17,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/mistralai/mistral-saba,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-saba-2502.
+Meta AI,Llama Guard 3 8B,2025-02-12,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/meta-llama/llama-guard-3-8b,OpenRouter models API auto-detected. canonical_slug=meta-llama/llama-guard-3-8b.
+OpenAI,OpenAI: o3 Mini High,2025-02-12,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o3-mini-high,OpenRouter models API auto-detected. canonical_slug=openai/o3-mini-high-2025-01-31.
+Google DeepMind,imagen 3.0 generate 002,2025-02-06,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,Google: Gemini 2.0 Flash,2025-02-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://openrouter.ai/google/gemini-2.0-flash-001,OpenRouter models API auto-detected. canonical_slug=google/gemini-2.0-flash-001.
+Alibaba,Qwen: Qwen VL Plus,2025-02-05,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen-vl-plus,OpenRouter models API auto-detected. canonical_slug=qwen/qwen-vl-plus.
+Google DeepMind,gemini 2.0 flash 001,2025-02-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 pro exp 02 05,2025-02-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Google DeepMind,gemini 2.0 flash lite preview 02 05,2025-02-05,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+Alibaba,Qwen: Qwen VL Max,2025-02-01,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen-vl-max,OpenRouter models API auto-detected. canonical_slug=qwen/qwen-vl-max-2025-01-25.
+Alibaba,Qwen: Qwen-Turbo,2025-02-01,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen-turbo,OpenRouter models API auto-detected. canonical_slug=qwen/qwen-turbo-2024-11-01.
+Alibaba,Qwen: Qwen2.5 VL 72B Instruct,2025-02-01,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen2.5-vl-72b-instruct,OpenRouter models API auto-detected. canonical_slug=qwen/qwen2.5-vl-72b-instruct.
+Alibaba,Qwen: Qwen-Plus,2025-02-01,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen-plus,OpenRouter models API auto-detected. canonical_slug=qwen/qwen-plus-2025-01-25.
+Alibaba,Qwen: Qwen-Max,2025-02-01,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/qwen/qwen-max,OpenRouter models API auto-detected. canonical_slug=qwen/qwen-max-2025-01-25.
+OpenAI,OpenAI: o3 Mini,2025-01-31,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/openai/o3-mini,OpenRouter models API auto-detected. canonical_slug=openai/o3-mini-2025-01-31.
+Mistral AI,Mistral: Mistral Small 3,2025-01-30,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/mistralai/mistral-small-24b-instruct-2501,OpenRouter models API auto-detected. canonical_slug=mistralai/mistral-small-24b-instruct-2501.
+DeepSeek,DeepSeek: R1 Distill Qwen 32B,2025-01-29,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-r1-distill-qwen-32b,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-r1-distill-qwen-32b.
+DeepSeek,DeepSeek: R1 Distill Llama 70B,2025-01-23,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-r1-distill-llama-70b,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-r1-distill-llama-70b.
+Google DeepMind,gemini 2.0 flash thinking exp 01 21,2025-01-21,N/A,N/A,N/A,N/A,N/A,N/A,closed,active,https://ai.google.dev/gemini-api/docs/changelog,Google Gemini API changelog extraction.
+DeepSeek,DeepSeek: R1,2025-01-20,N/A,N/A,N/A,N/A,N/A,N/A,open,active,https://openrouter.ai/deepseek/deepseek-r1,OpenRouter models API auto-detected. canonical_slug=deepseek/deepseek-r1.

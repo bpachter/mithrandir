@@ -13,12 +13,14 @@ import logging
 import os
 import time
 import json
+from pathlib import Path
 
 import httpx
 import websockets
 from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 GPU_URL = os.environ.get("GPU_URL", "").strip().rstrip("/")
 VOICE_GPU_URL = os.environ.get("VOICE_GPU_URL", "").strip().rstrip("/")
@@ -30,6 +32,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mithrandir.gateway")
 
 app = FastAPI(title="Mithrandir Gateway", version="1.0.0")
+
+_GATEWAY_DIR = Path(__file__).resolve().parent
+_APPS_DIR = _GATEWAY_DIR / "apps"
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,6 +66,20 @@ _PARAMS_FALLBACK = {
     "seed": -1,
     "gateway_fallback": True,
 }
+
+
+def _mount_static_app(route: str, folder_name: str) -> None:
+    app_dir = _APPS_DIR / folder_name
+    if app_dir.exists():
+        app.mount(route, StaticFiles(directory=str(app_dir), html=True), name=f"static-{folder_name}")
+        logger.info("Mounted static app %s at %s", folder_name, route)
+    else:
+        logger.warning("Static app directory missing for %s (%s)", folder_name, app_dir)
+
+
+_mount_static_app("/aegis", "aegis")
+_mount_static_app("/chronos", "chronos")
+_mount_static_app("/heimdall", "heimdall")
 
 
 def _fallback_api(path: str) -> tuple[dict, int] | None:

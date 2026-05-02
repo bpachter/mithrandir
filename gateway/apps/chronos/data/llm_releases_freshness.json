@@ -1,0 +1,14 @@
+{
+  "generated_at_utc": "2026-04-24T10:57:06Z",
+  "since": "2025-01-01",
+  "candidate_count": 364,
+  "newest_candidate_release_date": "2026-06-15",
+  "days_since_newest_candidate": 0,
+  "has_future_dated_candidates": true,
+  "freshness_status": "fresh_future_dated",
+  "source_counts": {
+    "openrouter_models_api": 255,
+    "anthropic_api_release_notes": 40,
+    "google_gemini_changelog": 152
+  }
+}

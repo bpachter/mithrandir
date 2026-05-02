@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chronos — AI Model Release Calendar</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,600&display=swap" />
+  <style>
+    body { margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@mui/material@5.14.0/umd/material-ui.production.min.js"></script>
+  <script src="https://unpkg.com/@emotion/react@11.11.0/dist/emotion-react.umd.production.min.js"></script>
+  <script src="https://unpkg.com/@emotion/styled@11.11.0/dist/emotion-styled.umd.production.min.js"></script>
+  <script src="https://unpkg.com/@mui/icons-material@5.14.0/umd/material-ui-icons.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const {
+      AppBar,
+      Toolbar,
+      Box,
+      Container,
+      Typography,
+      Button,
+      Grid,
+      Paper,
+      Card,
+      CardContent,
+      CssBaseline,
+      ThemeProvider,
+      createTheme,
+      Stack,
+      TextField,
+      FormControl,
+      InputLabel,
+      Select,
+      MenuItem,
+      Chip,
+      Table,
+      TableBody,
+      TableCell,
+      TableContainer,
+      TableHead,
+      TableRow,
+      Divider,
+    } = window.MaterialUI;
+
+    const { useEffect, useMemo, useState } = React;
+
+    const NullIcon = () => null;
+    const Icons = window.MaterialUIIcons || {};
+    const Timeline = Icons.Timeline || NullIcon;
+    const ArrowBack = Icons.ArrowBack || NullIcon;
+    const RestartAlt = Icons.RestartAlt || NullIcon;
+
+    const DATA_PATH = './data/llm_releases_2020_present.csv';
+
+    const theme = createTheme({
+      palette: {
+        mode: 'dark',
+        primary: { main: '#67b2ff' },
+        secondary: { main: '#34d3a2' },
+        background: {
+          default: '#08121f',
+          paper: '#0f1d30',
+        },
+        text: {
+          primary: '#e5f0ff',
+          secondary: '#8ca6c9',
+        },
+        divider: '#223853',
+      },
+      typography: {
+        fontFamily: 'Roboto, sans-serif',
+        h6: { fontWeight: 800 },
+      },
+      components: {
+        MuiPaper: {
+          styleOverrides: {
+            root: {
+              border: '1px solid #223853',
+              boxShadow: '0 10px 28px rgba(0, 0, 0, 0.42)',
+              borderRadius: 12,
+            },
+          },
+        },
+        MuiCard: {
+          styleOverrides: {
+            root: {
+              border: '1px solid #294260',
+              boxShadow: '0 12px 30px rgba(0, 0, 0, 0.4)',
+            },
+          },
+        },
+        MuiTableCell: {
+          styleOverrides: {
+            head: {
+              fontWeight: 700,
+              color: '#bcd4f5',
+              backgroundColor: '#13243b',
+            },
+          },
+        },
+      },
+    });
+
+    function parseCsv(text) {
+      const rows = [];
+      let cur = '';
+      let row = [];
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+          if (c === '"' && next === '"') {
+            cur += '"';
+            i++;
+          } else if (c === '"') {
+            inQuotes = false;
+          } else {
+            cur += c;
+          }
+        } else {
+          if (c === '"') {
+            inQuotes = true;
+          } else if (c === ',') {
+            row.push(cur);
+            cur = '';
+          } else if (c === '\n') {
+            row.push(cur);
+            rows.push(row);
+            row = [];
+            cur = '';
+          } else if (c !== '\r') {
+            cur += c;
+          }
+        }
+      }
+
+      if (cur.length || row.length) {
+        row.push(cur);
+        rows.push(row);
+      }
+
+      if (!rows.length) return [];
+      const header = rows[0].map((h) => h.trim());
+
+      return rows.slice(1).map((r) => {
+        const obj = {};
+        header.forEach((h, i) => {
+          obj[h] = (r[i] ?? '').trim();
+        });
+        return obj;
+      });
+    }
+
+    function parseDate(v) {
+      const d = new Date(v);
+      return Number.isNaN(d.getTime()) ? new Date(0) : d;
+    }
+
+    function byNewest(a, b) {
+      return parseDate(b.release_date) - parseDate(a.release_date);
+    }
+
+    function statusColor(status) {
+      const s = (status || '').toLowerCase();
+      if (s === 'active') return 'success';
+      if (s === 'deprecated') return 'warning';
+      return 'error';
+    }
+
+    function pointColor(status) {
+      const s = (status || '').toLowerCase();
+      if (s === 'active') return '#36d399';
+      if (s === 'deprecated') return '#fbbf24';
+      return '#f87171';
+    }
+
+    function TimelineSvg({ rows }) {
+      if (!rows.length) {
+        return (
+          <Box sx={{ p: 2, color: 'text.secondary', fontFamily: 'Roboto Mono, monospace' }}>
+            No rows match current filters.
+          </Box>
+        );
+      }
+
+      const labs = [...new Set(rows.map((r) => r.lab_name).filter(Boolean))].sort();
+      const dates = rows.map((r) => parseDate(r.release_date).getTime()).filter((v) => v > 0);
+      const minT = Math.min(...dates);
+      const maxT = Math.max(...dates);
+
+      const left = 220;
+      const right = 30;
+      const top = 24;
+      const bottom = 60;
+      const width = 1420;
+      const rowH = 36; // slightly expanded for readability
+      const plotH = Math.max(180, labs.length * rowH);
+      const height = top + plotH + bottom;
+      const plotW = width - left - right;
+
+      const xFor = (t) => {
+        if (maxT === minT) return left + plotW / 2;
+        return left + ((t - minT) / (maxT - minT)) * plotW;
+      };
+
+      const yFor = (i) => top + i * rowH + rowH / 2;
+
+      const minYear = new Date(minT).getFullYear();
+      const maxYear = new Date(maxT).getFullYear();
+      const years = [];
+      for (let y = minYear; y <= maxYear; y++) {
+        years.push({ label: String(y), t: new Date(`${y}-01-01T00:00:00Z`).getTime() });
+      }
+
+      return (
+        <Box sx={{ overflowX: 'auto', overflowY: 'hidden', bgcolor: '#0d1b2d' }}>
+          <svg width={width} height={height} style={{ display: 'block', minWidth: 980 }}>
+            <rect x="0" y="0" width={width} height={height} fill="#0d1b2d" />
+
+            {years.map((m) => {
+              const x = xFor(m.t);
+              return (
+                <g key={m.label}>
+                  <line x1={x} y1={top} x2={x} y2={top + plotH} stroke="#29435f" strokeWidth="1" />
+                  <text x={x + 4} y={height - 20} fill="#89a8cb" fontSize="11" fontFamily="Roboto Mono">
+                    {m.label}
+                  </text>
+                </g>
+              );
+            })}
+
+            {labs.map((lab, i) => {
+              const y = yFor(i);
+              return (
+                <g key={lab}>
+                  <line x1={left} y1={y} x2={left + plotW} y2={y} stroke="#1d3550" strokeWidth="1" />
+                  <text x={left - 10} y={y + 4} textAnchor="end" fill="#a9c1e2" fontSize="12">
+                    {lab}
+                  </text>
+                </g>
+              );
+            })}
+
+            {rows.map((r, idx) => {
+              const i = labs.indexOf(r.lab_name);
+              if (i < 0) return null;
+              const t = parseDate(r.release_date).getTime();
+              if (!Number.isFinite(t) || t <= 0) return null;
+              const x = xFor(t);
+              const y = yFor(i);
+              return (
+                <circle key={idx} cx={x} cy={y} r="4.8" fill={pointColor(r.status)} stroke="#ffffff" strokeWidth="1.2">
+                  <title>{`${r.release_date} | ${r.lab_name} | ${r.model_name} | status=${r.status || 'N/A'}`}</title>
+                </circle>
+              );
+            })}
+
+            <line x1={left} y1={top + plotH + 0.5} x2={left + plotW} y2={top + plotH + 0.5} stroke="#466688" strokeWidth="1.5" />
+          </svg>
+        </Box>
+      );
+    }
+
+    function App() {
+      const [rows, setRows] = useState([]);
+      const [q, setQ] = useState('');
+      const [lab, setLab] = useState('');
+      const [status, setStatus] = useState('');
+      const [weights, setWeights] = useState('');
+
+      useEffect(() => {
+        fetch(DATA_PATH)
+          .then((r) => r.text())
+          .then((txt) => setRows(parseCsv(txt).filter((r) => r.model_name && r.lab_name)))
+          .catch(() => setRows([]));
+      }, []);
+
+      const labs = useMemo(() => [...new Set(rows.map((r) => r.lab_name).filter(Boolean))].sort(), [rows]);
+      const statuses = useMemo(() => [...new Set(rows.map((r) => r.status).filter(Boolean))].sort(), [rows]);
+      const weightClasses = useMemo(() => [...new Set(rows.map((r) => r.weights).filter(Boolean))].sort(), [rows]);
+
+      const filtered = useMemo(() => {
+        const needle = q.trim().toLowerCase();
+        return rows
+          .filter((r) => {
+            if (lab && r.lab_name !== lab) return false;
+            if (status && r.status !== status) return false;
+            if (weights && r.weights !== weights) return false;
+            if (!needle) return true;
+            const hay = [r.lab_name, r.model_name, r.notes].join(' ').toLowerCase();
+            return hay.includes(needle);
+          })
+          .sort(byNewest);
+      }, [rows, q, lab, status, weights]);
+
+      const kpi = useMemo(() => {
+        const active = rows.filter((r) => (r.status || '').toLowerCase() === 'active').length;
+        const newest = rows.length ? rows.slice().sort(byNewest)[0]?.release_date || 'N/A' : 'N/A';
+        return {
+          models: rows.length,
+          labs: new Set(rows.map((r) => r.lab_name).filter(Boolean)).size,
+          active,
+          newest,
+        };
+      }, [rows]);
+
+      const reset = () => {
+        setQ('');
+        setLab('');
+        setStatus('');
+        setWeights('');
+      };
+
+      return (
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Box
+            sx={{
+              minHeight: '100vh',
+              bgcolor: 'background.default',
+              backgroundImage:
+                'radial-gradient(circle at 0% 0%, rgba(103,178,255,0.22), transparent 36%), radial-gradient(circle at 100% 0%, rgba(52,211,162,0.16), transparent 34%), linear-gradient(180deg, #08121f 0%, #060d18 100%)',
+            }}
+          >
+            <AppBar
+              position="sticky"
+              sx={{
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                background: 'linear-gradient(135deg, #101f34 0%, #0b1728 100%)',
+                color: '#d8e8ff',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.35)',
+              }}
+            >
+              <Toolbar>
+                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1 }}>
+                  <Timeline sx={{ color: 'secondary.main' }} />
+                  <Box>
+                    <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 900, letterSpacing: 1.2 }}>
+                      Chronos
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      AI Model Release Calendar
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Button href="../" color="inherit" startIcon={<ArrowBack />} sx={{ textTransform: 'none' }}>
+                  Back to Portfolio
+                </Button>
+              </Toolbar>
+            </AppBar>
+
+            <Container maxWidth="xl" sx={{ py: 3 }}>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                {[
+                  { label: 'Models', value: kpi.models },
+                  { label: 'Labs', value: kpi.labs },
+                  { label: 'Active', value: kpi.active },
+                  { label: 'Latest Release', value: kpi.newest },
+                ].map((x) => (
+                  <Grid item xs={12} sm={6} md={3} key={x.label}>
+                    <Card sx={{ background: 'linear-gradient(145deg, #132641, #0f1e33)' }}>
+                      <CardContent>
+                        <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: 1.2 }}>
+                          {x.label}
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                          {x.value}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+
+              <Paper sx={{ p: 2, mb: 2 }}>
+                <Grid container spacing={2} alignItems="end">
+                  <Grid item xs={12} md={4}>
+                    <TextField
+                      fullWidth
+                      label="Search"
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      placeholder="Model, lab, notes..."
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={2.5}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Lab</InputLabel>
+                      <Select value={lab} label="Lab" onChange={(e) => setLab(e.target.value)}>
+                        <MenuItem value="">All labs</MenuItem>
+                        {labs.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={2}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Status</InputLabel>
+                      <Select value={status} label="Status" onChange={(e) => setStatus(e.target.value)}>
+                        <MenuItem value="">Any</MenuItem>
+                        {statuses.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={2}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Weights</InputLabel>
+                      <Select value={weights} label="Weights" onChange={(e) => setWeights(e.target.value)}>
+                        <MenuItem value="">Any</MenuItem>
+                        {weightClasses.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} md={1.5}>
+                    <Button fullWidth variant="outlined" startIcon={<RestartAlt />} onClick={reset} sx={{ textTransform: 'none' }}>
+                      Reset
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              <Paper sx={{ mb: 2, overflow: 'hidden' }}>
+                <Box sx={{ p: 1.5, px: 2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="overline" sx={{ letterSpacing: 1.1, color: 'text.secondary' }}>
+                    Release Timeline
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontFamily: 'Roboto Mono, monospace', color: 'text.secondary' }}>
+                    {filtered.length} points across {new Set(filtered.map((r) => r.lab_name)).size} labs
+                  </Typography>
+                </Box>
+                <TimelineSvg rows={filtered} />
+              </Paper>
+
+              <Paper>
+                <TableContainer sx={{ maxHeight: '62vh' }}>
+                  <Table stickyHeader size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Release</TableCell>
+                        <TableCell>Lab</TableCell>
+                        <TableCell>Model</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Ctx</TableCell>
+                        <TableCell>In $/1M</TableCell>
+                        <TableCell>Out $/1M</TableCell>
+                        <TableCell>MMLU</TableCell>
+                        <TableCell>SWE Verified</TableCell>
+                        <TableCell>Weights</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {filtered.map((r, i) => (
+                        <TableRow key={`${r.model_name}-${i}`} hover>
+                          <TableCell sx={{ fontFamily: 'Roboto Mono, monospace' }}>{r.release_date || 'N/A'}</TableCell>
+                          <TableCell>{r.lab_name || 'N/A'}</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{r.model_name || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Chip size="small" label={r.status || 'N/A'} color={statusColor(r.status)} variant="outlined" />
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: 'Roboto Mono, monospace' }}>{r.context_window_tokens || 'N/A'}</TableCell>
+                          <TableCell sx={{ fontFamily: 'Roboto Mono, monospace' }}>{r.input_cost_usd_per_1m || 'N/A'}</TableCell>
+                          <TableCell sx={{ fontFamily: 'Roboto Mono, monospace' }}>{r.output_cost_usd_per_1m || 'N/A'}</TableCell>
+                          <TableCell sx={{ fontFamily: 'Roboto Mono, monospace' }}>{r.mmlu_pct || 'N/A'}</TableCell>
+                          <TableCell sx={{ fontFamily: 'Roboto Mono, monospace' }}>{r.swe_bench_verified_pct || 'N/A'}</TableCell>
+                          <TableCell sx={{ fontFamily: 'Roboto Mono, monospace' }}>{r.weights || 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <Divider />
+                <Box sx={{ p: 1.5, color: 'text.secondary', fontSize: 12 }}>
+                  Data source: llm_releases_2020_present.csv · Sorted newest first · Client-side filtered
+                </Box>
+              </Paper>
+            </Container>
+          </Box>
+        </ThemeProvider>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>

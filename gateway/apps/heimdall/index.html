@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heimdall | Supply Chain Observatory</title>
+  <meta name="description" content="Heimdall is an interactive supply chain map and logistics simulator for commodity value chains." />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #f6f7f8;
+      --panel: rgba(255, 255, 255, 0.94);
+      --panel-solid: #ffffff;
+      --line: #d9dee5;
+      --line-strong: #b7c0cc;
+      --text: #20252d;
+      --muted: #66717f;
+      --soft: #eef1f4;
+      --shadow: 0 18px 48px rgba(20, 30, 44, 0.16), 0 0 0 1px rgba(120, 132, 148, 0.20);
+      --shadow-soft: 0 8px 26px rgba(20, 30, 44, 0.10), 0 0 0 1px rgba(120, 132, 148, 0.16);
+      --mining: #2f9e44;
+      --inbound: #2374ab;
+      --operations: #f59e0b;
+      --outbound: #8b5cf6;
+      --sales: #ef476f;
+      --use: #0891b2;
+      --risk: #c94b4b;
+      --ok: #3f8e6e;
+      --font-ui: 'Inter Tight', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      color: var(--text);
+      background: var(--bg);
+      font-family: var(--font-ui);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+
+    #map {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: #edf1f5;
+    }
+
+    .map-veil {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(246,247,248,0.92) 0, rgba(246,247,248,0.34) 22%, rgba(246,247,248,0.06) 47%, rgba(246,247,248,0.40) 78%, rgba(246,247,248,0.92) 100%),
+        linear-gradient(180deg, rgba(246,247,248,0.88) 0, rgba(246,247,248,0.16) 18%, rgba(246,247,248,0.08) 72%, rgba(246,247,248,0.70) 100%);
+    }
+
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 58px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 16px;
+      background: rgba(255, 255, 255, 0.84);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset;
+      backdrop-filter: blur(18px) saturate(1.08);
+      -webkit-backdrop-filter: blur(18px) saturate(1.08);
+    }
+
+    .icon-button {
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      background: rgba(255,255,255,0.88);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      text-decoration: none;
+      transition: border-color 140ms ease, color 140ms ease, transform 140ms ease, background 140ms ease;
+    }
+    .icon-button:hover { color: var(--text); border-color: var(--line-strong); background: #fff; transform: translateY(-1px); }
+    .icon-button svg { width: 17px; height: 17px; stroke-width: 2; }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0.18em;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .brand span {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .kpi-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .top-kpi {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 96px;
+      padding: 7px 9px;
+      background: rgba(255,255,255,0.76);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+    .top-kpi b {
+      font-size: 13px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text);
+    }
+    .top-kpi span {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .panel {
+      position: fixed;
+      z-index: 15;
+      background: var(--panel);
+      border: 1px solid rgba(187, 196, 208, 0.84);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px) saturate(1.08);
+      -webkit-backdrop-filter: blur(20px) saturate(1.08);
+    }
+
+    .command-panel {
+      top: 74px;
+      left: 16px;
+      width: 358px;
+      max-height: calc(100vh - 186px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-panel {
+      top: 74px;
+      right: 16px;
+      width: 382px;
+      max-height: calc(100vh - 186px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-head {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.70);
+    }
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+    .eyebrow svg { width: 13px; height: 13px; }
+    .panel-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .panel-subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .panel-body {
+      padding: 12px 14px 14px;
+      overflow: auto;
+    }
+
+    .search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      height: 42px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset;
+    }
+    .search-wrap svg { width: 16px; height: 16px; color: var(--muted); flex: 0 0 auto; }
+    .search-wrap input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .result-list { display: grid; gap: 7px; margin: 10px 0 12px; }
+    .result-button, .route-card, .node-row {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.76);
+      border-radius: 7px;
+      text-align: left;
+      transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+    }
+    .result-button { padding: 9px 10px; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+    .result-button:hover, .route-card:hover, .node-row:hover { border-color: var(--line-strong); background: #fff; transform: translateY(-1px); }
+    .result-button strong { display: block; font-size: 13px; }
+    .result-button span { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .result-button code {
+      color: var(--muted);
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .chip-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0 14px; }
+    .chip, .stage-toggle, .company-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.78);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+    }
+    .chip { padding: 7px 9px; }
+    .chip.active { background: var(--text); border-color: var(--text); color: #fff; }
+    .company-chip { padding: 5px 8px; font-family: var(--font-mono); }
+
+    .section-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0 8px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .route-list { display: grid; gap: 8px; }
+    .route-card {
+      padding: 10px;
+      border-left: 4px solid var(--inbound);
+    }
+    .route-card.active { background: #fff; border-color: var(--line-strong); border-left-color: var(--operations); box-shadow: var(--shadow-soft); }
+    .route-card .route-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .route-card h3 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.18;
+    }
+    .route-card p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .route-badge {
+      flex: 0 0 auto;
+      color: var(--muted);
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 7px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      text-transform: uppercase;
+    }
+    .route-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 9px;
+    }
+    .route-meta span {
+      min-width: 0;
+      padding: 6px 7px;
+      color: var(--muted);
+      background: var(--soft);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .detail-main {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .chain-name { min-width: 0; }
+    .chain-name h2 { margin: 0; font-size: 20px; line-height: 1.1; }
+    .chain-name p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.38; }
+    .confidence {
+      flex: 0 0 auto;
+      width: 68px;
+      height: 68px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--ok) calc(var(--score) * 1%), var(--soft) 0);
+      border: 1px solid var(--line);
+      position: relative;
+    }
+    .confidence::before {
+      content: '';
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+    .confidence span { position: relative; z-index: 1; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .metric {
+      padding: 9px;
+      background: rgba(255,255,255,0.76);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+    .metric span { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; }
+    .metric strong { display: block; margin-top: 4px; font-size: 16px; line-height: 1.1; }
+
+    .taxonomy { display: grid; gap: 7px; }
+    .taxonomy-row {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 8px;
+      background: rgba(255,255,255,0.66);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+    .taxonomy-row b { color: var(--muted); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; }
+    .taxonomy-row span { font-size: 12px; line-height: 1.35; }
+
+    .isotope-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+    }
+    .isotope-table th, .isotope-table td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .isotope-table th { color: var(--muted); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; background: var(--soft); }
+    .isotope-table tr:last-child td { border-bottom: 0; }
+    .isotope-table td:first-child { font-family: var(--font-mono); color: var(--text); white-space: nowrap; }
+
+    .node-list { display: grid; gap: 7px; }
+    .node-row {
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+    }
+    .node-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--stage-color);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--stage-color), transparent 78%);
+    }
+    .node-row strong { display: block; font-size: 12px; line-height: 1.18; }
+    .node-row span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.25; }
+    .node-time { color: var(--muted); font-family: var(--font-mono); font-size: 10px; white-space: nowrap; }
+
+    .bottom-console {
+      left: 392px;
+      right: 412px;
+      bottom: 16px;
+      min-height: 96px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+    }
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .slider-box {
+      min-width: 0;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255,255,255,0.74);
+    }
+    .slider-box label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .slider-box input { width: 100%; margin-top: 8px; accent-color: var(--text); }
+    .stage-grid {
+      display: flex;
+      align-content: start;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .stage-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      user-select: none;
+    }
+    .stage-toggle input { accent-color: var(--stage-color); }
+    .stage-toggle i {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--stage-color);
+      flex: 0 0 auto;
+    }
+
+    .leaflet-control-attribution {
+      color: var(--muted) !important;
+      background: rgba(255,255,255,0.76) !important;
+      border-radius: 6px 0 0 0;
+      font-size: 10px;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--line);
+    }
+    .leaflet-popup-content { margin: 10px 12px; font-family: var(--font-ui); }
+    .popup-title { margin: 0 0 4px; font-size: 13px; }
+    .popup-meta { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+
+    .node-marker-shell {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #fff;
+      border: 2px solid var(--stage-color);
+      box-shadow: 0 8px 22px rgba(20,30,44,0.24), 0 0 0 5px color-mix(in srgb, var(--stage-color), transparent 78%);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .route-segment {
+      stroke-linecap: round;
+      stroke-dasharray: 10 12;
+      animation: routeFlow 18s linear infinite;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.18));
+    }
+    @keyframes routeFlow { to { stroke-dashoffset: -220; } }
+
+    .empty-state {
+      color: var(--muted);
+      border: 1px dashed var(--line-strong);
+      border-radius: 7px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.35;
+      background: rgba(255,255,255,0.58);
+    }
+
+    @media (max-width: 1180px) {
+      .top-kpi { display: none; }
+      .command-panel { width: 330px; }
+      .detail-panel { width: 350px; }
+      .bottom-console { left: 360px; right: 380px; }
+      .scenario-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 920px) {
+      body { overflow: auto; }
+      #map { position: fixed; height: 100vh; }
+      .map-veil { background: rgba(246,247,248,0.38); }
+      .topbar { height: 64px; gap: 10px; }
+      .brand { flex-direction: column; gap: 2px; }
+      .brand h1 { font-size: 16px; }
+      .brand span { font-size: 10px; }
+      .panel { position: relative; left: auto; right: auto; top: auto; bottom: auto; width: auto; max-height: none; margin: 10px; }
+      .mobile-stack { position: relative; z-index: 30; padding-top: 70px; padding-bottom: 12px; }
+      .command-panel, .detail-panel, .bottom-console { display: block; }
+      .bottom-console { min-height: 0; }
+      .scenario-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stage-grid { margin-top: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="map" aria-label="Interactive supply chain map"></div>
+  <div class="map-veil" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="icon-button" href="../" title="Back to portfolio" aria-label="Back to portfolio"><i data-lucide="arrow-left"></i></a>
+    <div class="brand">
+      <h1>HEIMDALL</h1>
+      <span>Supply Chain Observatory</span>
+    </div>
+    <div class="kpi-strip" aria-label="Route summary metrics">
+      <div class="top-kpi"><b id="kpiNodes">0</b><span>Nodes</span></div>
+      <div class="top-kpi"><b id="kpiLead">0d</b><span>Lead</span></div>
+      <div class="top-kpi"><b id="kpiRisk">0</b><span>Risk</span></div>
+    </div>
+    <button class="icon-button" id="fitRoute" title="Fit route" aria-label="Fit route"><i data-lucide="scan"></i></button>
+  </header>
+
+  <main class="mobile-stack">
+    <aside class="panel command-panel" aria-label="Commodity and route controls">
+      <div class="panel-head">
+        <div class="eyebrow"><i data-lucide="radar"></i><span>Commodity Graph</span></div>
+        <h2 class="panel-title">Search any input, middleput, or output</h2>
+        <p class="panel-subtitle">Raw materials, refined forms, finished goods, routes, companies, and facilities resolve into one mapped chain.</p>
+      </div>
+      <div class="panel-body">
+        <div class="search-wrap">
+          <i data-lucide="search"></i>
+          <input id="searchBox" type="search" autocomplete="off" spellcheck="false" placeholder="raw uranium, refined uranium, nuclear reactor..." />
+        </div>
+        <div class="result-list" id="searchResults"></div>
+
+        <div class="section-label"><span>Tracked Commodities</span><span id="chainCount"></span></div>
+        <div class="chip-row" id="commodityChips"></div>
+
+        <div class="section-label"><span>Route Examples</span><span id="routeCount"></span></div>
+        <div class="route-list" id="routeList"></div>
+      </div>
+    </aside>
+
+    <aside class="panel detail-panel" aria-label="Selected supply chain details">
+      <div class="panel-head">
+        <div class="detail-main">
+          <div class="chain-name">
+            <div class="eyebrow"><i data-lucide="network"></i><span id="chainCategory">Value Chain</span></div>
+            <h2 id="chainTitle">Supply Chain</h2>
+            <p id="chainSummary"></p>
+          </div>
+          <div class="confidence" id="confidenceGauge" style="--score: 70"><span id="confidenceText">70%</span></div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="metric-grid">
+          <div class="metric"><span>Adjusted Lead Time</span><strong id="metricLead">0 days</strong></div>
+          <div class="metric"><span>Bottleneck</span><strong id="metricBottleneck">-</strong></div>
+          <div class="metric"><span>Cost Pressure</span><strong id="metricCost">-</strong></div>
+          <div class="metric"><span>Traffic Nowcast</span><strong id="metricTraffic">-</strong></div>
+        </div>
+
+        <div class="section-label"><span>Inputs / Middleputs / Outputs</span></div>
+        <div class="taxonomy" id="taxonomy"></div>
+
+        <div id="isotopeBlock"></div>
+
+        <div class="section-label"><span>Companies In The Chain</span></div>
+        <div class="chip-row" id="companyList"></div>
+
+        <div class="section-label"><span>Mapped Process Timeline</span></div>
+        <div class="node-list" id="nodeList"></div>
+      </div>
+    </aside>
+
+    <section class="panel bottom-console" aria-label="Scenario and layer controls">
+      <div>
+        <div class="section-label" style="margin-top:0"><span>Macro And Logistics Shocks</span><span id="scenarioScore">Base</span></div>
+        <div class="scenario-grid">
+          <div class="slider-box"><label for="congestionShock"><span>Congestion</span><b id="congestionValue">0</b></label><input id="congestionShock" type="range" min="-50" max="50" value="0" /></div>
+          <div class="slider-box"><label for="fuelShock"><span>Fuel</span><b id="fuelValue">0</b></label><input id="fuelShock" type="range" min="-50" max="50" value="0" /></div>
+          <div class="slider-box"><label for="demandShock"><span>Demand</span><b id="demandValue">0</b></label><input id="demandShock" type="range" min="-50" max="50" value="0" /></div>
+          <div class="slider-box"><label for="policyShock"><span>Policy</span><b id="policyValue">0</b></label><input id="policyShock" type="range" min="-50" max="50" value="0" /></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label" style="margin-top:0"><span>Value Chain Stages</span><span>Layer</span></div>
+        <div class="stage-grid" id="stageToggles"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script>
+    'use strict';
+
+    const STAGES = {
+      mining: { label: 'Mining', color: '#2f9e44', code: 'MN' },
+      inbound: { label: 'Inbound Logistics', color: '#2374ab', code: 'IL' },
+      operations: { label: 'Operations', color: '#f59e0b', code: 'OP' },
+      outbound: { label: 'Outbound Logistics', color: '#8b5cf6', code: 'OL' },
+      sales: { label: 'Marketing & Sales', color: '#ef476f', code: 'MS' },
+      use: { label: 'Service / Use', color: '#0891b2', code: 'US' },
+    };
+
+    const CHAINS = [
+      {
+        id: 'nuclear-fuel',
+        title: 'Nuclear Reactor Fuel Chain',
+        category: 'Energy / Nuclear',
+        summary: 'Uranium ore, conversion, enrichment, fabrication, and delivery into operating nuclear reactor fleets in the Southeast.',
+        aliases: ['nuclear reactor', 'reactor', 'raw uranium', 'uranium ore', 'u3o8', 'yellowcake', 'refined uranium', 'uranium hexafluoride', 'uf6', 'enriched uranium', 'fuel assembly', 'duke energy', 'brunswick nuclear'],
+        taxonomy: {
+          inputs: ['Uraninite ore', 'U3O8 yellowcake', 'natural UF6', 'zirconium cladding', 'boron control materials'],
+          middleputs: ['Converted UF6', '3-5% low-enriched uranium', 'UO2 ceramic pellets', 'fuel rods', 'fuel assemblies'],
+          outputs: ['Reload fuel assemblies', 'reactor core inventory', 'baseload electricity']
+        },
+        isotopes: [
+          { isotope: 'U-238', share: '~99.27% of natural uranium', role: 'Fertile isotope; can breed Pu-239 but is not the main thermal-reactor fissile fuel.' },
+          { isotope: 'U-235', share: '~0.72% of natural uranium', role: 'Primary fissile isotope; enrichment raises concentration to roughly 3-5% for most light-water reactor fuel.' },
+          { isotope: 'U-234', share: '~0.0055% of natural uranium', role: 'Trace isotope concentrated slightly during enrichment; useful marker for material accounting.' },
+          { isotope: 'U3O8 / UF6', share: 'chemical forms, not isotopes', role: 'Yellowcake is a stable oxide concentrate; UF6 is the volatile conversion product used for enrichment.' }
+        ],
+        routes: [
+          {
+            id: 'athabasca-duke',
+            name: 'Athabasca Basin to Duke Energy Brunswick',
+            badge: 'baseline',
+            description: 'Canadian uranium concentrate converted, enriched, fabricated in the Carolinas, and loaded into a Duke Energy reactor site in North Carolina.',
+            confidence: 82,
+            baseRisk: 34,
+            traffic: { truck: 'I-95 steady', rail: 'Class I dwell moderate', port: 'Not port-dependent', bottleneck: 'Enrichment capacity' },
+            nodes: [
+              { id: 'cigar-lake', code: 'ORE', name: 'Cigar Lake / McArthur River', place: 'Athabasca Basin, SK', coords: [58.08, -104.54], stage: 'mining', company: 'Cameco / Orano', process: 'High-grade uranium ore extraction; natural uranium dominated by U-238 with U-235 as the fissile fraction.', days: [10, 18] },
+              { id: 'key-lake', code: 'MIL', name: 'Key Lake Mill', place: 'Saskatchewan, Canada', coords: [57.22, -105.62], stage: 'operations', company: 'Cameco / Orano', process: 'Ore is milled into U3O8 yellowcake concentrate for long-distance shipment.', days: [14, 30] },
+              { id: 'sask-rail', code: 'RAIL', name: 'Prairie Rail Interchange', place: 'Saskatoon, SK', coords: [52.13, -106.67], stage: 'inbound', company: 'CN / CP rail network', process: 'Drummed concentrate moves by secured rail and truck corridors toward conversion.', days: [4, 9] },
+              { id: 'port-hope', code: 'UF6', name: 'Port Hope Conversion', place: 'Ontario, Canada', coords: [43.95, -78.29], stage: 'operations', company: 'Cameco Fuel Services', process: 'U3O8 is converted into UF6 feedstock compatible with enrichment cascades.', days: [20, 45] },
+              { id: 'urenco-usa', code: 'ENR', name: 'Urenco USA', place: 'Eunice, NM', coords: [32.44, -103.16], stage: 'operations', company: 'Urenco', process: 'Centrifuge enrichment raises U-235 concentration to low-enriched uranium levels.', days: [35, 75] },
+              { id: 'wilmington-fuel', code: 'FAB', name: 'Global Nuclear Fuel', place: 'Wilmington, NC', coords: [34.24, -77.95], stage: 'operations', company: 'GE Hitachi / GNF', process: 'LEU is processed into ceramic UO2 pellets, rods, and full reactor fuel assemblies.', days: [24, 55] },
+              { id: 'brunswick', code: 'LOAD', name: 'Brunswick Nuclear Plant', place: 'Southport, NC', coords: [33.96, -78.01], stage: 'use', company: 'Duke Energy', process: 'Reload assemblies enter outage planning, core loading, inspection, and power generation.', days: [18, 35] }
+            ]
+          },
+          {
+            id: 'wyoming-carolinas',
+            name: 'Wyoming ISR to Carolinas Reactors',
+            badge: 'domestic',
+            description: 'Domestic in-situ recovery uranium flows through conversion, enrichment, and Southeast fabrication channels.',
+            confidence: 74,
+            baseRisk: 38,
+            traffic: { truck: 'I-80 variable', rail: 'Powder River light', port: 'None', bottleneck: 'Conversion scheduling' },
+            nodes: [
+              { id: 'smith-ranch', code: 'ISR', name: 'Powder River ISR Fields', place: 'Wyoming', coords: [43.74, -105.51], stage: 'mining', company: 'Uranium Energy / domestic ISR operators', process: 'Solution mining recovers uranium-bearing solution and produces concentrate.', days: [15, 32] },
+              { id: 'denver-logistics', code: 'HUB', name: 'Rocky Mountain Hazmat Hub', place: 'Denver, CO', coords: [39.75, -104.99], stage: 'inbound', company: 'Specialized hazmat carriers', process: 'Regulated overland movement toward conversion or storage.', days: [3, 8] },
+              { id: 'metropolis', code: 'CONV', name: 'Metropolis Works', place: 'Metropolis, IL', coords: [37.15, -88.73], stage: 'operations', company: 'ConverDyn / Honeywell', process: 'Conversion capability for UF6 feedstock when available.', days: [18, 42] },
+              { id: 'urenco-usa-wy', code: 'ENR', name: 'Urenco USA', place: 'Eunice, NM', coords: [32.44, -103.16], stage: 'operations', company: 'Urenco', process: 'U-235 enrichment to reactor-grade LEU.', days: [35, 75] },
+              { id: 'columbia-fuel', code: 'FAB', name: 'Westinghouse Fuel Fabrication', place: 'Columbia, SC', coords: [33.86, -81.06], stage: 'operations', company: 'Westinghouse', process: 'PWR-oriented fuel manufacturing and QA release.', days: [26, 60] },
+              { id: 'mcguire', code: 'USE', name: 'McGuire Nuclear Station', place: 'Huntersville, NC', coords: [35.43, -80.95], stage: 'use', company: 'Duke Energy', process: 'Fuel inventory supports outage reload cycles and baseload generation.', days: [16, 34] }
+            ]
+          },
+          {
+            id: 'kazakhstan-savannah',
+            name: 'Kazakhstan to Savannah Nuclear Corridor',
+            badge: 'import',
+            description: 'Central Asian uranium reaches the US Southeast through ocean freight, inland rail, conversion, enrichment, and fabrication.',
+            confidence: 68,
+            baseRisk: 52,
+            traffic: { truck: 'Southeast steady', rail: 'Savannah intermodal tight', port: 'Savannah moderate', bottleneck: 'Port and sanctions risk' },
+            nodes: [
+              { id: 'inkai', code: 'ORE', name: 'Inkai ISR Mine', place: 'Turkistan Region, Kazakhstan', coords: [44.34, 68.92], stage: 'mining', company: 'Kazatomprom / Cameco JV', process: 'ISR uranium concentrate production in one of the largest global supply basins.', days: [18, 38] },
+              { id: 'aktau', code: 'PORT', name: 'Caspian Export Gateway', place: 'Aktau, Kazakhstan', coords: [43.65, 51.16], stage: 'inbound', company: 'Regional logistics operators', process: 'Containerized hazardous material routing toward ocean freight networks.', days: [9, 24] },
+              { id: 'savannah', code: 'PORT', name: 'Port of Savannah', place: 'Georgia', coords: [32.08, -81.09], stage: 'inbound', company: 'Georgia Ports Authority', process: 'US import entry, inspection, customs, and inland release.', days: [6, 18] },
+              { id: 'metropolis-kz', code: 'UF6', name: 'Metropolis Works', place: 'Metropolis, IL', coords: [37.15, -88.73], stage: 'operations', company: 'ConverDyn / Honeywell', process: 'Conversion into UF6 for enrichment cascades.', days: [18, 42] },
+              { id: 'urenco-kz', code: 'ENR', name: 'Urenco USA', place: 'Eunice, NM', coords: [32.44, -103.16], stage: 'operations', company: 'Urenco', process: 'Enrichment and cylinder handling.', days: [35, 75] },
+              { id: 'wilmington-kz', code: 'FAB', name: 'Global Nuclear Fuel', place: 'Wilmington, NC', coords: [34.24, -77.95], stage: 'operations', company: 'GE Hitachi / GNF', process: 'Fuel assembly fabrication and final QA.', days: [24, 55] },
+              { id: 'brunswick-kz', code: 'LOAD', name: 'Brunswick Nuclear Plant', place: 'Southport, NC', coords: [33.96, -78.01], stage: 'use', company: 'Duke Energy', process: 'Receipt, inspection, core loading, and generation.', days: [18, 35] }
+            ]
+          },
+          {
+            id: 'australia-gulf',
+            name: 'Australian Ore to US Southeast Reloads',
+            badge: 'import',
+            description: 'Australian uranium ships through Pacific and Gulf logistics before entering US conversion and fuel fabrication channels.',
+            confidence: 62,
+            baseRisk: 49,
+            traffic: { truck: 'I-10 heavy', rail: 'Gulf rail balanced', port: 'Houston moderate', bottleneck: 'Ocean freight exposure' },
+            nodes: [
+              { id: 'olympic-dam', code: 'ORE', name: 'Olympic Dam', place: 'South Australia', coords: [-30.44, 136.89], stage: 'mining', company: 'BHP', process: 'Polymetallic mine producing uranium oxide as part of a copper-uranium system.', days: [18, 40] },
+              { id: 'adelaide-port', code: 'PORT', name: 'Port Adelaide', place: 'South Australia', coords: [-34.84, 138.50], stage: 'inbound', company: 'Australian port operators', process: 'Export documentation, container handling, and long-haul ocean leg.', days: [10, 28] },
+              { id: 'houston-port', code: 'PORT', name: 'Port Houston', place: 'Texas', coords: [29.73, -95.26], stage: 'inbound', company: 'Port Houston', process: 'US entry, inland release, and hazardous freight compliance.', days: [8, 20] },
+              { id: 'metropolis-au', code: 'CONV', name: 'Metropolis Works', place: 'Metropolis, IL', coords: [37.15, -88.73], stage: 'operations', company: 'ConverDyn / Honeywell', process: 'Conversion to UF6.', days: [18, 42] },
+              { id: 'urenco-au', code: 'ENR', name: 'Urenco USA', place: 'Eunice, NM', coords: [32.44, -103.16], stage: 'operations', company: 'Urenco', process: 'LEU enrichment.', days: [35, 75] },
+              { id: 'columbia-au', code: 'FAB', name: 'Westinghouse Fuel Fabrication', place: 'Columbia, SC', coords: [33.86, -81.06], stage: 'operations', company: 'Westinghouse', process: 'Fuel rod and assembly production.', days: [26, 60] },
+              { id: 'catawba-au', code: 'USE', name: 'Catawba Nuclear Station', place: 'York County, SC', coords: [35.05, -81.07], stage: 'use', company: 'Duke Energy', process: 'Reload outage and operating cycle support.', days: [16, 34] }
+            ]
+          },
+          {
+            id: 'greenland-scenario',
+            name: 'Greenland Strategic Source Scenario',
+            badge: 'scenario',
+            description: 'A speculative Arctic-to-Carolinas route for an undeveloped Greenland uranium-bearing deposit and US Southeast reactor demand.',
+            confidence: 41,
+            baseRisk: 71,
+            traffic: { truck: 'I-95 steady', rail: 'Sparse Arctic links', port: 'Weather-sensitive', bottleneck: 'Permitting and project status' },
+            nodes: [
+              { id: 'kvanefjeld', code: 'ORE', name: 'Kvanefjeld Deposit Area', place: 'South Greenland', coords: [60.99, -45.99], stage: 'mining', company: 'Project-stage operators', process: 'Uranium-bearing mineralization scenario; not an operating common uranium supply route today.', days: [45, 120] },
+              { id: 'nuuk', code: 'PORT', name: 'Nuuk / South Greenland Export Leg', place: 'Greenland', coords: [64.18, -51.72], stage: 'inbound', company: 'Arctic maritime operators', process: 'Seasonal port, weather, ice, and vessel availability constraints.', days: [12, 35] },
+              { id: 'wilmington-port', code: 'PORT', name: 'Port of Wilmington', place: 'North Carolina', coords: [34.23, -77.95], stage: 'inbound', company: 'NC Ports', process: 'US Southeast receiving point near nuclear fuel fabrication capacity.', days: [5, 14] },
+              { id: 'wilmington-gf', code: 'FAB', name: 'Global Nuclear Fuel', place: 'Wilmington, NC', coords: [34.24, -77.95], stage: 'operations', company: 'GE Hitachi / GNF', process: 'Fabrication scenario after conversion and enrichment services are contracted.', days: [24, 55] },
+              { id: 'brunswick-greenland', code: 'USE', name: 'Brunswick Nuclear Plant', place: 'Southport, NC', coords: [33.96, -78.01], stage: 'use', company: 'Duke Energy', process: 'Delivered assemblies support a reactor reload cycle.', days: [18, 35] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'ev-battery',
+        title: 'Electric Vehicle Battery Chain',
+        category: 'Mobility / Energy Storage',
+        summary: 'Lithium, cathode materials, cells, packs, vehicle assembly, and dealer distribution across North American corridors.',
+        aliases: ['electric car', 'ev', 'ev battery', 'lithium', 'cathode', 'anode', 'battery cell', 'battery pack', 'tesla', 'ford battery'],
+        taxonomy: {
+          inputs: ['Lithium carbonate', 'nickel sulfate', 'graphite', 'copper foil', 'battery separator film'],
+          middleputs: ['Cathode active material', 'anode material', 'pouch or cylindrical cells', 'battery modules'],
+          outputs: ['EV battery packs', 'electric vehicles', 'stationary storage packs']
+        },
+        routes: [
+          {
+            id: 'nevada-kentucky',
+            name: 'Nevada Lithium to Kentucky EV Assembly',
+            badge: 'domestic',
+            description: 'Western lithium and Midwest battery plants feeding vehicle assembly in the Ohio Valley.',
+            confidence: 70,
+            baseRisk: 42,
+            traffic: { truck: 'I-80 tight', rail: 'Intermodal balanced', port: 'None', bottleneck: 'Cell ramp yield' },
+            nodes: [
+              { id: 'thacker', code: 'LI', name: 'Thacker Pass Lithium', place: 'Nevada', coords: [41.71, -118.02], stage: 'mining', company: 'Lithium Americas', process: 'Lithium-bearing clay extraction and chemical processing feedstock.', days: [20, 50] },
+              { id: 'reno-hub', code: 'HUB', name: 'Reno Logistics Hub', place: 'Nevada', coords: [39.53, -119.81], stage: 'inbound', company: 'Western intermodal carriers', process: 'Drayage, rail ramping, and cross-dock consolidation.', days: [2, 6] },
+              { id: 'blueoval', code: 'CELL', name: 'BlueOval SK Battery Park', place: 'Glendale, KY', coords: [37.62, -85.90], stage: 'operations', company: 'Ford / SK On', process: 'Cell manufacturing, formation cycling, module assembly, and QA.', days: [18, 45] },
+              { id: 'louisville', code: 'ASM', name: 'Louisville Assembly Corridor', place: 'Kentucky', coords: [38.25, -85.76], stage: 'operations', company: 'Ford supplier network', process: 'Battery pack integration into vehicle assembly cadence.', days: [5, 14] },
+              { id: 'atlanta-dealer', code: 'SALE', name: 'Southeast Dealer Network', place: 'Atlanta, GA', coords: [33.75, -84.39], stage: 'sales', company: 'OEM franchise channels', process: 'Finished vehicles move through regional sales, financing, and service networks.', days: [4, 12] }
+            ]
+          },
+          {
+            id: 'chile-tennessee',
+            name: 'Lithium Triangle to Tennessee Cells',
+            badge: 'import',
+            description: 'South American lithium chemicals feed US cathode, cell, and vehicle manufacturing corridors.',
+            confidence: 63,
+            baseRisk: 51,
+            traffic: { truck: 'I-75 heavy', rail: 'Southeast balanced', port: 'Charleston moderate', bottleneck: 'Chemical conversion' },
+            nodes: [
+              { id: 'atacama', code: 'LI', name: 'Atacama Brine Operations', place: 'Chile', coords: [-23.50, -68.20], stage: 'mining', company: 'SQM / Albemarle', process: 'Brine extraction and lithium carbonate production.', days: [30, 75] },
+              { id: 'san-antonio', code: 'PORT', name: 'San Antonio Export Port', place: 'Chile', coords: [-33.58, -71.61], stage: 'inbound', company: 'Ocean carriers', process: 'Containerized chemical export into North American logistics lanes.', days: [10, 25] },
+              { id: 'charleston', code: 'PORT', name: 'Port of Charleston', place: 'South Carolina', coords: [32.78, -79.93], stage: 'inbound', company: 'South Carolina Ports', process: 'Import clearance and inland transfer to battery materials plants.', days: [5, 16] },
+              { id: 'clarksville', code: 'CELL', name: 'Clarksville Battery Corridor', place: 'Tennessee', coords: [36.53, -87.36], stage: 'operations', company: 'Battery cell suppliers', process: 'Cathode, cell, and module manufacturing.', days: [18, 45] },
+              { id: 'spring-hill', code: 'ASM', name: 'Spring Hill Assembly', place: 'Tennessee', coords: [35.75, -86.93], stage: 'operations', company: 'GM / supplier network', process: 'Battery pack and vehicle final assembly.', days: [5, 14] },
+              { id: 'charlotte-ev', code: 'SALE', name: 'Carolinas Retail Network', place: 'Charlotte, NC', coords: [35.23, -80.84], stage: 'sales', company: 'OEM retail and fleet channels', process: 'Allocation, sale, financing, and service handoff.', days: [4, 12] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'smartphone',
+        title: 'Smartphone Chain',
+        category: 'Consumer Electronics',
+        summary: 'Rare earths, wafers, displays, batteries, final assembly, ocean freight, and US retail fulfillment.',
+        aliases: ['mobile phone', 'smartphone', 'iphone', 'screen', 'computer screens', 'display glass', 'semiconductor', 'chip', 'lithium ion phone battery'],
+        taxonomy: {
+          inputs: ['Silicon wafers', 'rare earth oxides', 'display glass', 'lithium cobalt oxide', 'camera modules'],
+          middleputs: ['Application processors', 'OLED panels', 'battery cells', 'printed circuit boards', 'assembled devices'],
+          outputs: ['Smartphones', 'retail devices', 'replacement parts']
+        },
+        routes: [
+          {
+            id: 'taiwan-california',
+            name: 'Taiwan Silicon to US Retail Fulfillment',
+            badge: 'global',
+            description: 'Semiconductors, displays, assembly, Pacific freight, and West Coast distribution.',
+            confidence: 73,
+            baseRisk: 47,
+            traffic: { truck: 'I-5 dense', rail: 'LA intermodal tight', port: 'LA/LB elevated', bottleneck: 'Ocean freight and launch surge' },
+            nodes: [
+              { id: 'hsinchu', code: 'CHIP', name: 'Hsinchu Science Park', place: 'Taiwan', coords: [24.80, 120.97], stage: 'operations', company: 'TSMC / supplier ecosystem', process: 'Advanced processor fabrication and packaging ecosystem.', days: [25, 60] },
+              { id: 'shenzhen', code: 'ASM', name: 'Pearl River Assembly Cluster', place: 'Shenzhen, China', coords: [22.54, 114.06], stage: 'operations', company: 'Foxconn / electronics EMS network', process: 'Final device assembly, test, boxing, and launch allocation.', days: [8, 20] },
+              { id: 'yantian', code: 'PORT', name: 'Yantian Port', place: 'Shenzhen, China', coords: [22.58, 114.27], stage: 'outbound', company: 'Ocean carrier alliances', process: 'Ocean freight to US West Coast import gateways.', days: [10, 22] },
+              { id: 'long-beach', code: 'PORT', name: 'Long Beach / LA Ports', place: 'California', coords: [33.75, -118.19], stage: 'inbound', company: 'Port of Long Beach / LA', process: 'Import deconsolidation, customs release, and intermodal handoff.', days: [4, 15] },
+              { id: 'inland-empire', code: 'DC', name: 'Inland Empire Fulfillment', place: 'California', coords: [34.06, -117.65], stage: 'outbound', company: '3PL and OEM fulfillment network', process: 'Retail allocation, e-commerce pick/pack, returns staging.', days: [2, 7] },
+              { id: 'bay-retail', code: 'SALE', name: 'Bay Area Retail Market', place: 'California', coords: [37.77, -122.42], stage: 'sales', company: 'OEM retail and carrier channels', process: 'Consumer sale, activation, warranty, and service ecosystem.', days: [1, 5] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'jewelry',
+        title: 'Fine Jewelry Chain',
+        category: 'Luxury / Retail',
+        summary: 'Precious metals and stones move through refining, cutting, design, setting, certification, and boutique retail.',
+        aliases: ['jewelry', 'jewlery', 'gold ring', 'diamond ring', 'gemstone', 'luxury goods', 'precious metals'],
+        taxonomy: {
+          inputs: ['Gold doré', 'recycled gold', 'rough diamonds', 'platinum group metals', 'gemstones'],
+          middleputs: ['Refined bullion', 'cut stones', 'cast settings', 'finished rings', 'certified inventory'],
+          outputs: ['Fine jewelry', 'engagement rings', 'luxury retail inventory']
+        },
+        routes: [
+          {
+            id: 'canada-nyc-jewelry',
+            name: 'Canadian Diamonds to New York Jewelry',
+            badge: 'premium',
+            description: 'Arctic diamond supply, cutting, certification, design, and Manhattan retail distribution.',
+            confidence: 66,
+            baseRisk: 36,
+            traffic: { truck: 'Northeast dense', rail: 'Low dependence', port: 'Air cargo priority', bottleneck: 'Certification queue' },
+            nodes: [
+              { id: 'diavik', code: 'GEM', name: 'Diavik Diamond Mine', place: 'Northwest Territories, Canada', coords: [64.50, -110.28], stage: 'mining', company: 'Rio Tinto / Dominion history', process: 'Rough diamond production in remote Arctic logistics conditions.', days: [20, 50] },
+              { id: 'yellowknife', code: 'AIR', name: 'Yellowknife Air Cargo', place: 'Canada', coords: [62.45, -114.37], stage: 'inbound', company: 'Secure air logistics', process: 'High-value inventory flies through secure chain-of-custody routes.', days: [1, 4] },
+              { id: 'ny-diamond', code: 'CUT', name: 'Diamond District', place: 'New York, NY', coords: [40.76, -73.98], stage: 'operations', company: 'Cutters, wholesalers, GIA-linked ecosystem', process: 'Cutting, grading, certification, matching, and dealer inventory.', days: [10, 35] },
+              { id: 'ny-atelier', code: 'SET', name: 'Manhattan Jewelry Atelier', place: 'New York, NY', coords: [40.75, -73.99], stage: 'operations', company: 'Independent jewelers / luxury houses', process: 'Design, casting, stone setting, polishing, appraisal, and packaging.', days: [7, 24] },
+              { id: 'fifth-ave', code: 'SALE', name: 'Fifth Avenue Retail', place: 'New York, NY', coords: [40.76, -73.97], stage: 'sales', company: 'Luxury boutiques', process: 'Retail merchandising, clienteling, financing, and after-sale service.', days: [1, 8] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'cotton-shirt',
+        title: 'Cotton T-Shirt Chain',
+        category: 'Apparel / Basics',
+        summary: 'Cotton bales, spinning, knitting, dyeing, cut-and-sew, warehouse replenishment, and retail shelves.',
+        aliases: ['clothing', 'shirt', 't-shirt', 'cotton', 'apparel', 'textile', 'fabric', 'garment'],
+        taxonomy: {
+          inputs: ['Cotton lint', 'polyester thread', 'dyes', 'packaging film', 'labels'],
+          middleputs: ['Yarn', 'knit fabric', 'dyed rolls', 'cut panels', 'finished garments'],
+          outputs: ['T-shirts', 'retail apparel inventory', 'e-commerce units']
+        },
+        routes: [
+          {
+            id: 'texas-carolinas-apparel',
+            name: 'Texas Cotton to Carolinas Apparel',
+            badge: 'basic goods',
+            description: 'Southern cotton flows through yarn, fabric, cut-and-sew, distribution, and retail replenishment.',
+            confidence: 76,
+            baseRisk: 29,
+            traffic: { truck: 'I-20 steady', rail: 'Southeast balanced', port: 'Low dependence', bottleneck: 'Cut-and-sew capacity' },
+            nodes: [
+              { id: 'lubbock', code: 'COT', name: 'High Plains Cotton Gin', place: 'Lubbock, TX', coords: [33.58, -101.86], stage: 'mining', company: 'Regional cotton growers', process: 'Harvested cotton is ginned, baled, classed, and staged for mills.', days: [4, 12] },
+              { id: 'memphis-cotton', code: 'HUB', name: 'Memphis Cotton Classing Hub', place: 'Tennessee', coords: [35.15, -90.05], stage: 'inbound', company: 'Cotton merchants / rail carriers', process: 'Merchanting, classing, storage, and outbound freight planning.', days: [3, 9] },
+              { id: 'spartanburg', code: 'YARN', name: 'Textile Mill Corridor', place: 'Spartanburg, SC', coords: [34.95, -81.93], stage: 'operations', company: 'US textile mills', process: 'Spinning, knitting, dyeing, finishing, and roll goods QA.', days: [8, 22] },
+              { id: 'atlanta-apparel', code: 'SEW', name: 'Southeast Cut-and-Sew Network', place: 'Atlanta, GA', coords: [33.75, -84.39], stage: 'operations', company: 'Apparel contractors', process: 'Cut panels, sewing lines, finishing, tagging, and packaging.', days: [5, 18] },
+              { id: 'charlotte-dc', code: 'DC', name: 'Charlotte Retail DC', place: 'North Carolina', coords: [35.23, -80.84], stage: 'outbound', company: 'Retail distribution network', process: 'Store allocation, e-commerce replenishment, and reverse logistics.', days: [2, 7] },
+              { id: 'raleigh-store', code: 'SALE', name: 'Triangle Retail Shelf', place: 'Raleigh, NC', coords: [35.78, -78.64], stage: 'sales', company: 'National apparel retailers', process: 'POS sale, markdown cycles, returns, and inventory rebalancing.', days: [1, 6] }
+            ]
+          }
+        ]
+      }
+    ];
+
+    const state = {
+      chainId: 'nuclear-fuel',
+      routeId: 'athabasca-duke',
+      activeStages: new Set(Object.keys(STAGES)),
+      shocks: { congestion: 0, fuel: 0, demand: 0, policy: 0 },
+      layers: [],
+      markersByNode: new Map(),
+    };
+
+    const map = L.map('map', {
+      zoomControl: false,
+      worldCopyJump: true,
+      preferCanvas: false,
+      minZoom: 2,
+      maxZoom: 11,
+    }).setView([38.0, -96.0], 4);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
+
+    const routeLayer = L.layerGroup().addTo(map);
+
+    const el = {
+      searchBox: document.getElementById('searchBox'),
+      searchResults: document.getElementById('searchResults'),
+      commodityChips: document.getElementById('commodityChips'),
+      routeList: document.getElementById('routeList'),
+      chainCount: document.getElementById('chainCount'),
+      routeCount: document.getElementById('routeCount'),
+      chainCategory: document.getElementById('chainCategory'),
+      chainTitle: document.getElementById('chainTitle'),
+      chainSummary: document.getElementById('chainSummary'),
+      confidenceGauge: document.getElementById('confidenceGauge'),
+      confidenceText: document.getElementById('confidenceText'),
+      metricLead: document.getElementById('metricLead'),
+      metricBottleneck: document.getElementById('metricBottleneck'),
+      metricCost: document.getElementById('metricCost'),
+      metricTraffic: document.getElementById('metricTraffic'),
+      taxonomy: document.getElementById('taxonomy'),
+      isotopeBlock: document.getElementById('isotopeBlock'),
+      companyList: document.getElementById('companyList'),
+      nodeList: document.getElementById('nodeList'),
+      kpiNodes: document.getElementById('kpiNodes'),
+      kpiLead: document.getElementById('kpiLead'),
+      kpiRisk: document.getElementById('kpiRisk'),
+      stageToggles: document.getElementById('stageToggles'),
+      scenarioScore: document.getElementById('scenarioScore'),
+      fitRoute: document.getElementById('fitRoute'),
+      sliders: {
+        congestion: document.getElementById('congestionShock'),
+        fuel: document.getElementById('fuelShock'),
+        demand: document.getElementById('demandShock'),
+        policy: document.getElementById('policyShock'),
+      },
+      sliderValues: {
+        congestion: document.getElementById('congestionValue'),
+        fuel: document.getElementById('fuelValue'),
+        demand: document.getElementById('demandValue'),
+        policy: document.getElementById('policyValue'),
+      },
+    };
+
+    function getChain() {
+      return CHAINS.find((chain) => chain.id === state.chainId) || CHAINS[0];
+    }
+
+    function getRoute() {
+      const chain = getChain();
+      return chain.routes.find((route) => route.id === state.routeId) || chain.routes[0];
+    }
+
+    function averageDays(node) {
+      return (node.days[0] + node.days[1]) / 2;
+    }
+
+    function routeBaseDays(route) {
+      return route.nodes.reduce((sum, node) => sum + averageDays(node), 0);
+    }
+
+    function adjustedMetrics(route) {
+      const base = routeBaseDays(route);
+      const shockFactor = 1
+        + state.shocks.congestion * 0.0022
+        + state.shocks.fuel * 0.0010
+        + state.shocks.demand * 0.0016
+        + state.shocks.policy * 0.0024;
+      const adjusted = Math.max(1, base * shockFactor);
+      const risk = Math.max(0, Math.min(100, Math.round(
+        route.baseRisk
+        + state.shocks.congestion * 0.28
+        + state.shocks.fuel * 0.10
+        + state.shocks.demand * 0.18
+        + state.shocks.policy * 0.34
+      )));
+      const confidence = Math.max(10, Math.min(96, Math.round(route.confidence - Math.max(0, risk - route.baseRisk) * 0.24)));
+      const cost = Math.round(50 + state.shocks.fuel * 0.42 + state.shocks.congestion * 0.28 + state.shocks.demand * 0.18 + state.shocks.policy * 0.12);
+      return { base, adjusted, risk, confidence, cost };
+    }
+
+    function shortDays(days) {
+      if (days >= 100) return Math.round(days) + 'd';
+      return Math.round(days * 10) / 10 + 'd';
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function allTextForChain(chain) {
+      const routeText = chain.routes.flatMap((route) => [
+        route.name,
+        route.description,
+        ...route.nodes.flatMap((node) => [node.name, node.place, node.company, node.process]),
+      ]);
+      return [
+        chain.title,
+        chain.category,
+        chain.summary,
+        ...chain.aliases,
+        ...chain.taxonomy.inputs,
+        ...chain.taxonomy.middleputs,
+        ...chain.taxonomy.outputs,
+        ...routeText,
+      ].join(' ').toLowerCase();
+    }
+
+    function searchChains(query) {
+      const needle = query.trim().toLowerCase();
+      if (!needle) {
+        return CHAINS.slice(0, 5).map((chain) => ({ chain, reason: 'featured' }));
+      }
+      return CHAINS
+        .map((chain) => {
+          const exactAlias = chain.aliases.find((alias) => alias.toLowerCase() === needle);
+          const partialAlias = chain.aliases.find((alias) => alias.toLowerCase().includes(needle));
+          const taxonomyHit = [...chain.taxonomy.inputs, ...chain.taxonomy.middleputs, ...chain.taxonomy.outputs]
+            .find((item) => item.toLowerCase().includes(needle));
+          const textHit = allTextForChain(chain).includes(needle);
+          if (!exactAlias && !partialAlias && !taxonomyHit && !textHit) return null;
+          return { chain, reason: exactAlias || partialAlias || taxonomyHit || 'route/company hit' };
+        })
+        .filter(Boolean)
+        .slice(0, 6);
+    }
+
+    function setChain(chainId) {
+      const chain = CHAINS.find((item) => item.id === chainId);
+      if (!chain) return;
+      state.chainId = chain.id;
+      state.routeId = chain.routes[0].id;
+      render();
+      fitToRoute();
+    }
+
+    function setRoute(routeId) {
+      state.routeId = routeId;
+      render();
+      fitToRoute();
+    }
+
+    function fitToRoute() {
+      const route = getRoute();
+      const visible = route.nodes.filter((node) => state.activeStages.has(node.stage));
+      const points = visible.length ? visible : route.nodes;
+      const bounds = L.latLngBounds(points.map((node) => node.coords));
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { paddingTopLeft: [390, 92], paddingBottomRight: [410, 142], maxZoom: 5.5 });
+      }
+    }
+
+    function stageColor(stage) {
+      return STAGES[stage]?.color || '#66717f';
+    }
+
+    function markerForNode(node) {
+      return L.divIcon({
+        className: '',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -18],
+        html: '<div class="node-marker-shell" style="--stage-color:' + stageColor(node.stage) + '">' + escapeHtml(node.code) + '</div>',
+      });
+    }
+
+    function drawMap() {
+      routeLayer.clearLayers();
+      state.markersByNode.clear();
+      const route = getRoute();
+
+      for (let index = 1; index < route.nodes.length; index += 1) {
+        const prev = route.nodes[index - 1];
+        const node = route.nodes[index];
+        if (!state.activeStages.has(prev.stage) || !state.activeStages.has(node.stage)) continue;
+        const color = stageColor(node.stage);
+        L.polyline([prev.coords, node.coords], {
+          color,
+          weight: 5,
+          opacity: 0.82,
+          smoothFactor: 1.1,
+          className: 'route-segment',
+        }).addTo(routeLayer);
+      }
+
+      route.nodes.forEach((node) => {
+        if (!state.activeStages.has(node.stage)) return;
+        const popup = [
+          '<h3 class="popup-title">' + escapeHtml(node.name) + '</h3>',
+          '<p class="popup-meta"><b>' + escapeHtml(STAGES[node.stage].label) + '</b> | ' + escapeHtml(node.place) + '<br />' + escapeHtml(node.company) + '<br />' + escapeHtml(node.process) + '</p>',
+        ].join('');
+        const marker = L.marker(node.coords, { icon: markerForNode(node), title: node.name })
+          .bindPopup(popup)
+          .addTo(routeLayer);
+        state.markersByNode.set(node.id, marker);
+      });
+    }
+
+    function renderSearchResults() {
+      const results = searchChains(el.searchBox.value);
+      el.searchResults.innerHTML = results.length
+        ? results.map(({ chain, reason }) => (
+          '<button class="result-button" type="button" data-chain-id="' + escapeHtml(chain.id) + '">' +
+            '<span><strong>' + escapeHtml(chain.title) + '</strong><span>' + escapeHtml(chain.category) + '</span></span>' +
+            '<code>' + escapeHtml(reason) + '</code>' +
+          '</button>'
+        )).join('')
+        : '<div class="empty-state">No chain match yet. Try uranium, battery, smartphone, jewelry, cotton, or nuclear reactor.</div>';
+    }
+
+    function renderCommodityChips() {
+      el.chainCount.textContent = CHAINS.length + ' chains';
+      el.commodityChips.innerHTML = CHAINS.map((chain) => (
+        '<button class="chip ' + (chain.id === state.chainId ? 'active' : '') + '" type="button" data-chain-id="' + escapeHtml(chain.id) + '">' + escapeHtml(chain.title.replace(' Chain', '')) + '</button>'
+      )).join('');
+    }
+
+    function renderRoutes() {
+      const chain = getChain();
+      el.routeCount.textContent = chain.routes.length + ' paths';
+      el.routeList.innerHTML = chain.routes.map((route) => {
+        const metrics = adjustedMetrics(route);
+        return '<button class="route-card ' + (route.id === state.routeId ? 'active' : '') + '" type="button" data-route-id="' + escapeHtml(route.id) + '">' +
+          '<div class="route-top"><h3>' + escapeHtml(route.name) + '</h3><span class="route-badge">' + escapeHtml(route.badge) + '</span></div>' +
+          '<p>' + escapeHtml(route.description) + '</p>' +
+          '<div class="route-meta"><span>' + shortDays(metrics.adjusted) + '</span><span>risk ' + metrics.risk + '</span><span>' + route.nodes.length + ' nodes</span></div>' +
+        '</button>';
+      }).join('');
+    }
+
+    function renderTaxonomy() {
+      const chain = getChain();
+      const rows = [
+        ['Inputs', chain.taxonomy.inputs],
+        ['Middle', chain.taxonomy.middleputs],
+        ['Outputs', chain.taxonomy.outputs],
+      ];
+      el.taxonomy.innerHTML = rows.map(([label, items]) => (
+        '<div class="taxonomy-row"><b>' + escapeHtml(label) + '</b><span>' + escapeHtml(items.join(' | ')) + '</span></div>'
+      )).join('');
+    }
+
+    function renderIsotopes() {
+      const chain = getChain();
+      if (!chain.isotopes) {
+        el.isotopeBlock.innerHTML = '';
+        return;
+      }
+      el.isotopeBlock.innerHTML = '<div class="section-label"><span>Uranium Forms And Isotopes</span></div>' +
+        '<table class="isotope-table"><thead><tr><th>Material</th><th>Share / Form</th><th>Differentiation</th></tr></thead><tbody>' +
+        chain.isotopes.map((row) => '<tr><td>' + escapeHtml(row.isotope) + '</td><td>' + escapeHtml(row.share) + '</td><td>' + escapeHtml(row.role) + '</td></tr>').join('') +
+        '</tbody></table>';
+    }
+
+    function renderCompanies() {
+      const route = getRoute();
+      const companies = [...new Set(route.nodes.map((node) => node.company))];
+      el.companyList.innerHTML = companies.map((company) => '<span class="company-chip">' + escapeHtml(company) + '</span>').join('');
+    }
+
+    function renderNodeList() {
+      const route = getRoute();
+      el.nodeList.innerHTML = route.nodes.map((node) => (
+        '<button class="node-row" type="button" data-node-id="' + escapeHtml(node.id) + '">' +
+          '<i class="node-dot" style="--stage-color:' + stageColor(node.stage) + '"></i>' +
+          '<span><strong>' + escapeHtml(node.name) + '</strong><span>' + escapeHtml(STAGES[node.stage].label + ' | ' + node.company + ' | ' + node.place) + '</span></span>' +
+          '<b class="node-time">' + escapeHtml(node.days[0] + '-' + node.days[1] + 'd') + '</b>' +
+        '</button>'
+      )).join('');
+    }
+
+    function renderDetail() {
+      const chain = getChain();
+      const route = getRoute();
+      const metrics = adjustedMetrics(route);
+      el.chainCategory.textContent = chain.category;
+      el.chainTitle.textContent = chain.title;
+      el.chainSummary.textContent = route.name + ': ' + chain.summary;
+      el.confidenceGauge.style.setProperty('--score', metrics.confidence);
+      el.confidenceText.textContent = metrics.confidence + '%';
+      el.metricLead.textContent = shortDays(metrics.adjusted);
+      el.metricBottleneck.textContent = route.traffic.bottleneck;
+      el.metricCost.textContent = metrics.cost >= 65 ? 'High' : metrics.cost <= 40 ? 'Low' : 'Moderate';
+      el.metricTraffic.textContent = route.traffic.truck;
+      el.kpiNodes.textContent = route.nodes.length;
+      el.kpiLead.textContent = shortDays(metrics.adjusted);
+      el.kpiRisk.textContent = metrics.risk;
+      renderTaxonomy();
+      renderIsotopes();
+      renderCompanies();
+      renderNodeList();
+    }
+
+    function renderStageToggles() {
+      el.stageToggles.innerHTML = Object.entries(STAGES).map(([key, stage]) => (
+        '<label class="stage-toggle" style="--stage-color:' + stage.color + '">' +
+          '<input type="checkbox" data-stage="' + key + '" ' + (state.activeStages.has(key) ? 'checked' : '') + ' />' +
+          '<i></i><span>' + escapeHtml(stage.label) + '</span>' +
+        '</label>'
+      )).join('');
+    }
+
+    function renderScenario() {
+      Object.entries(state.shocks).forEach(([key, value]) => {
+        el.sliders[key].value = value;
+        el.sliderValues[key].textContent = value > 0 ? '+' + value : String(value);
+      });
+      const total = Object.values(state.shocks).reduce((sum, value) => sum + value, 0);
+      el.scenarioScore.textContent = total > 30 ? 'Stress' : total < -20 ? 'Easing' : 'Base';
+    }
+
+    function render() {
+      renderSearchResults();
+      renderCommodityChips();
+      renderRoutes();
+      renderDetail();
+      renderStageToggles();
+      renderScenario();
+      drawMap();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function bindEvents() {
+      el.searchBox.addEventListener('input', renderSearchResults);
+      el.searchBox.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        const first = searchChains(el.searchBox.value)[0];
+        if (first) setChain(first.chain.id);
+      });
+
+      document.addEventListener('click', (event) => {
+        const chainButton = event.target.closest('[data-chain-id]');
+        if (chainButton) {
+          setChain(chainButton.getAttribute('data-chain-id'));
+          return;
+        }
+        const routeButton = event.target.closest('[data-route-id]');
+        if (routeButton) {
+          setRoute(routeButton.getAttribute('data-route-id'));
+          return;
+        }
+        const nodeButton = event.target.closest('[data-node-id]');
+        if (nodeButton) {
+          const nodeId = nodeButton.getAttribute('data-node-id');
+          const marker = state.markersByNode.get(nodeId);
+          if (marker) {
+            map.setView(marker.getLatLng(), Math.max(map.getZoom(), 5), { animate: true });
+            marker.openPopup();
+          }
+          return;
+        }
+      });
+
+      el.stageToggles.addEventListener('change', (event) => {
+        const input = event.target.closest('input[data-stage]');
+        if (!input) return;
+        const stage = input.getAttribute('data-stage');
+        if (input.checked) state.activeStages.add(stage);
+        else state.activeStages.delete(stage);
+        drawMap();
+      });
+
+      Object.keys(el.sliders).forEach((key) => {
+        el.sliders[key].addEventListener('input', (event) => {
+          state.shocks[key] = Number(event.target.value);
+          renderRoutes();
+          renderDetail();
+          renderScenario();
+        });
+      });
+
+      el.fitRoute.addEventListener('click', fitToRoute);
+      window.addEventListener('resize', () => setTimeout(fitToRoute, 120));
+    }
+
+    bindEvents();
+    render();
+    setTimeout(fitToRoute, 160);
+  </script>
+</body>
+</html>

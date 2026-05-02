@@ -1,0 +1,25 @@
+{
+  "sources": [
+    {
+      "name": "openrouter_models_api",
+      "type": "json_api",
+      "url": "https://openrouter.ai/api/v1/models",
+      "enabled": true,
+      "notes": "High-frequency machine-readable feed with created timestamps and model IDs"
+    },
+    {
+      "name": "anthropic_api_release_notes",
+      "type": "html_release_notes",
+      "url": "https://platform.claude.com/docs/en/release-notes/api",
+      "enabled": true,
+      "notes": "Dated changelog with explicit model IDs and deprecations"
+    },
+    {
+      "name": "google_gemini_changelog",
+      "type": "html_release_notes",
+      "url": "https://ai.google.dev/gemini-api/docs/changelog",
+      "enabled": true,
+      "notes": "Dated changelog with model IDs and version transitions"
+    }
+  ]
+}
