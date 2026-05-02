@@ -73,7 +73,7 @@
       left: 0;
       right: 0;
       height: 58px;
-      z-index: 20;
+      z-index: 40;
       display: flex;
       align-items: center;
       gap: 14px;
@@ -100,6 +100,23 @@
     }
     .icon-button:hover { color: var(--text); border-color: var(--line-strong); background: #fff; transform: translateY(-1px); }
     .icon-button svg { width: 17px; height: 17px; stroke-width: 2; }
+
+    .mode-toggle {
+      width: auto;
+      min-width: 92px;
+      gap: 7px;
+      padding: 0 10px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .mode-toggle[data-mode="3d"] {
+      color: var(--risk);
+      border-color: color-mix(in srgb, var(--risk), transparent 44%);
+      background: #fff8f6;
+    }
 
     .brand {
       display: flex;
@@ -423,6 +440,48 @@
     .isotope-table tr:last-child td { border-bottom: 0; }
     .isotope-table td:first-child { font-family: var(--font-mono); color: var(--text); white-space: nowrap; }
 
+    .leg-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+    }
+    .leg-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+    }
+    .leg-table th, .leg-table td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+    .leg-table th {
+      color: var(--muted);
+      background: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .leg-table tr:last-child td { border-bottom: 0; }
+    .leg-table td:first-child, .leg-table td:nth-child(4), .leg-table td:nth-child(5) { font-family: var(--font-mono); }
+
+    .globe-notice {
+      display: none;
+      margin-top: 10px;
+      padding: 9px 10px;
+      color: var(--risk);
+      background: #fff8f6;
+      border: 1px dashed color-mix(in srgb, var(--risk), transparent 42%);
+      border-radius: 7px;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .globe-notice.active { display: block; }
+
     .node-list { display: grid; gap: 7px; }
     .node-row {
       display: grid;
@@ -585,6 +644,7 @@
       <div class="top-kpi"><b id="kpiLead">0d</b><span>Lead</span></div>
       <div class="top-kpi"><b id="kpiRisk">0</b><span>Risk</span></div>
     </div>
+    <button class="icon-button mode-toggle" id="mapModeToggle" data-mode="2d" title="Toggle 2D and planned 3D globe mode" aria-label="Toggle map mode"><i data-lucide="globe-2"></i><span id="mapModeText">2D Map</span></button>
     <button class="icon-button" id="fitRoute" title="Fit route" aria-label="Fit route"><i data-lucide="scan"></i></button>
   </header>
 
@@ -629,6 +689,9 @@
           <div class="metric"><span>Traffic Nowcast</span><strong id="metricTraffic">-</strong></div>
         </div>
 
+        <div class="section-label"><span>Route Legs And Provenance</span></div>
+        <div class="leg-table-wrap" id="legTable"></div>
+
         <div class="section-label"><span>Inputs / Middleputs / Outputs</span></div>
         <div class="taxonomy" id="taxonomy"></div>
 
@@ -655,6 +718,7 @@
       <div>
         <div class="section-label" style="margin-top:0"><span>Value Chain Stages</span><span>Layer</span></div>
         <div class="stage-grid" id="stageToggles"></div>
+        <div class="globe-notice" id="globeNotice">3D globe mode is staged for Phase 3. The Phase 0 toggle is wired now so globe layers can plug into the same chain, leg, and routePath model.</div>
       </div>
     </section>
   </main>
@@ -925,6 +989,7 @@
     const state = {
       chainId: 'nuclear-fuel',
       routeId: 'athabasca-duke',
+      mapMode: '2d',
       activeStages: new Set(Object.keys(STAGES)),
       shocks: { congestion: 0, fuel: 0, demand: 0, policy: 0 },
       layers: [],
@@ -963,6 +1028,7 @@
       metricBottleneck: document.getElementById('metricBottleneck'),
       metricCost: document.getElementById('metricCost'),
       metricTraffic: document.getElementById('metricTraffic'),
+      legTable: document.getElementById('legTable'),
       taxonomy: document.getElementById('taxonomy'),
       isotopeBlock: document.getElementById('isotopeBlock'),
       companyList: document.getElementById('companyList'),
@@ -972,6 +1038,9 @@
       kpiRisk: document.getElementById('kpiRisk'),
       stageToggles: document.getElementById('stageToggles'),
       scenarioScore: document.getElementById('scenarioScore'),
+      mapModeToggle: document.getElementById('mapModeToggle'),
+      mapModeText: document.getElementById('mapModeText'),
+      globeNotice: document.getElementById('globeNotice'),
       fitRoute: document.getElementById('fitRoute'),
       sliders: {
         congestion: document.getElementById('congestionShock'),
@@ -1190,6 +1259,44 @@
       )).join('');
     }
 
+    function inferLegMode(from, to) {
+      if (from.code === 'PORT' && to.code === 'PORT') return 'sea';
+      if (from.code === 'AIR' || to.code === 'AIR') return 'air';
+      if (from.code === 'RAIL' || to.code === 'RAIL' || to.code === 'PORT' || from.code === 'PORT') return 'rail';
+      return 'road';
+    }
+
+    function routeSourceForMode(mode) {
+      if (mode === 'sea') return 'maritime graph fixture';
+      if (mode === 'rail') return 'rail graph fixture';
+      if (mode === 'air') return 'great-circle arc';
+      return 'snapped-road fixture';
+    }
+
+    function renderLegTable() {
+      const route = getRoute();
+      const rows = [];
+      for (let index = 1; index < route.nodes.length; index += 1) {
+        const from = route.nodes[index - 1];
+        const to = route.nodes[index];
+        const mode = inferLegMode(from, to);
+        const avgDays = averageDays(to);
+        const confidence = Math.max(35, Math.min(95, route.confidence - index * 2));
+        rows.push({ from, to, mode, avgDays, confidence, source: routeSourceForMode(mode) });
+      }
+      el.legTable.innerHTML = '<table class="leg-table"><thead><tr><th>Leg</th><th>From</th><th>To</th><th>Mode</th><th>Source</th><th>ETA</th><th>Conf.</th></tr></thead><tbody>' +
+        rows.map((row, index) => '<tr>' +
+          '<td>' + escapeHtml('L' + String(index + 1).padStart(2, '0')) + '</td>' +
+          '<td>' + escapeHtml(row.from.name) + '</td>' +
+          '<td>' + escapeHtml(row.to.name) + '</td>' +
+          '<td>' + escapeHtml(row.mode) + '</td>' +
+          '<td>' + escapeHtml(row.source) + '</td>' +
+          '<td>' + escapeHtml(shortDays(row.avgDays)) + '</td>' +
+          '<td>' + escapeHtml(row.confidence + '%') + '</td>' +
+        '</tr>').join('') +
+        '</tbody></table>';
+    }
+
     function renderIsotopes() {
       const chain = getChain();
       if (!chain.isotopes) {
@@ -1235,6 +1342,7 @@
       el.kpiNodes.textContent = route.nodes.length;
       el.kpiLead.textContent = shortDays(metrics.adjusted);
       el.kpiRisk.textContent = metrics.risk;
+      renderLegTable();
       renderTaxonomy();
       renderIsotopes();
       renderCompanies();
@@ -1259,6 +1367,13 @@
       el.scenarioScore.textContent = total > 30 ? 'Stress' : total < -20 ? 'Easing' : 'Base';
     }
 
+    function renderMapMode() {
+      const isGlobe = state.mapMode === '3d';
+      el.mapModeToggle.dataset.mode = isGlobe ? '3d' : '2d';
+      el.mapModeText.textContent = isGlobe ? '3D Stub' : '2D Map';
+      el.globeNotice.classList.toggle('active', isGlobe);
+    }
+
     function render() {
       renderSearchResults();
       renderCommodityChips();
@@ -1266,6 +1381,7 @@
       renderDetail();
       renderStageToggles();
       renderScenario();
+      renderMapMode();
       drawMap();
       if (window.lucide) window.lucide.createIcons();
     }
@@ -1320,6 +1436,10 @@
       });
 
       el.fitRoute.addEventListener('click', fitToRoute);
+      el.mapModeToggle.addEventListener('click', () => {
+        state.mapMode = state.mapMode === '2d' ? '3d' : '2d';
+        renderMapMode();
+      });
       window.addEventListener('resize', () => setTimeout(fitToRoute, 120));
     }
 
