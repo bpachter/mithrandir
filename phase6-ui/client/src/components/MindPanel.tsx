@@ -249,7 +249,7 @@ function buildLiveContextBlock(args: {
 
   if (args.orator.status === 'ok') {
     const snapshot = args.orator.data
-    const signals = snapshot.top_signals.slice(0, 4).map((signal) => `${signal.name}: ${signal.value} (${signal.state})`).join('; ')
+    const signals = (snapshot.top_signals ?? []).slice(0, 4).map((signal) => `${signal.name}: ${signal.value} (${signal.state})`).join('; ')
     parts.push(
       [
         'Orator macro brief:',
@@ -708,7 +708,7 @@ export default function MindPanel() {
                         </div>
                         <div className="mind-orbit-copy">{oratorState.data.narrative}</div>
                         <div className="mind-orbit-pill-row">
-                          {oratorState.data.top_signals.slice(0, 4).map((signal) => (
+                          {(oratorState.data.top_signals ?? []).slice(0, 4).map((signal) => (
                             <span key={signal.name} className={`mind-orbit-pill state-${signal.state.toLowerCase()}`}>{signal.name}: {signal.value}</span>
                           ))}
                         </div>
