@@ -712,6 +712,7 @@ _TOOL_STATUS: dict[str, tuple[str, str]] = {
     "lexicon_lookup":       ("Looking up pronunciation...",           "Pronunciation found..."),
     "lexicon_remove":       ("Removing lexicon entry...",             "Entry removed..."),
     "speech_feedback_add":  ("Recording speech feedback...",          "Feedback saved..."),
+    "repo_watch":           ("Scanning the repo for agent activity...", "Repo scan complete, analyzing changes..."),
 }
 
 def _tool_msg(tool_name: str, phase: int) -> str:

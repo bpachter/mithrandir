@@ -1118,6 +1118,38 @@ register(
 
 
 # ---------------------------------------------------------------------------
+# repo_watcher — monitor other repos on this machine for agent activity
+# ---------------------------------------------------------------------------
+
+_repo_watcher_path = os.path.join(os.path.dirname(__file__), "repo_watcher.py")
+_repo_watcher_spec = importlib.util.spec_from_file_location("repo_watcher", _repo_watcher_path)
+_repo_watcher_mod = importlib.util.module_from_spec(_repo_watcher_spec)
+_repo_watcher_spec.loader.exec_module(_repo_watcher_mod)
+
+register(
+    name="repo_watch",
+    description=(
+        "Monitor another repo on this machine for agent (Claude Code) activity. "
+        "Two modes: "
+        "(1) action='snapshot' — instant report: recent commits, git status, recently modified files, "
+        "and a diff stat. Use to see what an agent has been building or to identify bugs mid-work. "
+        "(2) action='poll_until_idle' — blocks until the repo goes quiet (no new commits or file "
+        "changes for idle_secs seconds), then returns a full change summary. Use when the user says "
+        "'tell me when the agent is done' or 'notify me when Claude finishes in avalon'. "
+        "Known repo aliases: avalon, orator, mithrandir, longinus, zeus, babylon, aristotle, chronos, aegis. "
+        "After either mode, call dev_read_file to inspect specific changed files for deeper analysis."
+    ),
+    parameters={
+        "repo":      "str — repo alias or absolute path, e.g. 'avalon'",
+        "action":    "str — 'snapshot' (fast, default) or 'poll_until_idle' (blocks until agent finishes)",
+        "since_sha": "str — optional base git SHA for snapshot diffs, e.g. 'abc1234'",
+        "max_wait":  "int — max seconds to block in poll_until_idle (30–600, default 300)",
+        "idle_secs": "int — seconds of quiet to declare the agent done (20–120, default 45)",
+    },
+    fn=_repo_watcher_mod.watch_repo,
+)
+
+# ---------------------------------------------------------------------------
 # Avalon — datacenter siting (Railway-hosted site-selection platform)
 # ---------------------------------------------------------------------------
 
