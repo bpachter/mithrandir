@@ -406,6 +406,75 @@
     .metric span { display: block; color: var(--muted); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; }
     .metric strong { display: block; margin-top: 4px; font-size: 16px; line-height: 1.1; }
 
+    .compare-grid {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .compare-grid th, .compare-grid td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 11px;
+      line-height: 1.3;
+      vertical-align: top;
+    }
+    .compare-grid th {
+      color: var(--muted);
+      background: var(--soft);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .compare-grid tr:last-child td { border-bottom: 0; }
+    .delta-up { color: #b42318; font-family: var(--font-mono); }
+    .delta-down { color: #027a48; font-family: var(--font-mono); }
+
+    .bottleneck-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--risk), transparent 42%);
+      background: #fff1f1;
+      color: var(--risk);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .disruption-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .disruption-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255,255,255,0.74);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .disruption-toggle input { accent-color: var(--risk); }
+    .disruption-toggle.active {
+      color: var(--risk);
+      border-color: color-mix(in srgb, var(--risk), transparent 40%);
+      background: #fff5f3;
+    }
+
     .taxonomy { display: grid; gap: 7px; }
     .taxonomy-row {
       display: grid;
@@ -689,6 +758,11 @@
           <div class="metric"><span>Traffic Nowcast</span><strong id="metricTraffic">-</strong></div>
         </div>
 
+        <div class="section-label"><span>Chain Compare</span><span id="scenarioLabel">Baseline</span></div>
+        <div id="chainCompare"></div>
+
+        <div class="section-label"><span>Bottleneck Highlight</span><span id="bottleneckPill" class="bottleneck-pill">No active bottleneck</span></div>
+
         <div class="section-label"><span>Route Legs And Provenance</span></div>
         <div class="leg-table-wrap" id="legTable"></div>
 
@@ -714,6 +788,8 @@
           <div class="slider-box"><label for="demandShock"><span>Demand</span><b id="demandValue">0</b></label><input id="demandShock" type="range" min="-50" max="50" value="0" /></div>
           <div class="slider-box"><label for="policyShock"><span>Policy</span><b id="policyValue">0</b></label><input id="policyShock" type="range" min="-50" max="50" value="0" /></div>
         </div>
+        <div class="section-label"><span>Disruption Toggles</span><span>Events</span></div>
+        <div class="disruption-grid" id="disruptionToggles"></div>
       </div>
       <div>
         <div class="section-label" style="margin-top:0"><span>Value Chain Stages</span><span>Layer</span></div>
@@ -735,6 +811,13 @@
       outbound: { label: 'Outbound Logistics', color: '#8b5cf6', code: 'OL' },
       sales: { label: 'Marketing & Sales', color: '#ef476f', code: 'MS' },
       use: { label: 'Service / Use', color: '#0891b2', code: 'US' },
+    };
+
+    const DISRUPTIONS = {
+      suezClosure: { label: 'Suez Capacity Cut', key: 'SUEZ', mode: 'sea' },
+      portStrike: { label: 'Port Strike Wave', key: 'PORT', mode: 'sea' },
+      sanctions: { label: 'Sanctions Spike', key: 'SANCTIONS', mode: 'sea' },
+      weather: { label: 'Severe Weather', key: 'WEATHER', mode: 'air' },
     };
 
     const CHAINS = [
@@ -992,6 +1075,8 @@
       mapMode: '2d',
       activeStages: new Set(Object.keys(STAGES)),
       shocks: { congestion: 0, fuel: 0, demand: 0, policy: 0 },
+      disruptions: { suezClosure: false, portStrike: false, sanctions: false, weather: false },
+      lastScenario: null,
       layers: [],
       markersByNode: new Map(),
     };
@@ -1028,6 +1113,9 @@
       metricBottleneck: document.getElementById('metricBottleneck'),
       metricCost: document.getElementById('metricCost'),
       metricTraffic: document.getElementById('metricTraffic'),
+      scenarioLabel: document.getElementById('scenarioLabel'),
+      chainCompare: document.getElementById('chainCompare'),
+      bottleneckPill: document.getElementById('bottleneckPill'),
       legTable: document.getElementById('legTable'),
       taxonomy: document.getElementById('taxonomy'),
       isotopeBlock: document.getElementById('isotopeBlock'),
@@ -1038,6 +1126,7 @@
       kpiRisk: document.getElementById('kpiRisk'),
       stageToggles: document.getElementById('stageToggles'),
       scenarioScore: document.getElementById('scenarioScore'),
+      disruptionToggles: document.getElementById('disruptionToggles'),
       mapModeToggle: document.getElementById('mapModeToggle'),
       mapModeText: document.getElementById('mapModeText'),
       globeNotice: document.getElementById('globeNotice'),
@@ -1073,25 +1162,168 @@
       return route.nodes.reduce((sum, node) => sum + averageDays(node), 0);
     }
 
-    function adjustedMetrics(route) {
-      const base = routeBaseDays(route);
-      const shockFactor = 1
-        + state.shocks.congestion * 0.0022
-        + state.shocks.fuel * 0.0010
-        + state.shocks.demand * 0.0016
-        + state.shocks.policy * 0.0024;
-      const adjusted = Math.max(1, base * shockFactor);
-      const risk = Math.max(0, Math.min(100, Math.round(
-        route.baseRisk
-        + state.shocks.congestion * 0.28
-        + state.shocks.fuel * 0.10
-        + state.shocks.demand * 0.18
-        + state.shocks.policy * 0.34
-      )));
-      const confidence = Math.max(10, Math.min(96, Math.round(route.confidence - Math.max(0, risk - route.baseRisk) * 0.24)));
-      const cost = Math.round(50 + state.shocks.fuel * 0.42 + state.shocks.congestion * 0.28 + state.shocks.demand * 0.18 + state.shocks.policy * 0.12);
-      return { base, adjusted, risk, confidence, cost };
+    function severityForLeg(mode) {
+      let sev = 0;
+      if (state.disruptions.suezClosure && mode === 'sea') sev += 0.65;
+      if (state.disruptions.portStrike && (mode === 'sea' || mode === 'rail')) sev += 0.40;
+      if (state.disruptions.sanctions && (mode === 'sea' || mode === 'air')) sev += 0.35;
+      if (state.disruptions.weather && (mode === 'air' || mode === 'sea')) sev += 0.45;
+      return sev;
     }
+
+    function legProvider(mode) {
+      if (mode === 'sea') return 'maritime_graph_v1';
+      if (mode === 'air') return 'great_circle';
+      if (mode === 'rail') return 'osrm_drive_proxy';
+      return 'osrm_drive';
+    }
+
+    function runScenario(route) {
+      const legResults = [];
+      for (let index = 1; index < route.nodes.length; index += 1) {
+        const from = route.nodes[index - 1];
+        const to = route.nodes[index];
+        const mode = inferLegMode(from, to);
+        const baseDays = averageDays(to);
+        const baseCost = 100;
+        const baseRisk = Math.max(18, Math.min(90, route.baseRisk - 8 + index * 2));
+        const baseConfidence = Math.max(30, Math.min(95, route.confidence - index * 2));
+
+        const macroTime = 1
+          + state.shocks.congestion * (mode === 'sea' ? 0.0048 : 0.0038)
+          + state.shocks.demand * 0.0017
+          + state.shocks.policy * 0.0024;
+        const macroCost = 1
+          + state.shocks.fuel * (mode === 'air' ? 0.0060 : mode === 'sea' ? 0.0046 : 0.0031)
+          + state.shocks.congestion * 0.0018
+          + state.shocks.policy * 0.0012;
+        const sev = severityForLeg(mode);
+        const disruptionDelayDays = sev * (mode === 'sea' ? 8.2 : mode === 'air' ? 2.3 : 1.4);
+        const adjustedDays = Math.max(0.5, baseDays * macroTime + disruptionDelayDays);
+        const adjustedCost = Math.max(10, baseCost * macroCost * (1 + sev * 0.32));
+        const adjustedRisk = Math.max(0, Math.min(100, baseRisk + sev * 30 + state.shocks.policy * 0.26 + state.shocks.congestion * 0.16));
+        const confidence = Math.max(8, Math.min(98, baseConfidence - Math.max(0, adjustedRisk - baseRisk) * 0.36));
+        const bottleneckScore = adjustedDays * (1 + adjustedRisk / 100) * (2 - confidence / 100);
+
+        legResults.push({
+          leg: 'L' + String(index).padStart(2, '0'),
+          index,
+          from,
+          to,
+          mode,
+          provider: legProvider(mode),
+          source: routeSourceForMode(mode),
+          baseDays,
+          adjustedDays,
+          deltaDays: adjustedDays - baseDays,
+          baseCost,
+          adjustedCost,
+          deltaCost: adjustedCost - baseCost,
+          risk: adjustedRisk,
+          confidence,
+          bottleneckScore,
+        });
+      }
+
+      const totalBaseDays = legResults.reduce((sum, leg) => sum + leg.baseDays, 0);
+      const totalAdjustedDays = legResults.reduce((sum, leg) => sum + leg.adjustedDays, 0);
+      const totalBaseCost = legResults.reduce((sum, leg) => sum + leg.baseCost, 0);
+      const totalAdjustedCost = legResults.reduce((sum, leg) => sum + leg.adjustedCost, 0);
+      const weightedRisk = legResults.reduce((sum, leg) => sum + leg.risk * leg.adjustedDays, 0) / Math.max(1, totalAdjustedDays);
+      const weightedConfidence = legResults.reduce((sum, leg) => sum + leg.confidence * leg.adjustedDays, 0) / Math.max(1, totalAdjustedDays);
+      const bottleneck = [...legResults].sort((a, b) => b.bottleneckScore - a.bottleneckScore)[0] || null;
+
+      return {
+        scenarioId: scenarioSignature(),
+        routeId: route.id,
+        totalBaseDays,
+        totalAdjustedDays,
+        totalBaseCost,
+        totalAdjustedCost,
+        totalRisk: Math.max(0, Math.min(100, weightedRisk)),
+        confidence: Math.max(0, Math.min(100, weightedConfidence)),
+        deltaDays: totalAdjustedDays - totalBaseDays,
+        deltaCost: totalAdjustedCost - totalBaseCost,
+        bottleneck,
+        legs: legResults,
+      };
+    }
+
+    function scenarioSignature() {
+      const activeDisruptions = Object.keys(state.disruptions).filter((key) => state.disruptions[key]);
+      const macro = [state.shocks.congestion, state.shocks.fuel, state.shocks.demand, state.shocks.policy].join('/');
+      return 'macro:' + macro + '|events:' + (activeDisruptions.join(',') || 'none');
+    }
+
+    function adjustedMetrics(route) {
+      const result = runScenario(route);
+      state.lastScenario = result;
+      return {
+        base: result.totalBaseDays,
+        adjusted: result.totalAdjustedDays,
+        risk: Math.round(result.totalRisk),
+        confidence: Math.round(result.confidence),
+        cost: Math.round(result.totalAdjustedCost / Math.max(1, result.legs.length)),
+      };
+    }
+
+    // Phase 2 API blueprint implemented in-browser so frontend logic is transportable to backend endpoints.
+    const heimdallScenarioApi = {
+      getChains: function() {
+        return CHAINS.map(function(chain) {
+          return {
+            chainId: chain.id,
+            title: chain.title,
+            category: chain.category,
+            routeCount: chain.routes.length,
+          };
+        });
+      },
+      getChain: function(chainId) {
+        const chain = CHAINS.find(function(item) { return item.id === chainId; });
+        if (!chain) return null;
+        return {
+          chainId: chain.id,
+          title: chain.title,
+          category: chain.category,
+          routes: chain.routes.map(function(route) {
+            return {
+              routeId: route.id,
+              name: route.name,
+              nodes: route.nodes.length,
+            };
+          }),
+        };
+      },
+      run: function(input) {
+        if (input && typeof input.chainId === 'string' && input.chainId !== state.chainId) {
+          const target = CHAINS.find(function(chain) { return chain.id === input.chainId; });
+          if (target) {
+            state.chainId = target.id;
+            state.routeId = target.routes[0].id;
+          }
+        }
+        if (input && typeof input.routeId === 'string') {
+          const route = getChain().routes.find(function(item) { return item.id === input.routeId; });
+          if (route) state.routeId = route.id;
+        }
+        if (input && input.shocks) {
+          Object.keys(state.shocks).forEach(function(key) {
+            if (typeof input.shocks[key] === 'number') state.shocks[key] = input.shocks[key];
+          });
+        }
+        if (input && input.disruptions) {
+          Object.keys(state.disruptions).forEach(function(key) {
+            if (typeof input.disruptions[key] === 'boolean') state.disruptions[key] = input.disruptions[key];
+          });
+        }
+        state.lastScenario = null;
+        const result = runScenario(getRoute());
+        state.lastScenario = result;
+        return result;
+      },
+    };
+    window.heimdallScenarioApi = heimdallScenarioApi;
 
     function shortDays(days) {
       if (days >= 100) return Math.round(days) + 'd';
@@ -1149,12 +1381,14 @@
       if (!chain) return;
       state.chainId = chain.id;
       state.routeId = chain.routes[0].id;
+      state.lastScenario = null;
       render();
       fitToRoute();
     }
 
     function setRoute(routeId) {
       state.routeId = routeId;
+      state.lastScenario = null;
       render();
       fitToRoute();
     }
@@ -1188,6 +1422,9 @@
       routeLayer.clearLayers();
       state.markersByNode.clear();
       const route = getRoute();
+      const scenario = state.lastScenario && state.lastScenario.routeId === route.id ? state.lastScenario : runScenario(route);
+      state.lastScenario = scenario;
+      const bottleneckIndex = scenario.bottleneck ? scenario.bottleneck.index : -1;
 
       // Draw markers synchronously so they're immediately visible
       route.nodes.forEach(function(node) {
@@ -1210,15 +1447,16 @@
           const node = route.nodes[index];
           if (!state.activeStages.has(prev.stage) || !state.activeStages.has(node.stage)) continue;
           const mode = inferLegMode(prev, node);
+          const isBottleneck = index === bottleneckIndex;
           const color = stageColor(node.stage);
           const coords = await getSegmentGeom(prev, node, mode);
           if (gen !== drawGeneration) return;
           L.polyline(coords, {
-            color: color,
-            weight: 5,
-            opacity: 0.82,
+            color: isBottleneck ? '#c94b4b' : color,
+            weight: isBottleneck ? 7 : 5,
+            opacity: isBottleneck ? 0.98 : 0.82,
             smoothFactor: 1.1,
-            className: 'route-segment',
+            className: isBottleneck ? '' : 'route-segment',
           }).addTo(routeLayer);
         }
       })();
@@ -1284,26 +1522,49 @@
 
     function renderLegTable() {
       const route = getRoute();
-      const rows = [];
-      for (let index = 1; index < route.nodes.length; index += 1) {
-        const from = route.nodes[index - 1];
-        const to = route.nodes[index];
-        const mode = inferLegMode(from, to);
-        const avgDays = averageDays(to);
-        const confidence = Math.max(35, Math.min(95, route.confidence - index * 2));
-        rows.push({ from, to, mode, avgDays, confidence, source: routeSourceForMode(mode) });
-      }
-      el.legTable.innerHTML = '<table class="leg-table"><thead><tr><th>Leg</th><th>From</th><th>To</th><th>Mode</th><th>Source</th><th>ETA</th><th>Conf.</th></tr></thead><tbody>' +
-        rows.map((row, index) => '<tr>' +
-          '<td>' + escapeHtml('L' + String(index + 1).padStart(2, '0')) + '</td>' +
+      const scenario = state.lastScenario && state.lastScenario.routeId === route.id ? state.lastScenario : runScenario(route);
+      state.lastScenario = scenario;
+      el.legTable.innerHTML = '<table class="leg-table"><thead><tr><th>Leg</th><th>From</th><th>To</th><th>Mode</th><th>Source</th><th>Base</th><th>Adj.</th><th>Delta</th><th>Risk</th><th>Conf.</th></tr></thead><tbody>' +
+        scenario.legs.map((row) => '<tr>' +
+          '<td>' + escapeHtml(row.leg) + '</td>' +
           '<td>' + escapeHtml(row.from.name) + '</td>' +
           '<td>' + escapeHtml(row.to.name) + '</td>' +
           '<td>' + escapeHtml(row.mode) + '</td>' +
-          '<td>' + escapeHtml(row.source) + '</td>' +
-          '<td>' + escapeHtml(shortDays(row.avgDays)) + '</td>' +
-          '<td>' + escapeHtml(row.confidence + '%') + '</td>' +
+          '<td>' + escapeHtml(row.provider + ' | ' + row.source) + '</td>' +
+          '<td>' + escapeHtml(shortDays(row.baseDays)) + '</td>' +
+          '<td>' + escapeHtml(shortDays(row.adjustedDays)) + '</td>' +
+          '<td class="' + (row.deltaDays >= 0 ? 'delta-up' : 'delta-down') + '">' + escapeHtml((row.deltaDays >= 0 ? '+' : '') + (Math.round(row.deltaDays * 10) / 10) + 'd') + '</td>' +
+          '<td>' + escapeHtml(Math.round(row.risk) + '') + '</td>' +
+          '<td>' + escapeHtml(Math.round(row.confidence) + '%') + '</td>' +
         '</tr>').join('') +
         '</tbody></table>';
+    }
+
+    function renderChainCompare() {
+      const route = getRoute();
+      const scenario = state.lastScenario && state.lastScenario.routeId === route.id ? state.lastScenario : runScenario(route);
+      state.lastScenario = scenario;
+      el.scenarioLabel.textContent = scenario.scenarioId.includes('events:none') ? 'Baseline' : 'Shock';
+      el.chainCompare.innerHTML = '<table class="compare-grid"><thead><tr><th>Metric</th><th>Baseline</th><th>Scenario</th><th>Delta</th></tr></thead><tbody>' +
+        '<tr><td>Lead Time</td><td>' + escapeHtml(shortDays(scenario.totalBaseDays)) + '</td><td>' + escapeHtml(shortDays(scenario.totalAdjustedDays)) + '</td><td class="' + (scenario.deltaDays >= 0 ? 'delta-up' : 'delta-down') + '">' + escapeHtml((scenario.deltaDays >= 0 ? '+' : '') + (Math.round(scenario.deltaDays * 10) / 10) + 'd') + '</td></tr>' +
+        '<tr><td>Cost Index</td><td>' + escapeHtml(String(Math.round(scenario.totalBaseCost))) + '</td><td>' + escapeHtml(String(Math.round(scenario.totalAdjustedCost))) + '</td><td class="' + (scenario.deltaCost >= 0 ? 'delta-up' : 'delta-down') + '">' + escapeHtml((scenario.deltaCost >= 0 ? '+' : '') + String(Math.round(scenario.deltaCost))) + '</td></tr>' +
+        '<tr><td>Risk Score</td><td>' + escapeHtml(String(getRoute().baseRisk)) + '</td><td>' + escapeHtml(String(Math.round(scenario.totalRisk))) + '</td><td class="' + ((scenario.totalRisk - route.baseRisk) >= 0 ? 'delta-up' : 'delta-down') + '">' + escapeHtml(((scenario.totalRisk - route.baseRisk) >= 0 ? '+' : '') + String(Math.round(scenario.totalRisk - route.baseRisk))) + '</td></tr>' +
+        '<tr><td>Confidence</td><td>' + escapeHtml(String(route.confidence) + '%') + '</td><td>' + escapeHtml(String(Math.round(scenario.confidence)) + '%') + '</td><td class="' + ((scenario.confidence - route.confidence) >= 0 ? 'delta-down' : 'delta-up') + '">' + escapeHtml(((scenario.confidence - route.confidence) >= 0 ? '+' : '') + String(Math.round(scenario.confidence - route.confidence)) + '%') + '</td></tr>' +
+        '</tbody></table>';
+      if (scenario.bottleneck) {
+        el.bottleneckPill.textContent = scenario.bottleneck.leg + ' | ' + scenario.bottleneck.from.name + ' -> ' + scenario.bottleneck.to.name;
+      } else {
+        el.bottleneckPill.textContent = 'No active bottleneck';
+      }
+    }
+
+    function renderDisruptionToggles() {
+      el.disruptionToggles.innerHTML = Object.entries(DISRUPTIONS).map(([key, val]) => (
+        '<label class="disruption-toggle ' + (state.disruptions[key] ? 'active' : '') + '">' +
+          '<input type="checkbox" data-disruption="' + key + '" ' + (state.disruptions[key] ? 'checked' : '') + ' />' +
+          '<span>' + escapeHtml(val.label) + '</span>' +
+        '</label>'
+      )).join('');
     }
 
     function renderIsotopes() {
@@ -1345,12 +1606,15 @@
       el.confidenceGauge.style.setProperty('--score', metrics.confidence);
       el.confidenceText.textContent = metrics.confidence + '%';
       el.metricLead.textContent = shortDays(metrics.adjusted);
-      el.metricBottleneck.textContent = route.traffic.bottleneck;
+      el.metricBottleneck.textContent = state.lastScenario && state.lastScenario.bottleneck
+        ? state.lastScenario.bottleneck.from.name + ' -> ' + state.lastScenario.bottleneck.to.name
+        : route.traffic.bottleneck;
       el.metricCost.textContent = metrics.cost >= 65 ? 'High' : metrics.cost <= 40 ? 'Low' : 'Moderate';
       el.metricTraffic.textContent = route.traffic.truck;
       el.kpiNodes.textContent = route.nodes.length;
       el.kpiLead.textContent = shortDays(metrics.adjusted);
       el.kpiRisk.textContent = metrics.risk;
+      renderChainCompare();
       renderLegTable();
       renderTaxonomy();
       renderIsotopes();
@@ -1373,7 +1637,8 @@
         el.sliderValues[key].textContent = value > 0 ? '+' + value : String(value);
       });
       const total = Object.values(state.shocks).reduce((sum, value) => sum + value, 0);
-      el.scenarioScore.textContent = total > 30 ? 'Stress' : total < -20 ? 'Easing' : 'Base';
+      const activeEvents = Object.values(state.disruptions).filter(Boolean).length;
+      el.scenarioScore.textContent = activeEvents > 0 ? 'Shock+' + activeEvents : (total > 30 ? 'Stress' : total < -20 ? 'Easing' : 'Base');
     }
 
     function renderMapMode() {
@@ -1389,6 +1654,7 @@
       renderRoutes();
       renderDetail();
       renderStageToggles();
+      renderDisruptionToggles();
       renderScenario();
       renderMapMode();
       drawMap();
@@ -1435,12 +1701,27 @@
         drawMap();
       });
 
+      el.disruptionToggles.addEventListener('change', (event) => {
+        const input = event.target.closest('input[data-disruption]');
+        if (!input) return;
+        const key = input.getAttribute('data-disruption');
+        state.disruptions[key] = Boolean(input.checked);
+        state.lastScenario = null;
+        renderRoutes();
+        renderDetail();
+        renderDisruptionToggles();
+        renderScenario();
+        drawMap();
+      });
+
       Object.keys(el.sliders).forEach((key) => {
         el.sliders[key].addEventListener('input', (event) => {
           state.shocks[key] = Number(event.target.value);
+          state.lastScenario = null;
           renderRoutes();
           renderDetail();
           renderScenario();
+          drawMap();
         });
       });
 
