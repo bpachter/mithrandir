@@ -950,6 +950,89 @@
     body.globe-mode .topbar-action { background: rgba(255, 255, 255, 0.07); border-color: rgba(60, 80, 110, 0.40); color: #8fa0b8; }
     body.globe-mode .topbar-action:hover { border-color: rgba(60, 80, 110, 0.70); color: #dde4ef; background: rgba(255, 255, 255, 0.10); }
     body.globe-mode .topbar-action.active { background: var(--inbound); border-color: var(--inbound); color: #fff; }
+
+    /* Node dwell-time badge */
+    .node-marker-wrap { position: relative; display: inline-block; }
+    .node-dwell-badge {
+      position: absolute;
+      top: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 1px 5px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.32);
+      pointer-events: none;
+      line-height: 1.4;
+    }
+
+    /* Transit pill (path segment label) */
+    .transit-pill {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.22);
+      box-shadow: 0 1px 5px rgba(0,0,0,0.28);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.22);
+      pointer-events: none;
+    }
+
+    /* Risk-pulse animation on high-risk nodes */
+    @keyframes riskPulse {
+      0%   { transform: scale(0.7); opacity: 0.85; }
+      60%  { transform: scale(2.4); opacity: 0; }
+      100% { transform: scale(0.7); opacity: 0; }
+    }
+    .risk-pulse-div {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--ring-color, #c94b4b);
+      animation: riskPulse 2.4s ease-out infinite;
+      pointer-events: none;
+    }
+
+    /* Intelligence callout markers */
+    .intel-shell {
+      width: 26px; height: 26px;
+      border-radius: 8px;
+      display: grid; place-items: center;
+      font-size: 12px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    }
+    .intel-shell.sev-critical {
+      background: rgba(201,75,75,0.16);
+      border: 1.5px solid rgba(201,75,75,0.65);
+    }
+    .intel-shell.sev-warning {
+      background: rgba(245,158,11,0.15);
+      border: 1.5px solid rgba(245,158,11,0.60);
+    }
+    .intel-shell.sev-info {
+      background: rgba(35,116,171,0.14);
+      border: 1.5px solid rgba(35,116,171,0.52);
+    }
+    .intel-popup-title { margin: 0 0 4px; font-size: 13px; font-weight: 700; }
+    .intel-popup-body { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.45; }
+    .intel-popup-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+    .intel-tag {
+      display: inline-block; padding: 2px 6px; border-radius: 4px;
+      font-size: 10px; font-family: var(--font-mono); font-weight: 600;
+    }
+    .intel-tag.tag-red { background: rgba(201,75,75,0.12); color: #c94b4b; }
+    .intel-tag.tag-amber { background: rgba(245,158,11,0.12); color: #b45309; }
+    .intel-tag.tag-blue { background: rgba(35,116,171,0.12); color: #2374ab; }
+    .intel-tag.tag-active { background: #c94b4b; color: #fff; }
   </style>
 </head>
 <body>
@@ -1749,6 +1832,109 @@
     }).addTo(map);
 
     const routeLayer = L.layerGroup().addTo(map);
+    const intelLayer = L.layerGroup().addTo(map);
+
+    // ─── Intelligence chokepoints & risk hotspots ─────────────────────────────
+    const INTEL_CHOKEPOINTS = [
+      { id: 'suez', coords: [30.70, 32.34], label: 'Suez Canal', sev: 'critical',
+        desc: '~12% of global trade transits this 193km waterway. Closure or congestion forces Cape of Good Hope rerouting (+10–14d, +$15k/TEU).', tags: ['Maritime', 'Energy', 'Container'], disruption: 'suezClosure' },
+      { id: 'hormuz', coords: [26.56, 56.25], label: 'Strait of Hormuz', sev: 'critical',
+        desc: '~20% of global oil and ~25% of LNG transits this 39km-wide passage. Iranian interdiction risk creates persistent energy market volatility.', tags: ['Energy', 'LNG', 'Oil'], disruption: 'sanctions' },
+      { id: 'malacca', coords: [2.50, 102.00], label: 'Strait of Malacca', sev: 'warning',
+        desc: '~25% of world trade by value. Chokepoint for China-bound energy and Europe-Asia container flows. Piracy risk; Singapore congestion spikes.', tags: ['Maritime', 'Container', 'Energy'], disruption: null },
+      { id: 'panama', coords: [9.05, -79.60], label: 'Panama Canal', sev: 'warning',
+        desc: 'Low-water events (2023–24) caused 35% capacity reduction. East Coast US importers rerouted via Suez. Governs US LNG export economics.', tags: ['Maritime', 'Water Risk'], disruption: null },
+      { id: 'cape-horn', coords: [-55.98, -67.27], label: 'Cape Horn', sev: 'info',
+        desc: 'Backup route when Panama Canal is restricted. Adds 8–10d and exposes vessels to severe Southern Ocean weather. Rarely used.', tags: ['Maritime', 'Weather'], disruption: null },
+      { id: 'cape-good-hope', coords: [-34.36, 18.48], label: 'Cape of Good Hope', sev: 'info',
+        desc: 'Primary Suez bypass since 2024 Red Sea crisis. Traffic up ~80%. Port congestion at Durban & Cape Town has emerged as secondary constraint.', tags: ['Maritime', 'Rerouting'], disruption: 'suezClosure' },
+      { id: 'bosphorus', coords: [41.12, 29.08], label: 'Bosphorus Strait', sev: 'warning',
+        desc: 'Turkey controls passage; Russia-Ukraine conflict has driven record traffic avoidance. Tanker insurance for Black Sea transits at historical high.', tags: ['Maritime', 'Geopolitical'], disruption: 'sanctions' },
+      { id: 'taiwan-strait', coords: [24.50, 120.00], label: 'Taiwan Strait', sev: 'warning',
+        desc: 'Taiwan produces ~90% of advanced semiconductors (<7nm). Military tension causes instantaneous supply chain risk premium across tech hardware globally.', tags: ['Semiconductor', 'Geopolitical', 'Electronics'], disruption: null },
+    ];
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function estimateTransitDays(from, to, mode) {
+      const km = haversineKm(from.coords[0], from.coords[1], to.coords[0], to.coords[1]);
+      const kpd = { air: 16000, sea: 720, rail: 600, road: 500 };
+      return Math.max(0.2, km / (kpd[mode] || 500));
+    }
+
+    function drawIntelOverlays(route, scenario) {
+      intelLayer.clearLayers();
+
+      // Pulsing risk rings on high-risk destination nodes
+      scenario.legs.forEach(function(leg, i) {
+        if (leg.risk < 52) return;
+        const node = route.nodes[i + 1];
+        if (!node || !state.activeStages.has(node.stage)) return;
+        const ringColor = leg.risk > 72 ? '#c94b4b' : '#f59e0b';
+        L.marker(node.coords, {
+          icon: L.divIcon({
+            className: '',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
+            html: '<div class="risk-pulse-div" style="--ring-color:' + ringColor + '"></div>',
+          }),
+          interactive: false, keyboard: false,
+        }).addTo(intelLayer);
+      });
+
+      // Bottleneck flag marker
+      if (scenario.bottleneck) {
+        const bnNode = scenario.bottleneck.to;
+        if (bnNode && state.activeStages.has(bnNode.stage)) {
+          L.marker(bnNode.coords, {
+            icon: L.divIcon({
+              className: '',
+              iconSize: [28, 28],
+              iconAnchor: [14, 28],
+              popupAnchor: [0, -30],
+              html: '<div class="intel-shell sev-critical" title="Bottleneck">🔴</div>',
+            }),
+            zIndexOffset: 500,
+          }).bindPopup(
+            '<h3 class="intel-popup-title">⛔ Bottleneck Detected</h3>' +
+            '<p class="intel-popup-body"><b>' + escapeHtml(bnNode.name) + '</b> is the highest-scoring bottleneck under current shock settings. Avg dwell ' + escapeHtml(bnNode.days[0] + '–' + bnNode.days[1]) + 'd; bottleneck score is driven by combined time, risk, and confidence penalty.</p>' +
+            '<div class="intel-popup-tags"><span class="intel-tag tag-active">⚡ BOTTLENECK</span><span class="intel-tag tag-amber">' + escapeHtml(scenario.bottleneck.leg) + '</span></div>'
+          ).addTo(intelLayer);
+        }
+      }
+
+      // Chokepoint intelligence markers
+      INTEL_CHOKEPOINTS.forEach(function(cp) {
+        const isActive = cp.disruption && state.disruptions[cp.disruption];
+        if (cp.sev === 'info' && !isActive) return;
+        const sevClass = isActive ? 'sev-critical' : ('sev-' + cp.sev);
+        const emoji = isActive ? '⚡' : (cp.sev === 'critical' ? '⚠️' : 'ℹ️');
+        L.marker(cp.coords, {
+          icon: L.divIcon({
+            className: '',
+            iconSize: [26, 26],
+            iconAnchor: [13, 13],
+            popupAnchor: [0, -16],
+            html: '<div class="intel-shell ' + sevClass + '">' + emoji + '</div>',
+          }),
+          title: cp.label,
+        }).bindPopup(
+          '<h3 class="intel-popup-title">' + escapeHtml(cp.label) + '</h3>' +
+          '<p class="intel-popup-body">' + escapeHtml(cp.desc) + '</p>' +
+          '<div class="intel-popup-tags">' +
+          cp.tags.map(function(t) { return '<span class="intel-tag tag-blue">' + escapeHtml(t) + '</span>'; }).join('') +
+          (isActive ? '<span class="intel-tag tag-active">⚡ ACTIVE DISRUPTION</span>' : '') +
+          '</div>'
+        ).addTo(intelLayer);
+      });
+    }
 
     // ─── Phase 3: 3D Globe ───────────────────────────────────────────────────
     let globeInstance = null;
@@ -1774,18 +1960,24 @@
         const legResult = scenario.legs[i - 1];
         const risk = legResult ? legResult.risk : route.baseRisk;
         const isBottleneck = !!(scenario.bottleneck && scenario.bottleneck.index === i);
-        arcs.push({
-          id: 'arc_' + i,
-          startLat: from.coords[0], startLng: from.coords[1],
-          endLat: to.coords[0], endLng: to.coords[1],
-          mode,
-          risk,
-          color: isBottleneck ? '#ef4444' : riskToHex(risk, mode),
-          stroke: isBottleneck ? 1.0 : (mode === 'sea' ? 0.65 : mode === 'air' ? 0.55 : 0.45),
-          altScale: mode === 'air' ? 0.35 : mode === 'sea' ? 0.15 : 0.06,
-          animTime: mode === 'air' ? 2000 : mode === 'sea' ? 3600 : 4800,
-          isBottleneck,
-          label: mode + ': ' + from.name + ' → ' + to.name,
+        const baseAlt = mode === 'air' ? 0.35 : mode === 'sea' ? 0.15 : 0.06;
+        const baseTime = mode === 'air' ? 2000 : mode === 'sea' ? 3600 : 4800;
+        const arcColor = isBottleneck ? '#ef4444' : riskToHex(risk, mode);
+        const arcLabel = mode + ': ' + from.name + ' \u2192 ' + to.name;
+        // Three parallel lanes per leg — staggered altitude and animation timing
+        [0, 0.052, -0.052].forEach(function(altOff, lane) {
+          arcs.push({
+            id: 'arc_' + i + '_' + lane,
+            startLat: from.coords[0], startLng: from.coords[1],
+            endLat: to.coords[0], endLng: to.coords[1],
+            mode, risk,
+            color: arcColor,
+            stroke: isBottleneck ? 0.80 : 0.28,
+            altScale: baseAlt + altOff,
+            animTime: baseTime * (1 + lane * 0.22),
+            isBottleneck,
+            label: lane === 0 ? arcLabel : '',
+          });
         });
       }
       return arcs;
@@ -1852,6 +2044,8 @@
 
     function drawGlobe() {
       initGlobe();
+      // Clear previous chain's data synchronously to prevent stale nodes
+      globeInstance.arcsData([]).pointsData([]).labelsData([]);
       const arcs = buildGlobeArcs();
       const points = buildGlobePoints();
       globeInstance.arcsData(arcs).pointsData(points).labelsData(points);
@@ -2506,12 +2700,17 @@
     }
 
     function markerForNode(node) {
+      const dwellStr = node.days[0] + '\u2013' + node.days[1] + 'd';
+      const color = stageColor(node.stage);
       return L.divIcon({
         className: '',
-        iconSize: [34, 34],
+        iconSize: [50, 52],
         iconAnchor: [17, 17],
-        popupAnchor: [0, -18],
-        html: '<div class="node-marker-shell" style="--stage-color:' + stageColor(node.stage) + '">' + escapeHtml(node.code) + '</div>',
+        popupAnchor: [0, -26],
+        html: '<div class="node-marker-wrap">' +
+          '<div class="node-marker-shell" style="--stage-color:' + color + '">' + escapeHtml(node.code) + '</div>' +
+          '<div class="node-dwell-badge" style="background:' + color + '">' + escapeHtml(dwellStr) + '</div>' +
+          '</div>',
       });
     }
 
@@ -2558,23 +2757,25 @@
             className: isBottleneck ? '' : 'route-segment',
           }).addTo(routeLayer);
 
-          // Mid-segment time label
-          const legResult = scenario.legs[index - 1];
-          const legDays = legResult ? legResult.adjustedDays : averageDays(node);
+          // Transit time label on path midpoint (travel time estimate, not node dwell)
+          const transitDays = estimateTransitDays(prev, node, mode);
           const midIdx = Math.floor(coords.length / 2);
           const midPt = coords[midIdx] || [(prev.coords[0] + node.coords[0]) / 2, (prev.coords[1] + node.coords[1]) / 2];
+          const segColor = isBottleneck ? '#c94b4b' : color;
           L.marker(midPt, {
             icon: L.divIcon({
               className: 'path-time-label',
-              html: '<span class="path-time-pill" style="background:' + (isBottleneck ? '#c94b4b' : color) + '">' + shortDays(legDays) + '</span>',
-              iconAnchor: [28, 10],
+              html: '<span class="transit-pill" style="background:' + segColor + ';opacity:0.88">~' + shortDays(transitDays) + ' transit</span>',
+              iconAnchor: [40, 10],
               iconSize: null,
             }),
-            interactive: false,
-            keyboard: false,
+            interactive: false, keyboard: false,
           }).addTo(routeLayer);
         }
       })();
+
+      // Intelligence overlays (risk pulses, chokepoints, bottleneck flag)
+      drawIntelOverlays(route, scenario);
     }
 
     function renderSearchResults() {
@@ -2764,7 +2965,7 @@
       document.getElementById('map').style.display = isGlobe ? 'none' : '';
       document.getElementById('globe').style.display = isGlobe ? 'block' : 'none';
       document.body.classList.toggle('globe-mode', isGlobe);
-      if (isGlobe) drawGlobe();
+      // drawMap() (called by render()) handles globe rendering — no double-call here
     }
 
     function render() {
@@ -2866,7 +3067,8 @@
       el.mapModeToggle.addEventListener('click', () => {
         state.mapMode = state.mapMode === '2d' ? '3d' : '2d';
         renderMapMode();
-        if (state.mapMode === '2d') { state.lastScenario = null; drawMap(); }
+        state.lastScenario = null;
+        drawMap();
       });
       window.addEventListener('resize', () => {
         if (state.mapMode === '2d') setTimeout(fitToRoute, 120);
