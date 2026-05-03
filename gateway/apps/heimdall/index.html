@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js"></script>
   <style>
     :root {
       --bg: #f6f7f8;
@@ -56,6 +57,36 @@
       z-index: 1;
       background: #edf1f5;
     }
+
+    #globe {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background: #0e1118;
+      display: none;
+    }
+    body.globe-mode .map-veil { opacity: 0; pointer-events: none; }
+    body.globe-mode .topbar { background: rgba(14, 17, 24, 0.88); border-bottom-color: rgba(60,80,110,0.4); }
+    body.globe-mode .panel { background: rgba(14, 17, 24, 0.90); border-color: rgba(60,80,110,0.38); color: #dde4ef; }
+    body.globe-mode .panel-head { background: rgba(0,0,0,0.24); }
+    body.globe-mode .metric { background: rgba(255,255,255,0.05); border-color: rgba(60,80,110,0.32); }
+    body.globe-mode .metric strong { color: #dde4ef; }
+    body.globe-mode .panel-title { color: #dde4ef; }
+    body.globe-mode .brand h1 { color: #dde4ef; }
+    body.globe-mode .icon-button { background: rgba(255,255,255,0.07); border-color: rgba(60,80,110,0.40); color: #aab4c6; }
+    body.globe-mode .result-button, body.globe-mode .route-card, body.globe-mode .node-row { background: rgba(255,255,255,0.05); border-color: rgba(60,80,110,0.32); color: #dde4ef; }
+    body.globe-mode .eyebrow, body.globe-mode .section-label, body.globe-mode .panel-subtitle, body.globe-mode .muted { color: #7a8ba0; }
+    body.globe-mode .chip { background: rgba(255,255,255,0.07); border-color: rgba(60,80,110,0.32); color: #8fa0b8; }
+    body.globe-mode .chip.active { background: var(--inbound); border-color: var(--inbound); color: #fff; }
+    body.globe-mode .slider-box { background: rgba(255,255,255,0.05); border-color: rgba(60,80,110,0.32); }
+    body.globe-mode .stage-toggle { color: #8fa0b8; }
+    body.globe-mode .isotope-table, body.globe-mode .leg-table-wrap, body.globe-mode .compare-grid, body.globe-mode .leg-table { background: rgba(14,17,24,0.90); color: #dde4ef; }
+    body.globe-mode .isotope-table th, body.globe-mode .leg-table th, body.globe-mode .compare-grid th { background: rgba(255,255,255,0.06); color: #7a8ba0; }
+    body.globe-mode .taxonomy-row { background: rgba(255,255,255,0.04); border-color: rgba(60,80,110,0.28); }
+    body.globe-mode .route-badge, body.globe-mode .company-chip { background: rgba(255,255,255,0.07); border-color: rgba(60,80,110,0.32); color: #8fa0b8; }
+    body.globe-mode .empty-state { background: rgba(255,255,255,0.04); border-color: rgba(60,80,110,0.28); color: #7a8ba0; }
+    body.globe-mode .disruption-toggle { background: rgba(255,255,255,0.05); border-color: rgba(60,80,110,0.32); color: #8fa0b8; }
+    body.globe-mode .disruption-toggle.active { background: rgba(201,75,75,0.14); border-color: rgba(201,75,75,0.40); }
 
     .map-veil {
       position: fixed;
@@ -700,6 +731,7 @@
 </head>
 <body>
   <div id="map" aria-label="Interactive supply chain map"></div>
+  <div id="globe" aria-label="3D supply chain globe"></div>
   <div class="map-veil" aria-hidden="true"></div>
 
   <header class="topbar">
@@ -713,7 +745,7 @@
       <div class="top-kpi"><b id="kpiLead">0d</b><span>Lead</span></div>
       <div class="top-kpi"><b id="kpiRisk">0</b><span>Risk</span></div>
     </div>
-    <button class="icon-button mode-toggle" id="mapModeToggle" data-mode="2d" title="Toggle 2D and planned 3D globe mode" aria-label="Toggle map mode"><i data-lucide="globe-2"></i><span id="mapModeText">2D Map</span></button>
+    <button class="icon-button mode-toggle" id="mapModeToggle" data-mode="2d" title="Switch between 2D map and 3D globe" aria-label="Toggle map mode"><i data-lucide="globe-2"></i><span id="mapModeText">2D Map</span></button>
     <button class="icon-button" id="fitRoute" title="Fit route" aria-label="Fit route"><i data-lucide="scan"></i></button>
   </header>
 
@@ -1097,6 +1129,115 @@
 
     const routeLayer = L.layerGroup().addTo(map);
 
+    // ─── Phase 3: 3D Globe ───────────────────────────────────────────────────
+    let globeInstance = null;
+
+    function riskToHex(risk, mode) {
+      if (mode === 'air') return '#94c5e8';
+      if (risk < 28) return '#3f8e6e';
+      if (risk < 52) return '#f59e0b';
+      return '#c94b4b';
+    }
+
+    function buildGlobeArcs() {
+      const route = getRoute();
+      const scenario = state.lastScenario && state.lastScenario.routeId === route.id
+        ? state.lastScenario : runScenario(route);
+      state.lastScenario = scenario;
+      const arcs = [];
+      for (let i = 1; i < route.nodes.length; i++) {
+        if (!state.activeStages.has(route.nodes[i - 1].stage) || !state.activeStages.has(route.nodes[i].stage)) continue;
+        const from = route.nodes[i - 1];
+        const to = route.nodes[i];
+        const mode = inferLegMode(from, to);
+        const legResult = scenario.legs[i - 1];
+        const risk = legResult ? legResult.risk : route.baseRisk;
+        const isBottleneck = !!(scenario.bottleneck && scenario.bottleneck.index === i);
+        arcs.push({
+          id: 'arc_' + i,
+          startLat: from.coords[0], startLng: from.coords[1],
+          endLat: to.coords[0], endLng: to.coords[1],
+          mode,
+          risk,
+          color: isBottleneck ? '#ef4444' : riskToHex(risk, mode),
+          stroke: isBottleneck ? 3.0 : (mode === 'sea' ? 2.0 : mode === 'air' ? 1.8 : 1.4),
+          altScale: mode === 'air' ? 0.65 : mode === 'sea' ? 0.12 : 0.03,
+          animTime: mode === 'air' ? 2000 : mode === 'sea' ? 3600 : 4800,
+          isBottleneck,
+          label: mode + ': ' + from.name + ' → ' + to.name,
+        });
+      }
+      return arcs;
+    }
+
+    function buildGlobePoints() {
+      const route = getRoute();
+      return route.nodes
+        .filter(function(node) { return state.activeStages.has(node.stage); })
+        .map(function(node) {
+          return {
+            id: node.id,
+            name: node.name,
+            place: node.place,
+            company: node.company,
+            stage: node.stage,
+            lat: node.coords[0],
+            lng: node.coords[1],
+            color: stageColor(node.stage),
+          };
+        });
+    }
+
+    function initGlobe() {
+      if (globeInstance) return;
+      globeInstance = Globe({ animateIn: true })
+        .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
+        .bumpImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
+        .backgroundColor('#0e1118')
+        .showAtmosphere(true)
+        .atmosphereColor('#2374ab')
+        .atmosphereAltitude(0.18)
+        .arcStroke(function(d) { return d.stroke; })
+        .arcAltitudeAutoScale(function(d) { return d.altScale; })
+        .arcDashLength(0.38)
+        .arcDashGap(0.55)
+        .arcDashAnimateTime(function(d) { return d.animTime; })
+        .arcColor(function(d) { return d.color; })
+        .arcLabel(function(d) { return '<div style="font-family:monospace;font-size:11px;background:rgba(14,17,24,0.88);padding:5px 8px;border-radius:6px;border:1px solid #2a3a55;color:#dde4ef">' + escapeHtml(d.label) + '<br/><span style="color:#7a8ba0">risk ' + Math.round(d.risk) + ' | ' + d.mode + '</span></div>'; })
+        .pointColor(function(d) { return d.color; })
+        .pointAltitude(0.015)
+        .pointRadius(0.42)
+        .pointLabel(function(d) {
+          return '<div style="font-family:monospace;font-size:11px;background:rgba(14,17,24,0.88);padding:5px 8px;border-radius:6px;border:1px solid #2a3a55;color:#dde4ef"><b>' + escapeHtml(d.name) + '</b><br/>' + escapeHtml(d.place) + '<br/><span style="color:#7a8ba0">' + escapeHtml(d.company) + '</span></div>';
+        })
+        .onPointClick(function(d) {
+          const nodeBtn = document.querySelector('[data-node-id="' + d.id + '"]');
+          if (nodeBtn) nodeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        })
+        (document.getElementById('globe'));
+      globeInstance.controls().autoRotate = true;
+      globeInstance.controls().autoRotateSpeed = 0.28;
+      globeInstance.controls().enableDamping = true;
+    }
+
+    function drawGlobe() {
+      initGlobe();
+      const arcs = buildGlobeArcs();
+      const points = buildGlobePoints();
+      globeInstance.arcsData(arcs).pointsData(points);
+      const route = getRoute();
+      if (route.nodes.length) {
+        const avgLat = route.nodes.reduce(function(s, n) { return s + n.coords[0]; }, 0) / route.nodes.length;
+        const avgLng = route.nodes.reduce(function(s, n) { return s + n.coords[1]; }, 0) / route.nodes.length;
+        const spread = Math.max.apply(null, route.nodes.map(function(n) {
+          return Math.abs(n.coords[1] - avgLng) + Math.abs(n.coords[0] - avgLat);
+        }));
+        const alt = Math.max(1.2, Math.min(3.5, spread / 55));
+        globeInstance.pointOfView({ lat: avgLat, lng: avgLng, altitude: alt }, 1400);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const el = {
       searchBox: document.getElementById('searchBox'),
       searchResults: document.getElementById('searchResults'),
@@ -1418,6 +1559,7 @@
     }
 
     function drawMap() {
+      if (state.mapMode === '3d') { drawGlobe(); return; }
       const gen = ++drawGeneration;
       routeLayer.clearLayers();
       state.markersByNode.clear();
@@ -1644,8 +1786,12 @@
     function renderMapMode() {
       const isGlobe = state.mapMode === '3d';
       el.mapModeToggle.dataset.mode = isGlobe ? '3d' : '2d';
-      el.mapModeText.textContent = isGlobe ? '3D Stub' : '2D Map';
-      el.globeNotice.classList.toggle('active', isGlobe);
+      el.mapModeText.textContent = isGlobe ? '3D Globe' : '2D Map';
+      el.globeNotice.classList.toggle('active', false);
+      document.getElementById('map').style.display = isGlobe ? 'none' : '';
+      document.getElementById('globe').style.display = isGlobe ? 'block' : 'none';
+      document.body.classList.toggle('globe-mode', isGlobe);
+      if (isGlobe) drawGlobe();
     }
 
     function render() {
@@ -1729,8 +1875,12 @@
       el.mapModeToggle.addEventListener('click', () => {
         state.mapMode = state.mapMode === '2d' ? '3d' : '2d';
         renderMapMode();
+        if (state.mapMode === '2d') { state.lastScenario = null; drawMap(); }
       });
-      window.addEventListener('resize', () => setTimeout(fitToRoute, 120));
+      window.addEventListener('resize', () => {
+        if (state.mapMode === '2d') setTimeout(fitToRoute, 120);
+        else if (globeInstance) globeInstance.width(window.innerWidth).height(window.innerHeight);
+      });
     }
 
     // ─── Phase 1: Realistic Route Geometry ──────────────────────────────────
