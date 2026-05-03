@@ -1,0 +1,13 @@
+{
+  "name": "Heimdall Supply Chain Observatory",
+  "short_name": "Heimdall",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f8",
+  "theme_color": "#2374ab",
+  "description": "Interactive supply chain map, glossary, and logistics simulation workspace.",
+  "icons": [
+    { "src": "./icons/heimdall.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

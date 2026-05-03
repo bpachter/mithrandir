@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Heimdall icon">
+  <rect width="512" height="512" rx="96" fill="#0e1118"/>
+  <circle cx="256" cy="256" r="172" fill="none" stroke="#2374ab" stroke-width="28"/>
+  <path d="M96 278c54-76 109-114 164-114 54 0 106 38 156 114" fill="none" stroke="#f59e0b" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="48" fill="#f6f7f8"/>
+  <circle cx="256" cy="256" r="20" fill="#2374ab"/>
+  <path d="M256 84v56M256 372v56M84 256h56M372 256h56" stroke="#e6edf6" stroke-width="24" stroke-linecap="round"/>
+</svg>
