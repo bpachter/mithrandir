@@ -840,6 +840,116 @@
     body.globe-mode .rec-issue { color: #dde4ef; }
     body.globe-mode .rec-suggestion { color: #7a8ba0; }
     body.globe-mode .p4-btn.p4-secondary { border-color: rgba(60,80,110,0.40); color: #8fa0b8; }
+
+    /* ── Drawer system ── */
+    .hd-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 49;
+      background: rgba(10, 14, 22, 0.42);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+    .hd-overlay.open { opacity: 1; pointer-events: all; }
+
+    .hd-drawer {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(108%);
+      z-index: 50;
+      width: min(900px, calc(100vw - 32px));
+      max-height: calc(100vh - 72px);
+      display: flex;
+      flex-direction: column;
+      border-radius: 14px 14px 0 0;
+      border: 1px solid rgba(187, 196, 208, 0.84);
+      border-bottom: none;
+      background: var(--panel);
+      box-shadow: 0 -16px 52px rgba(20, 30, 44, 0.20), 0 0 0 1px rgba(120, 132, 148, 0.16);
+      backdrop-filter: blur(22px) saturate(1.08);
+      -webkit-backdrop-filter: blur(22px) saturate(1.08);
+      transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .hd-drawer.open { transform: translateX(-50%) translateY(0); }
+
+    .hd-drawer-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 14px 14px 0 0;
+      flex: 0 0 auto;
+    }
+    .hd-drawer-header svg { width: 16px; height: 16px; color: var(--muted); flex: 0 0 auto; }
+    .hd-drawer-header h3 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.03em; flex: 1; }
+
+    .hd-drawer-close {
+      width: 28px; height: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--line); border-radius: 6px;
+      background: transparent; color: var(--muted);
+      transition: background 140ms ease, color 140ms ease;
+    }
+    .hd-drawer-close:hover { background: var(--soft); color: var(--text); }
+    .hd-drawer-close svg { width: 14px; height: 14px; stroke-width: 2; }
+
+    .hd-drawer-body { padding: 14px 16px 20px; overflow-y: auto; flex: 1; }
+
+    .drawer-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 700px) { .drawer-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+
+    .phase-tag {
+      font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+      letter-spacing: 0.07em; padding: 2px 6px; border-radius: 4px;
+      background: rgba(35, 116, 171, 0.12); color: var(--inbound);
+      text-transform: uppercase; flex: 0 0 auto;
+    }
+
+    /* Topbar action buttons */
+    .topbar-action {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0 11px; height: 34px;
+      border: 1px solid var(--line); border-radius: 7px;
+      background: rgba(255, 255, 255, 0.88); color: var(--muted);
+      font-size: 11px; font-family: var(--font-mono);
+      text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+      transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+    }
+    .topbar-action:hover { border-color: var(--line-strong); color: var(--text); background: #fff; }
+    .topbar-action.active { background: var(--text); border-color: var(--text); color: #fff; }
+    .topbar-action svg { width: 13px; height: 13px; stroke-width: 2; flex: 0 0 auto; }
+    @media (max-width: 1100px) { .topbar-action span { display: none; } .topbar-action { padding: 0 9px; gap: 0; } }
+
+    /* 2D path time labels */
+    .path-time-label { background: transparent; border: none; pointer-events: none; }
+    .path-time-pill {
+      display: inline-block;
+      padding: 2px 7px; border-radius: 999px;
+      font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+      color: #fff; white-space: nowrap;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.30);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.26);
+      pointer-events: none;
+    }
+
+    /* Dark-mode overrides for new elements */
+    body.globe-mode .hd-overlay { background: rgba(4, 6, 12, 0.62); }
+    body.globe-mode .hd-drawer { background: rgba(14, 17, 24, 0.96); border-color: rgba(60, 80, 110, 0.40); }
+    body.globe-mode .hd-drawer-header { background: rgba(0, 0, 0, 0.30); border-color: rgba(60, 80, 110, 0.38); }
+    body.globe-mode .hd-drawer-header h3 { color: #dde4ef; }
+    body.globe-mode .hd-drawer-header svg { color: #7a8ba0; }
+    body.globe-mode .hd-drawer-close { border-color: rgba(60, 80, 110, 0.40); color: #7a8ba0; }
+    body.globe-mode .hd-drawer-close:hover { background: rgba(255, 255, 255, 0.08); color: #dde4ef; }
+    body.globe-mode .hd-drawer-body p { color: #7a8ba0; }
+    body.globe-mode .topbar-action { background: rgba(255, 255, 255, 0.07); border-color: rgba(60, 80, 110, 0.40); color: #8fa0b8; }
+    body.globe-mode .topbar-action:hover { border-color: rgba(60, 80, 110, 0.70); color: #dde4ef; background: rgba(255, 255, 255, 0.10); }
+    body.globe-mode .topbar-action.active { background: var(--inbound); border-color: var(--inbound); color: #fff; }
   </style>
 </head>
 <body>
@@ -857,6 +967,12 @@
       <div class="top-kpi"><b id="kpiNodes">0</b><span>Nodes</span></div>
       <div class="top-kpi"><b id="kpiLead">0d</b><span>Lead</span></div>
       <div class="top-kpi"><b id="kpiRisk">0</b><span>Risk</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="topbar-action" id="btnScenarios" data-open-drawer="drawerScenarios" title="Macro shocks &amp; disruption events"><i data-lucide="sliders-horizontal"></i><span>Scenarios</span></button>
+      <button class="topbar-action" id="btnSimulate" data-open-drawer="drawerSimulate" title="Monte Carlo simulation"><i data-lucide="activity"></i><span>Simulate</span></button>
+      <button class="topbar-action" id="btnIntel" data-open-drawer="drawerIntel" title="Decision Intelligence"><i data-lucide="brain-circuit"></i><span>Intel</span></button>
+      <button class="topbar-action" id="btnLayers" data-open-drawer="drawerLayers" title="Value chain layer toggles"><i data-lucide="layers"></i><span>Layers</span></button>
     </div>
     <button class="icon-button mode-toggle" id="mapModeToggle" data-mode="2d" title="Switch between 2D map and 3D globe" aria-label="Toggle map mode"><i data-lucide="globe-2"></i><span id="mapModeText">2D Map</span></button>
     <button class="icon-button" id="fitRoute" title="Fit route" aria-label="Fit route"><i data-lucide="scan"></i></button>
@@ -924,61 +1040,103 @@
       </div>
     </aside>
 
-    <section class="panel bottom-console" aria-label="Scenario and layer controls">
-      <div>
-        <div class="section-label" style="margin-top:0"><span>Macro And Logistics Shocks</span><span id="scenarioScore">Base</span></div>
-        <div class="scenario-grid">
-          <div class="slider-box"><label for="congestionShock"><span>Congestion</span><b id="congestionValue">0</b></label><input id="congestionShock" type="range" min="-50" max="50" value="0" /></div>
-          <div class="slider-box"><label for="fuelShock"><span>Fuel</span><b id="fuelValue">0</b></label><input id="fuelShock" type="range" min="-50" max="50" value="0" /></div>
-          <div class="slider-box"><label for="demandShock"><span>Demand</span><b id="demandValue">0</b></label><input id="demandShock" type="range" min="-50" max="50" value="0" /></div>
-          <div class="slider-box"><label for="policyShock"><span>Policy</span><b id="policyValue">0</b></label><input id="policyShock" type="range" min="-50" max="50" value="0" /></div>
-        </div>
-        <div class="section-label"><span>Disruption Toggles</span><span>Events</span></div>
-        <div class="disruption-grid" id="disruptionToggles"></div>
-        <div class="mc-section">
-          <div class="section-label"><span>Monte Carlo Simulation</span><span>Stochastic</span></div>
-          <div class="mc-run-row">
-            <button class="mc-run-btn" id="mcRunBtn" type="button">Run Simulation</button>
-            <select class="mc-iter-select" id="mcIterCount">
-              <option value="200">200 runs</option>
-              <option value="500" selected>500 runs</option>
-              <option value="1000">1000 runs</option>
-            </select>
-          </div>
-          <div class="mc-results" id="mcResults">
-            <div class="mc-header"><span>Lead Time Bands</span><span id="mcIterLabel"></span></div>
-            <div id="mcBands"></div>
-            <div class="mc-header" style="margin-top:8px"><span>Cost Bands (USD)</span></div>
-            <div id="mcCostBands"></div>
-          </div>
-        </div>
-        <div class="p4-section">
-          <div class="section-label"><span>Decision Intelligence</span><span>Phase 4</span></div>
-          <div class="p4-btn-row">
-            <button class="p4-btn" id="recBtn" type="button">Get Recommendations</button>
-            <button class="p4-btn p4-secondary" id="exportBtn" type="button">Export Pack</button>
-          </div>
-          <div class="p4-results" id="recResults">
-            <div id="recCards"></div>
-          </div>
-          <div class="p4-btn-row">
-            <button class="p4-btn p4-secondary" id="frontierBtn" type="button">Show Cost-Time Frontier</button>
-          </div>
-          <div class="p4-results" id="frontierResults">
-            <div class="mc-header"><span>Cost vs. Lead Time Frontier</span><span id="frontierLabel"></span></div>
-            <div class="frontier-wrap">
-              <svg class="frontier-svg" id="frontierSvg" viewBox="0 0 240 130" aria-label="Cost-time Pareto frontier chart"></svg>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="section-label" style="margin-top:0"><span>Value Chain Stages</span><span>Layer</span></div>
-        <div class="stage-grid" id="stageToggles"></div>
-        <div class="globe-notice" id="globeNotice">Toggle the 3D globe using the button in the top bar.</div>
-      </div>
     </section>
   </main>
+
+  <!-- Drawer overlay -->
+  <div class="hd-overlay" id="hdOverlay"></div>
+
+  <!-- Scenarios Drawer -->
+  <div class="hd-drawer" id="drawerScenarios" role="dialog" aria-modal="true" aria-label="Scenario controls">
+    <div class="hd-drawer-header">
+      <i data-lucide="sliders-horizontal"></i>
+      <h3>Macro &amp; Logistics Shocks</h3>
+      <button class="hd-drawer-close" data-close-drawer="drawerScenarios" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="hd-drawer-body">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5">Adjust macro-economic shock multipliers and toggle active disruption events. Changes propagate to all route metrics, bottleneck scoring, and the map in real time.</p>
+      <div class="section-label" style="margin-top:0"><span>Shock Multipliers</span><span id="scenarioScore">Base</span></div>
+      <div class="drawer-grid-4">
+        <div class="slider-box"><label for="congestionShock"><span>Congestion</span><b id="congestionValue">0</b></label><input id="congestionShock" type="range" min="-50" max="50" value="0" /></div>
+        <div class="slider-box"><label for="fuelShock"><span>Fuel</span><b id="fuelValue">0</b></label><input id="fuelShock" type="range" min="-50" max="50" value="0" /></div>
+        <div class="slider-box"><label for="demandShock"><span>Demand</span><b id="demandValue">0</b></label><input id="demandShock" type="range" min="-50" max="50" value="0" /></div>
+        <div class="slider-box"><label for="policyShock"><span>Policy</span><b id="policyValue">0</b></label><input id="policyShock" type="range" min="-50" max="50" value="0" /></div>
+      </div>
+      <div class="section-label" style="margin-top:16px"><span>Disruption Events</span><span>Toggle Active</span></div>
+      <div class="disruption-grid" id="disruptionToggles"></div>
+    </div>
+  </div>
+
+  <!-- Simulate Drawer -->
+  <div class="hd-drawer" id="drawerSimulate" role="dialog" aria-modal="true" aria-label="Monte Carlo simulation">
+    <div class="hd-drawer-header">
+      <i data-lucide="activity"></i>
+      <h3>Monte Carlo Simulation</h3>
+      <span class="phase-tag">Stochastic</span>
+      <button class="hd-drawer-close" data-close-drawer="drawerSimulate" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="hd-drawer-body">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5">Run stochastic iterations using current shock and disruption settings to produce lead-time and cost confidence bands across P50 / P80 / P95 percentiles.</p>
+      <div class="mc-run-row">
+        <button class="mc-run-btn" id="mcRunBtn" type="button">Run Simulation</button>
+        <select class="mc-iter-select" id="mcIterCount">
+          <option value="200">200 runs</option>
+          <option value="500" selected>500 runs</option>
+          <option value="1000">1000 runs</option>
+          <option value="2500">2500 runs</option>
+        </select>
+      </div>
+      <div class="mc-results" id="mcResults">
+        <div class="mc-header"><span>Lead Time Bands</span><span id="mcIterLabel"></span></div>
+        <div id="mcBands"></div>
+        <div class="mc-header" style="margin-top:10px"><span>Cost Bands (USD)</span></div>
+        <div id="mcCostBands"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Intel Drawer -->
+  <div class="hd-drawer" id="drawerIntel" role="dialog" aria-modal="true" aria-label="Decision Intelligence">
+    <div class="hd-drawer-header">
+      <i data-lucide="brain-circuit"></i>
+      <h3>Decision Intelligence</h3>
+      <span class="phase-tag">Phase 4</span>
+      <button class="hd-drawer-close" data-close-drawer="drawerIntel" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="hd-drawer-body">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5">Analyze the active route for bottlenecks, mode-substitution opportunities, and cost-time tradeoffs. Export a full scenario pack for stakeholder review.</p>
+      <div class="p4-btn-row">
+        <button class="p4-btn" id="recBtn" type="button">Get Recommendations</button>
+        <button class="p4-btn p4-secondary" id="exportBtn" type="button">Export Pack</button>
+      </div>
+      <div class="p4-results" id="recResults">
+        <div id="recCards"></div>
+      </div>
+      <div class="p4-btn-row" style="margin-top:10px">
+        <button class="p4-btn p4-secondary" id="frontierBtn" type="button">Show Cost-Time Frontier</button>
+      </div>
+      <div class="p4-results" id="frontierResults">
+        <div class="mc-header"><span>Cost vs. Lead Time Frontier</span><span id="frontierLabel"></span></div>
+        <div class="frontier-wrap">
+          <svg class="frontier-svg" id="frontierSvg" viewBox="0 0 240 130" aria-label="Cost-time Pareto frontier chart"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layers Drawer -->
+  <div class="hd-drawer" id="drawerLayers" role="dialog" aria-modal="true" aria-label="Map layer controls">
+    <div class="hd-drawer-header">
+      <i data-lucide="layers"></i>
+      <h3>Value Chain Layers</h3>
+      <button class="hd-drawer-close" data-close-drawer="drawerLayers" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="hd-drawer-body">
+      <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5">Toggle which value chain stages are rendered on the 2D map and 3D globe.</p>
+      <div class="stage-grid" id="stageToggles"></div>
+      <div class="globe-notice" id="globeNotice" style="margin-top:14px">Switch to 3D Globe using the button in the top bar.</div>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
@@ -1623,8 +1781,8 @@
           mode,
           risk,
           color: isBottleneck ? '#ef4444' : riskToHex(risk, mode),
-          stroke: isBottleneck ? 3.0 : (mode === 'sea' ? 2.0 : mode === 'air' ? 1.8 : 1.4),
-          altScale: mode === 'air' ? 0.65 : mode === 'sea' ? 0.12 : 0.03,
+          stroke: isBottleneck ? 1.0 : (mode === 'sea' ? 0.65 : mode === 'air' ? 0.55 : 0.45),
+          altScale: mode === 'air' ? 0.35 : mode === 'sea' ? 0.15 : 0.06,
           animTime: mode === 'air' ? 2000 : mode === 'sea' ? 3600 : 4800,
           isBottleneck,
           label: mode + ': ' + from.name + ' → ' + to.name,
@@ -1661,9 +1819,9 @@
         .atmosphereColor('#2374ab')
         .atmosphereAltitude(0.18)
         .arcStroke(function(d) { return d.stroke; })
-        .arcAltitudeAutoScale(function(d) { return d.altScale; })
-        .arcDashLength(0.38)
-        .arcDashGap(0.55)
+        .arcAltitude(function(d) { return d.altScale; })
+        .arcDashLength(0.14)
+        .arcDashGap(0.86)
         .arcDashAnimateTime(function(d) { return d.animTime; })
         .arcColor(function(d) { return d.color; })
         .arcLabel(function(d) { return '<div style="font-family:monospace;font-size:11px;background:rgba(14,17,24,0.88);padding:5px 8px;border-radius:6px;border:1px solid #2a3a55;color:#dde4ef">' + escapeHtml(d.label) + '<br/><span style="color:#7a8ba0">risk ' + Math.round(d.risk) + ' | ' + d.mode + '</span></div>'; })
@@ -1677,6 +1835,15 @@
           const nodeBtn = document.querySelector('[data-node-id="' + d.id + '"]');
           if (nodeBtn) nodeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         })
+        .labelsData([])
+        .labelLat(function(d) { return d.lat; })
+        .labelLng(function(d) { return d.lng; })
+        .labelText(function(d) { return d.name; })
+        .labelSize(0.48)
+        .labelDotRadius(0)
+        .labelColor(function() { return 'rgba(221,228,239,0.82)'; })
+        .labelResolution(2)
+        .labelAltitude(0.04)
         (document.getElementById('globe'));
       globeInstance.controls().autoRotate = true;
       globeInstance.controls().autoRotateSpeed = 0.28;
@@ -1687,7 +1854,7 @@
       initGlobe();
       const arcs = buildGlobeArcs();
       const points = buildGlobePoints();
-      globeInstance.arcsData(arcs).pointsData(points);
+      globeInstance.arcsData(arcs).pointsData(points).labelsData(points);
       const route = getRoute();
       if (route.nodes.length) {
         const avgLat = route.nodes.reduce(function(s, n) { return s + n.coords[0]; }, 0) / route.nodes.length;
@@ -2390,6 +2557,22 @@
             smoothFactor: 1.1,
             className: isBottleneck ? '' : 'route-segment',
           }).addTo(routeLayer);
+
+          // Mid-segment time label
+          const legResult = scenario.legs[index - 1];
+          const legDays = legResult ? legResult.adjustedDays : averageDays(node);
+          const midIdx = Math.floor(coords.length / 2);
+          const midPt = coords[midIdx] || [(prev.coords[0] + node.coords[0]) / 2, (prev.coords[1] + node.coords[1]) / 2];
+          L.marker(midPt, {
+            icon: L.divIcon({
+              className: 'path-time-label',
+              html: '<span class="path-time-pill" style="background:' + (isBottleneck ? '#c94b4b' : color) + '">' + shortDays(legDays) + '</span>',
+              iconAnchor: [28, 10],
+              iconSize: null,
+            }),
+            interactive: false,
+            keyboard: false,
+          }).addTo(routeLayer);
         }
       })();
     }
@@ -2689,9 +2872,47 @@
         if (state.mapMode === '2d') setTimeout(fitToRoute, 120);
         else if (globeInstance) globeInstance.width(window.innerWidth).height(window.innerHeight);
       });
-    }
 
-    // ─── Phase 1: Realistic Route Geometry ──────────────────────────────────
+      // ── Drawer system ──────────────────────────────────────────────────────
+      const hdOverlay = document.getElementById('hdOverlay');
+      let _openDrawerId = null;
+
+      function openDrawer(id) {
+        if (_openDrawerId && _openDrawerId !== id) {
+          document.getElementById(_openDrawerId).classList.remove('open');
+          document.querySelectorAll('[data-open-drawer="' + _openDrawerId + '"]').forEach(function(b) { b.classList.remove('active'); });
+        }
+        _openDrawerId = id;
+        document.getElementById(id).classList.add('open');
+        hdOverlay.classList.add('open');
+        document.querySelectorAll('[data-open-drawer="' + id + '"]').forEach(function(b) { b.classList.add('active'); });
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function closeAllDrawers() {
+        if (_openDrawerId) document.getElementById(_openDrawerId).classList.remove('open');
+        hdOverlay.classList.remove('open');
+        document.querySelectorAll('.topbar-action').forEach(function(b) { b.classList.remove('active'); });
+        _openDrawerId = null;
+      }
+
+      document.querySelectorAll('[data-open-drawer]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const id = btn.dataset.openDrawer;
+          if (_openDrawerId === id) { closeAllDrawers(); } else { openDrawer(id); }
+        });
+      });
+
+      document.querySelectorAll('[data-close-drawer]').forEach(function(btn) {
+        btn.addEventListener('click', closeAllDrawers);
+      });
+
+      hdOverlay.addEventListener('click', closeAllDrawers);
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && _openDrawerId) closeAllDrawers();
+      });
+    }
     const routeGeomCache = new Map();
     let drawGeneration = 0;
 
