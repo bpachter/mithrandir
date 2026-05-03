@@ -727,6 +727,119 @@
       .scenario-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .stage-grid { margin-top: 10px; }
     }
+
+    .mc-section { margin-top: 10px; }
+    .mc-run-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .mc-run-btn {
+      flex: 1;
+      padding: 7px 12px;
+      border-radius: 7px;
+      border: 1px solid var(--inbound);
+      background: var(--inbound);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .mc-run-btn:disabled { opacity: 0.55; cursor: default; }
+    .mc-iter-select {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--line-strong);
+      background: var(--panel-solid);
+      color: var(--text);
+      font-size: 12px;
+      min-width: 80px;
+    }
+    .mc-results {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      line-height: 1.5;
+      display: none;
+    }
+    .mc-results.visible { display: block; }
+    .mc-band-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .mc-band-label { color: var(--muted); font-size: 10px; min-width: 32px; }
+    .mc-band-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--line-strong); position: relative; }
+    .mc-band-fill { height: 100%; border-radius: 3px; }
+    .mc-band-val { font-weight: 600; font-family: var(--font-mono); font-size: 10px; min-width: 42px; text-align: right; }
+    .mc-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    body.globe-mode .mc-results { background: rgba(255,255,255,0.05); border-color: rgba(60,80,110,0.32); color: #dde4ef; }
+    body.globe-mode .mc-iter-select { background: rgba(14,17,24,0.8); color: #dde4ef; border-color: rgba(60,80,110,0.4); }
+
+    /* ── Phase 4: Decision Intelligence ── */
+    .p4-section { margin-top: 10px; }
+    .p4-btn-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .p4-btn {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--ok);
+      background: var(--ok);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .p4-btn:disabled { opacity: 0.55; cursor: default; }
+    .p4-btn.p4-secondary {
+      background: transparent;
+      border-color: var(--line-strong);
+      color: var(--muted);
+    }
+    .p4-btn.p4-secondary:hover { border-color: var(--muted); color: var(--text); }
+    .p4-results { display: none; }
+    .p4-results.visible { display: block; }
+    .rec-card {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .rec-card.critical { border-left-color: var(--risk); }
+    .rec-card.high { border-left-color: var(--operations); }
+    .rec-card.medium { border-left-color: var(--inbound); }
+    .rec-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .rec-priority {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .rec-priority.critical { background: rgba(201,75,75,0.14); color: var(--risk); }
+    .rec-priority.high { background: rgba(245,158,11,0.14); color: #b45309; }
+    .rec-priority.medium { background: rgba(35,116,171,0.14); color: var(--inbound); }
+    .rec-leg { font-size: 10px; color: var(--muted); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+    .rec-issue { margin: 3px 0; color: var(--text); }
+    .rec-suggestion { margin: 3px 0; color: var(--muted); font-style: italic; }
+    .rec-deltas { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+    .rec-delta {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .rec-delta.pos { background: rgba(201,75,75,0.10); color: var(--risk); }
+    .rec-delta.neg { background: rgba(63,142,110,0.12); color: var(--ok); }
+    .rec-delta.zero { background: rgba(102,113,127,0.10); color: var(--muted); }
+    .frontier-wrap { margin-top: 4px; }
+    .frontier-svg { width: 100%; height: 130px; display: block; }
+    body.globe-mode .rec-card { background: rgba(255,255,255,0.05); border-color: rgba(60,80,110,0.32); color: #dde4ef; }
+    body.globe-mode .rec-issue { color: #dde4ef; }
+    body.globe-mode .rec-suggestion { color: #7a8ba0; }
+    body.globe-mode .p4-btn.p4-secondary { border-color: rgba(60,80,110,0.40); color: #8fa0b8; }
   </style>
 </head>
 <body>
@@ -822,11 +935,47 @@
         </div>
         <div class="section-label"><span>Disruption Toggles</span><span>Events</span></div>
         <div class="disruption-grid" id="disruptionToggles"></div>
+        <div class="mc-section">
+          <div class="section-label"><span>Monte Carlo Simulation</span><span>Stochastic</span></div>
+          <div class="mc-run-row">
+            <button class="mc-run-btn" id="mcRunBtn" type="button">Run Simulation</button>
+            <select class="mc-iter-select" id="mcIterCount">
+              <option value="200">200 runs</option>
+              <option value="500" selected>500 runs</option>
+              <option value="1000">1000 runs</option>
+            </select>
+          </div>
+          <div class="mc-results" id="mcResults">
+            <div class="mc-header"><span>Lead Time Bands</span><span id="mcIterLabel"></span></div>
+            <div id="mcBands"></div>
+            <div class="mc-header" style="margin-top:8px"><span>Cost Bands (USD)</span></div>
+            <div id="mcCostBands"></div>
+          </div>
+        </div>
+        <div class="p4-section">
+          <div class="section-label"><span>Decision Intelligence</span><span>Phase 4</span></div>
+          <div class="p4-btn-row">
+            <button class="p4-btn" id="recBtn" type="button">Get Recommendations</button>
+            <button class="p4-btn p4-secondary" id="exportBtn" type="button">Export Pack</button>
+          </div>
+          <div class="p4-results" id="recResults">
+            <div id="recCards"></div>
+          </div>
+          <div class="p4-btn-row">
+            <button class="p4-btn p4-secondary" id="frontierBtn" type="button">Show Cost-Time Frontier</button>
+          </div>
+          <div class="p4-results" id="frontierResults">
+            <div class="mc-header"><span>Cost vs. Lead Time Frontier</span><span id="frontierLabel"></span></div>
+            <div class="frontier-wrap">
+              <svg class="frontier-svg" id="frontierSvg" viewBox="0 0 240 130" aria-label="Cost-time Pareto frontier chart"></svg>
+            </div>
+          </div>
+        </div>
       </div>
       <div>
         <div class="section-label" style="margin-top:0"><span>Value Chain Stages</span><span>Layer</span></div>
         <div class="stage-grid" id="stageToggles"></div>
-        <div class="globe-notice" id="globeNotice">3D globe mode is staged for Phase 3. The Phase 0 toggle is wired now so globe layers can plug into the same chain, leg, and routePath model.</div>
+        <div class="globe-notice" id="globeNotice">Toggle the 3D globe using the button in the top bar.</div>
       </div>
     </section>
   </main>
@@ -1098,6 +1247,320 @@
             ]
           }
         ]
+      },
+      {
+        id: 'cobalt-battery',
+        title: 'Cobalt Battery Materials Chain',
+        category: 'Critical Minerals / Energy Storage',
+        summary: 'Congolese cobalt ore flows through Chinese refining, cathode production, and US cell manufacturing for EV batteries.',
+        aliases: ['cobalt', 'drc', 'congo', 'cathode', 'ncm', 'nca', 'battery materials', 'artisanal mining', 'critical minerals'],
+        taxonomy: {
+          inputs: ['Cobalt ore (heterogenite)', 'copper-cobalt concentrate', 'hydromet solutions'],
+          middleputs: ['Cobalt hydroxide precipitate', 'battery-grade cobalt sulfate', 'NCM/NCA cathode powder'],
+          outputs: ['Cathode active material', 'EV battery cells', 'energy storage cells']
+        },
+        routes: [
+          {
+            id: 'katanga-nashville',
+            name: 'Katanga Province to US Cell Factory',
+            badge: 'critical',
+            description: 'Congo cobalt hydroxide moves through Chinese refining and US battery manufacturing corridors.',
+            confidence: 58,
+            baseRisk: 68,
+            traffic: { truck: 'N1 highway variable', rail: 'SNCC rail fragile', port: 'Durban–Cape Town moderate', bottleneck: 'Chinese refining concentration' },
+            nodes: [
+              { id: 'kolwezi', code: 'ORE', name: 'Kolwezi Mining District', place: 'Katanga, DRC', coords: [-10.71, 25.47], stage: 'mining', company: 'Glencore / Ivanhoe / artisanal operators', process: 'Cobalt-copper ore extraction; majority of global cobalt supply flows through this corridor.', days: [30, 75] },
+              { id: 'durban-cobalt', code: 'PORT', name: 'Port of Durban', place: 'KwaZulu-Natal, South Africa', coords: [-29.87, 31.04], stage: 'inbound', company: 'Transnet Port Terminals', process: 'Container handling and deep-sea export gateway for southern African cobalt and copper.', days: [12, 35] },
+              { id: 'shanghai-cobalt', code: 'PORT', name: 'Shanghai / Ningbo Port', place: 'China', coords: [31.23, 121.47], stage: 'inbound', company: 'Chinese port operators', process: 'Import and transfer to inland refining and cathode manufacturing facilities.', days: [8, 22] },
+              { id: 'jiangxi-refinery', code: 'REF', name: 'Jiangxi Cobalt Refinery', place: 'Jiangxi, China', coords: [27.60, 115.90], stage: 'operations', company: 'GEM Co. / Huayou Cobalt', process: 'Hydrometallurgical refining of cobalt hydroxide into battery-grade cobalt sulfate.', days: [18, 45] },
+              { id: 'changsha-cathode', code: 'CAT', name: 'Changsha Cathode Plant', place: 'Hunan, China', coords: [28.23, 112.94], stage: 'operations', company: 'Hunan Shanshan / CNGR Advanced Materials', process: 'NCM/NCA cathode active material synthesis and quality control.', days: [14, 38] },
+              { id: 'la-cobalt', code: 'PORT', name: 'Long Beach / LA Ports', place: 'California', coords: [33.75, -118.19], stage: 'inbound', company: 'Port of Long Beach', process: 'Import clearance and intermodal transfer to battery manufacturing sites.', days: [6, 18] },
+              { id: 'spring-hill-cobalt', code: 'CELL', name: 'Spring Hill Battery Cell Plant', place: 'Tennessee', coords: [35.75, -86.93], stage: 'operations', company: 'Ultium Cells / GM-LG JV', process: 'Cell assembly with NCM cathode material for GM EV platforms.', days: [12, 35] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'lng-europe',
+        title: 'LNG Energy Chain',
+        category: 'Energy / Natural Gas',
+        summary: 'Qatari liquefied natural gas moves through tanker fleets to European regasification terminals and grid distribution.',
+        aliases: ['lng', 'liquefied natural gas', 'qatar', 'gas', 'qatarenergy', 'natural gas', 'ras laffan', 'european gas', 'energy security'],
+        taxonomy: {
+          inputs: ['Raw natural gas feedstock', 'liquefaction plant capacity', 'LNG tanker fleet'],
+          middleputs: ['Liquefied natural gas (−162°C)', 'LNG tanker cargo', 'regasified natural gas'],
+          outputs: ['Pipeline gas supply', 'power plant fuel', 'industrial feedstock', 'residential heating']
+        },
+        routes: [
+          {
+            id: 'ras-laffan-rotterdam',
+            name: 'Ras Laffan to Rotterdam LNG Terminal',
+            badge: 'global',
+            description: 'Qatar LNG tankers transit the Indian Ocean and Suez Canal to deliver gas to European import terminals.',
+            confidence: 78,
+            baseRisk: 42,
+            traffic: { truck: 'None', rail: 'None', port: 'Ras Laffan and Rotterdam high throughput', bottleneck: 'Tanker availability and Suez transit' },
+            nodes: [
+              { id: 'ras-laffan', code: 'LNG', name: 'Ras Laffan LNG Complex', place: 'Qatar', coords: [25.91, 51.55], stage: 'mining', company: 'QatarEnergy / Shell / TotalEnergies', process: 'Gas treatment, liquefaction to −162°C, and LNG tanker loading from North Field reserves.', days: [2, 5] },
+              { id: 'hormuz-lng', code: 'PORT', name: 'Strait of Hormuz Transit', place: 'Persian Gulf', coords: [26.57, 56.43], stage: 'inbound', company: 'LNG tanker operators', process: 'Chokepoint transit; ~30% of global LNG exports pass through Hormuz daily.', days: [1, 3] },
+              { id: 'suez-lng', code: 'PORT', name: 'Suez Canal LNG Transit', place: 'Egypt', coords: [30.58, 32.54], stage: 'inbound', company: 'Suez Canal Authority', process: 'Northbound LNG tanker transit; canal transit time ~16 hours.', days: [1, 2] },
+              { id: 'gate-terminal', code: 'TERM', name: 'Gate LNG Terminal', place: 'Rotterdam, Netherlands', coords: [51.95, 4.05], stage: 'operations', company: 'Gasunie / Vopak / Shell', process: 'LNG storage, regasification, and injection into the European high-pressure gas grid.', days: [2, 6] },
+              { id: 'ttf-hub', code: 'SALE', name: 'Northwest European Gas Hub (TTF)', place: 'Netherlands', coords: [52.37, 4.90], stage: 'sales', company: 'Energy traders and utilities', process: 'Gas marketed at TTF virtual trading point for industrial and residential consumers.', days: [1, 5] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'coffee',
+        title: 'Coffee Chain',
+        category: 'Agriculture / Food & Beverage',
+        summary: 'Ethiopian Arabica beans move through exporters, ocean freight, Hamburg trade hubs, roasters, and US retail distribution.',
+        aliases: ['coffee', 'arabica', 'espresso', 'latte', 'starbucks', 'coffee beans', 'ethiopia', 'brazil coffee', 'green coffee'],
+        taxonomy: {
+          inputs: ['Coffee cherry harvest', 'wet or dry processing', 'green coffee beans'],
+          middleputs: ['Washed / natural green beans', 'ocean container cargo', 'roasted beans'],
+          outputs: ['Roasted whole bean', 'ground retail packs', 'ready-to-drink beverages']
+        },
+        routes: [
+          {
+            id: 'yirgacheffe-seattle',
+            name: 'Ethiopian Highlands to US Retail Shelf',
+            badge: 'premium',
+            description: 'Specialty Arabica from Ethiopia\'s Yirgacheffe region ships via Djibouti and Hamburg to US specialty roasters.',
+            confidence: 71,
+            baseRisk: 41,
+            traffic: { truck: 'Ethiopia highlands variable', rail: 'Djibouti-Addis light', port: 'Djibouti moderate', bottleneck: 'Harvest seasonality and grade sorting' },
+            nodes: [
+              { id: 'yirgacheffe', code: 'FARM', name: 'Yirgacheffe Coffee Region', place: 'Gedeo Zone, Ethiopia', coords: [6.15, 38.20], stage: 'mining', company: 'Smallholder cooperative network', process: 'Handpicked coffee cherries processed through washing stations; highly traceable micro-lot lots.', days: [14, 40] },
+              { id: 'addis-export', code: 'HUB', name: 'Addis Ababa Export Hub', place: 'Ethiopia', coords: [9.03, 38.74], stage: 'inbound', company: 'Ethiopian Coffee and Tea Authority', process: 'Green bean grading, cupping, ECX trade, bagging, and export documentation.', days: [7, 21] },
+              { id: 'djibouti-port', code: 'PORT', name: 'Port of Djibouti', place: 'Djibouti', coords: [11.59, 43.14], stage: 'inbound', company: 'Djibouti Ports Authority', process: 'Horn of Africa gateway for Ethiopian coffee exports via ocean container.', days: [5, 14] },
+              { id: 'hamburg-coffee', code: 'PORT', name: 'Hamburg / Bremen Coffee Port', place: 'Germany', coords: [53.55, 9.99], stage: 'inbound', company: 'Neumann Gruppe / ECOM / European operators', process: 'Green coffee import, warehousing, blending, and redistribution to roasters and re-export.', days: [10, 28] },
+              { id: 'seattle-roaster', code: 'ROAST', name: 'Pacific Northwest Roasting Facility', place: 'Seattle, WA', coords: [47.60, -122.33], stage: 'operations', company: 'Starbucks / independent specialty roasters', process: 'Green coffee roasted to profile, blended, and retail packaged.', days: [5, 18] },
+              { id: 'us-dc-coffee', code: 'DC', name: 'US Regional Distribution Center', place: 'Seattle, WA', coords: [47.44, -122.30], stage: 'outbound', company: '3PL distribution networks', process: 'Packaged coffee allocation, e-commerce pick-pack, and store replenishment.', days: [2, 6] },
+              { id: 'retail-coffee', code: 'SALE', name: 'Grocery and Coffee Retail', place: 'National, USA', coords: [39.50, -98.35], stage: 'sales', company: 'Supermarkets / specialty coffee shops', process: 'Consumer sale through grocery, QSR, and specialty retail channels.', days: [1, 7] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'soybeans',
+        title: 'Soybean Trade Chain',
+        category: 'Agriculture / Oilseeds',
+        summary: 'Brazilian soybeans move from Mato Grosso farms through Santos export terminals to Chinese crush plants and animal feed networks.',
+        aliases: ['soybeans', 'soy', 'oilseed', 'soybean meal', 'animal feed', 'brazil soy', 'china agriculture', 'bunge', 'cargill'],
+        taxonomy: {
+          inputs: ['Soybean seed', 'fertilizer (N-P-K)', 'pesticides', 'transport logistics'],
+          middleputs: ['Harvested soybeans', 'dried and cleaned bulk grain', 'Panamax ocean cargo'],
+          outputs: ['Soybean meal (protein feed)', 'soybean oil', 'livestock feed rations']
+        },
+        routes: [
+          {
+            id: 'matogrosso-tianjin',
+            name: 'Mato Grosso to Tianjin Crush Corridor',
+            badge: 'global',
+            description: 'Brazilian soy flows from interior farms via BR-163 and Santos port to Chinese animal feed crush facilities.',
+            confidence: 77,
+            baseRisk: 36,
+            traffic: { truck: 'BR-163 heavy seasonal', rail: 'Rumo intermodal', port: 'Santos congested at harvest', bottleneck: 'Port Santos capacity and harvest timing' },
+            nodes: [
+              { id: 'mato-grosso', code: 'FARM', name: 'Mato Grosso Soy Farms', place: 'Mato Grosso, Brazil', coords: [-12.64, -55.43], stage: 'mining', company: 'AMAGGI / SLC Agrícola / producers', process: 'Mechanized soybean harvest; Brazil produces ~40% of global soybean exports.', days: [10, 30] },
+              { id: 'rondonopolis', code: 'HUB', name: 'Rondonópolis Grain Hub', place: 'Mato Grosso, Brazil', coords: [-16.47, -54.64], stage: 'inbound', company: 'Bunge / ADM / Louis Dreyfus', process: 'Storage silos, drying, pre-cleaning, and intermodal transfer to Santos rail.', days: [4, 14] },
+              { id: 'santos-soy', code: 'PORT', name: 'Port of Santos', place: 'São Paulo, Brazil', coords: [-23.96, -46.33], stage: 'outbound', company: 'Brasil Terminal Portuário / Cargill', process: 'Largest soy export terminal in Latin America; bulk loading onto Capesize/Panamax vessels.', days: [10, 28] },
+              { id: 'tianjin-soy', code: 'PORT', name: 'Port of Tianjin (Xingang)', place: 'Tianjin, China', coords: [38.98, 117.72], stage: 'inbound', company: 'Chinese port operators', process: 'Bulk import, customs, and discharge to inland crush plants.', days: [8, 20] },
+              { id: 'hebei-crush', code: 'CRUSH', name: 'Hebei / Tianjin Crush Facilities', place: 'Hebei, China', coords: [38.50, 116.50], stage: 'operations', company: 'COFCO / Sinograin / Louis Dreyfus China', process: 'Soybean crushing into meal and oil; feeds Chinese hog and poultry sectors.', days: [5, 14] },
+              { id: 'china-feed', code: 'SALE', name: 'Chinese Feed and Food Markets', place: 'North China', coords: [35.00, 114.00], stage: 'sales', company: 'Chinese feed and food processors', process: 'Meal sold to animal feed compounders; oil enters food processing and biodiesel channels.', days: [2, 10] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'crude-oil',
+        title: 'Crude Oil Chain',
+        category: 'Energy / Petroleum',
+        summary: 'Saudi Arabian crude oil moves through VLCC supertankers to US Gulf Coast refineries and regional fuel distribution networks.',
+        aliases: ['crude oil', 'petroleum', 'oil', 'saudi oil', 'aramco', 'refinery', 'gasoline', 'diesel', 'fuel', 'vlcc tanker', 'supertanker'],
+        taxonomy: {
+          inputs: ['Subsurface crude oil reserves', 'gas lift / water injection', 'VLCC tanker capacity'],
+          middleputs: ['Crude oil (API grade)', 'VLCC vessel cargo', 'distillation fractions'],
+          outputs: ['Gasoline', 'diesel', 'jet fuel', 'petrochemical feedstock', 'residual fuel oil']
+        },
+        routes: [
+          {
+            id: 'ras-tanura-houston',
+            name: 'Ras Tanura to US Gulf Coast Refinery',
+            badge: 'global',
+            description: 'Saudi Aramco crude loaded at Ras Tanura moves via VLCC supertanker through Suez or Cape route to US Gulf refineries.',
+            confidence: 81,
+            baseRisk: 44,
+            traffic: { truck: 'None at sea', rail: 'None', port: 'Ras Tanura high-throughput VLCC', bottleneck: 'Strait of Hormuz and Suez transit' },
+            nodes: [
+              { id: 'ghawar-field', code: 'WELL', name: 'Ghawar Oil Field', place: 'Eastern Province, Saudi Arabia', coords: [24.93, 49.52], stage: 'mining', company: 'Saudi Aramco', process: 'World\'s largest conventional oil field; waterflooding sustains production above 3.8 Mb/d.', days: [2, 5] },
+              { id: 'ras-tanura', code: 'PORT', name: 'Ras Tanura Export Terminal', place: 'Saudi Arabia', coords: [26.65, 50.16], stage: 'outbound', company: 'Saudi Aramco Marine', process: 'VLCC loading terminal; one of the world\'s busiest crude oil export points.', days: [1, 3] },
+              { id: 'hormuz-oil', code: 'PORT', name: 'Strait of Hormuz', place: 'Persian Gulf', coords: [26.57, 56.43], stage: 'inbound', company: 'VLCC operator fleets', process: 'Critical chokepoint; ~20% of global oil supply passes through here daily.', days: [1, 2] },
+              { id: 'suez-oil', code: 'PORT', name: 'Suez Canal Crude Transit', place: 'Egypt', coords: [30.58, 32.54], stage: 'inbound', company: 'Suez Canal Authority', process: 'Northbound crude transit or bypass via SUMED pipeline for ultra-large vessels.', days: [1, 2] },
+              { id: 'houston-refinery', code: 'REF', name: 'Gulf Coast Refinery Complex', place: 'Houston, TX', coords: [29.76, -95.37], stage: 'operations', company: 'ExxonMobil / Valero / Marathon / LyondellBasell', process: 'Atmospheric distillation, cracking, treating, and blending into transportation fuels.', days: [4, 12] },
+              { id: 'colonial-pipeline', code: 'DC', name: 'Gulf Coast Petroleum Terminal', place: 'Gulf Coast, USA', coords: [30.50, -88.00], stage: 'outbound', company: 'Colonial Pipeline / Magellan', process: 'Product pipeline distribution to Southeast and Midwest retail and commercial markets.', days: [2, 8] },
+              { id: 'us-retail-fuel', code: 'SALE', name: 'US Retail Fuel Markets', place: 'National, USA', coords: [38.00, -90.00], stage: 'sales', company: 'OEM fuel brand networks', process: 'Gasoline, diesel, and jet fuel sold through branded and unbranded retail channels.', days: [1, 4] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'wheat-grain',
+        title: 'Wheat and Grain Chain',
+        category: 'Agriculture / Grains',
+        summary: 'Ukrainian wheat moves through Black Sea export terminals to Egyptian flour mills and MENA food security programs.',
+        aliases: ['wheat', 'grain', 'flour', 'bread', 'egypt wheat', 'ukraine grain', 'food security', 'black sea grain', 'gasc'],
+        taxonomy: {
+          inputs: ['Wheat seed', 'fertilizer (urea, MAP)', 'combine harvester capacity'],
+          middleputs: ['Harvested bulk wheat', 'ocean bulk cargo', 'cleaned milling wheat'],
+          outputs: ['Wheat flour', 'bread', 'pasta', 'animal feed grain']
+        },
+        routes: [
+          {
+            id: 'ukraine-cairo',
+            name: 'Black Sea Wheat to Egyptian Flour Mills',
+            badge: 'critical',
+            description: 'Ukrainian wheat shipped via Odesa through Bosphorus and Mediterranean to Egypt\'s GASC state buyer.',
+            confidence: 55,
+            baseRisk: 72,
+            traffic: { truck: 'Ukraine highway variable', rail: 'Ukrzaliznytsia impacted', port: 'Odesa disrupted', bottleneck: 'Bosphorus transit and conflict risk' },
+            nodes: [
+              { id: 'ukraine-fields', code: 'FARM', name: 'Ukrainian Wheat Belt', place: 'Central Ukraine', coords: [49.00, 32.00], stage: 'mining', company: 'MHP / Kernel / agricultural cooperatives', process: 'One of the world\'s largest wheat-exporting regions; conflict significantly impacts output and logistics.', days: [10, 30] },
+              { id: 'odesa-port', code: 'PORT', name: 'Port of Odesa / Pivdennyi', place: 'Ukraine', coords: [46.50, 30.72], stage: 'outbound', company: 'Ukrainian port operators', process: 'Black Sea export terminal; subject to conflict and drone disruption.', days: [10, 42] },
+              { id: 'bosphorus-grain', code: 'PORT', name: 'Bosphorus Transit', place: 'Turkey', coords: [41.10, 29.00], stage: 'inbound', company: 'Turkish Maritime Authority', process: 'Critical chokepoint for Black Sea grain exports; subject to geopolitical tensions.', days: [1, 3] },
+              { id: 'alexandria-port', code: 'PORT', name: 'Port of Alexandria', place: 'Egypt', coords: [31.20, 29.86], stage: 'inbound', company: 'Egyptian Ports Authority', process: 'Primary grain import gateway for Egypt; largest wheat importer in the world.', days: [6, 18] },
+              { id: 'cairo-mill', code: 'MILL', name: 'Cairo Flour Milling Complex', place: 'Greater Cairo, Egypt', coords: [30.06, 31.24], stage: 'operations', company: 'GASC / Holding Company for Food Industries', process: 'Milling of imported wheat into flour for subsidized bread (baladi) programs.', days: [4, 12] },
+              { id: 'egypt-bread', code: 'SALE', name: 'Egyptian Bread Distribution', place: 'Egypt', coords: [27.00, 30.00], stage: 'sales', company: 'Government bakeries / private distribution', process: 'Subsidized bread distribution through government-sponsored retail outlets.', days: [1, 5] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'pharmaceutical',
+        title: 'Pharmaceutical API Chain',
+        category: 'Healthcare / Life Sciences',
+        summary: 'Indian API manufacturers supply active pharmaceutical ingredients for US generic drug producers through temperature-controlled logistics.',
+        aliases: ['pharmaceutical', 'drugs', 'medicine', 'generic drugs', 'api', 'active ingredient', 'india pharma', 'hyderabad pharma', 'prescription drugs'],
+        taxonomy: {
+          inputs: ['Chemical precursors', 'fermentation substrates', 'solvent systems', 'cleanroom synthesis capacity'],
+          middleputs: ['Active pharmaceutical ingredient (API)', 'temperature-controlled airfreight', 'FDA-cleared US entry'],
+          outputs: ['Generic drug tablets / capsules', 'IV formulations', 'OTC medication', 'prescription drug supply']
+        },
+        routes: [
+          {
+            id: 'hyderabad-nj',
+            name: 'Hyderabad API to New Jersey Pharmaceutical',
+            badge: 'regulated',
+            description: 'FDA-registered Indian API plants supply US pharmaceutical manufacturers for generic drug production.',
+            confidence: 76,
+            baseRisk: 38,
+            traffic: { truck: 'India highway moderate', rail: 'Air cargo primary mode', port: 'Hyderabad/Mumbai air', bottleneck: 'FDA audit compliance and cold chain' },
+            nodes: [
+              { id: 'hyderabad-api', code: 'API', name: 'Hyderabad Pharma City', place: 'Telangana, India', coords: [17.38, 78.48], stage: 'operations', company: 'Dr. Reddy\'s / Aurobindo / Divi\'s Laboratories', process: 'GMP-compliant API synthesis, purification, and analysis in FDA-registered facilities.', days: [20, 60] },
+              { id: 'hyd-airport', code: 'AIR', name: 'Rajiv Gandhi International Airport', place: 'Hyderabad, India', coords: [17.23, 78.43], stage: 'outbound', company: 'Expeditors / DHL Supply Chain', process: 'Temperature-controlled cargo handling; GDP-compliant export documentation.', days: [2, 6] },
+              { id: 'newark-airport', code: 'AIR', name: 'Newark Liberty International Airport', place: 'New Jersey', coords: [40.69, -74.17], stage: 'inbound', company: 'US Customs / FDA import review', process: 'API import clearance, FDA OM compliance review, and cold-chain integrity verification.', days: [2, 7] },
+              { id: 'nj-pharma', code: 'MFG', name: 'New Jersey Pharmaceutical Manufacturing', place: 'New Jersey', coords: [40.58, -74.54], stage: 'operations', company: 'Teva / Amneal / Sun Pharma USA', process: 'Drug product manufacturing (tableting, coating, filling) from imported API.', days: [14, 45] },
+              { id: 'mckesson-dc', code: 'DC', name: 'McKesson Distribution Center', place: 'Pennsylvania', coords: [40.27, -75.75], stage: 'outbound', company: 'McKesson / AmerisourceBergen / Cardinal Health', process: 'Drug wholesale distribution to hospitals, retail chains, and mail-order channels.', days: [2, 7] },
+              { id: 'us-pharmacy', code: 'SALE', name: 'US Pharmacy Network', place: 'National, USA', coords: [39.50, -98.35], stage: 'sales', company: 'CVS / Walgreens / independent pharmacies', process: 'Prescription dispensing and OTC sales to end consumers.', days: [1, 5] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'rare-earth',
+        title: 'Rare Earth Elements Chain',
+        category: 'Critical Minerals / Advanced Manufacturing',
+        summary: 'Chinese rare earth mining and processing supplies neodymium-iron-boron magnets for US wind turbines, electric motors, and defense.',
+        aliases: ['rare earth', 'rare earths', 'neodymium', 'magnet', 'ndfeb', 'wind turbine magnet', 'electric motor', 'china rare earth', 'inner mongolia', 'baotou'],
+        taxonomy: {
+          inputs: ['Rare earth ore (bastnäsite/monazite)', 'acid leach / solvent extraction', 'metal reduction furnaces'],
+          middleputs: ['Rare earth oxides (REO)', 'separated REE metals', 'NdFeB magnet alloy', 'permanent magnets'],
+          outputs: ['NdFeB permanent magnets', 'wind turbine generators', 'EV traction motors', 'defense guidance systems']
+        },
+        routes: [
+          {
+            id: 'baotou-usa-wind',
+            name: 'Baotou Rare Earth to US Wind Energy',
+            badge: 'critical',
+            description: 'Inner Mongolia rare earth concentrate flows through Chinese separation to US permanent magnet and wind turbine manufacturing.',
+            confidence: 61,
+            baseRisk: 62,
+            traffic: { truck: 'Inner Mongolia moderate', rail: 'China rail network', port: 'Tianjin / Shanghai high', bottleneck: 'Chinese export quota and processing concentration' },
+            nodes: [
+              { id: 'baotou', code: 'ORE', name: 'Baotou Rare Earth Complex', place: 'Inner Mongolia, China', coords: [40.65, 109.83], stage: 'mining', company: 'Inner Mongolia Baotou Steel Rare Earth', process: 'Bayan Obo mine; world\'s largest rare earth deposit. Produces ~60% of global REE supply.', days: [14, 35] },
+              { id: 'ganzhou-ree', code: 'REF', name: 'Ganzhou Rare Earth Separation', place: 'Jiangxi, China', coords: [25.83, 114.93], stage: 'operations', company: 'China Minmetals / Chinalco', process: 'Hydrometallurgical separation of individual rare earth oxides from mixed concentrate.', days: [14, 40] },
+              { id: 'tianjin-ree', code: 'PORT', name: 'Tianjin Export Terminal', place: 'Tianjin, China', coords: [38.98, 117.72], stage: 'outbound', company: 'COSCO / Chinese freight forwarders', process: 'Export shipping under rare earth export quota system; subject to Chinese export controls.', days: [7, 21] },
+              { id: 'la-ree', code: 'PORT', name: 'Los Angeles Port', place: 'California', coords: [33.75, -118.19], stage: 'inbound', company: 'US Customs and Border Protection', process: 'Import with export control compliance; US-China trade friction exposure.', days: [5, 14] },
+              { id: 'mp-materials', code: 'MFG', name: 'MP Materials / Mountain Pass', place: 'California / Texas', coords: [35.48, -115.54], stage: 'operations', company: 'MP Materials', process: 'Rare earth separation and downstream magnet alloy production (partially domestic US).', days: [10, 30] },
+              { id: 'wind-turbine-mfg', code: 'MFG', name: 'Wind Turbine Assembly Plant', place: 'Midwest USA', coords: [41.50, -93.00], stage: 'operations', company: 'GE Vernova / Siemens Gamesa', process: 'Permanent magnet installation in direct-drive wind generators and nacelle assembly.', days: [14, 45] },
+              { id: 'wind-farm-usa', code: 'USE', name: 'US Wind Farm Deployment', place: 'Central Plains, USA', coords: [39.00, -101.00], stage: 'use', company: 'NextEra / Ørsted / AEP', process: 'Wind turbine installation, commissioning, and 25-year generation lifecycle.', days: [30, 180] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'copper',
+        title: 'Copper Mining and Refining Chain',
+        category: 'Metals / Industrial',
+        summary: 'Chilean copper concentrate moves from Andean mines through Pacific shipping to Chinese smelting and global copper product manufacturing.',
+        aliases: ['copper', 'copper wire', 'copper pipe', 'chile copper', 'codelco', 'concentrate', 'smelting', 'cathode copper', 'electronics wire'],
+        taxonomy: {
+          inputs: ['Copper ore (0.5–2% Cu)', 'flotation reagents', 'smelter energy and oxygen'],
+          middleputs: ['Copper concentrate (~30% Cu)', 'blister copper', 'refined cathode (LME Grade A)'],
+          outputs: ['Copper wire rod', 'copper pipe and tube', 'copper alloys', 'circuit board foil']
+        },
+        routes: [
+          {
+            id: 'escondida-yangshan',
+            name: 'Atacama Mines to Chinese Smelter',
+            badge: 'global',
+            description: 'Chilean copper concentrate from Escondida loads at Antofagasta and crosses the Pacific to Chinese smelting complexes.',
+            confidence: 80,
+            baseRisk: 33,
+            traffic: { truck: 'Andean mining roads moderate', rail: 'Mine-to-port rail', port: 'Antofagasta high-throughput', bottleneck: 'Ore grade decline and Chinese smelter capacity' },
+            nodes: [
+              { id: 'escondida', code: 'ORE', name: 'Escondida Copper Mine', place: 'Atacama Region, Chile', coords: [-24.27, -69.07], stage: 'mining', company: 'BHP / Rio Tinto / JECO', process: 'World\'s largest copper mine; open-pit porphyry copper producing ~5% of global supply.', days: [12, 30] },
+              { id: 'antofagasta-port', code: 'PORT', name: 'Port of Antofagasta', place: 'Antofagasta, Chile', coords: [-23.65, -70.40], stage: 'outbound', company: 'Antofagasta port operators', process: 'Bulk concentrate loading onto Panamax bulk carriers for Pacific transit.', days: [7, 21] },
+              { id: 'yangshan-copper', code: 'PORT', name: 'Yangshan Deep-Water Port', place: 'Shanghai, China', coords: [30.63, 122.06], stage: 'inbound', company: 'Shanghai International Port Group', process: 'Concentrate import, customs, and inland transfer to copper smelters.', days: [6, 18] },
+              { id: 'tongling-smelter', code: 'SMELT', name: 'Tongling Nonferrous Smelter', place: 'Anhui, China', coords: [30.94, 117.82], stage: 'operations', company: 'Tongling Nonferrous Metals', process: 'Flash smelting, converting, fire refining, and electrolytic refining to LME Grade A cathode.', days: [10, 28] },
+              { id: 'shanghai-wire', code: 'MFG', name: 'Shanghai Copper Products', place: 'Shanghai, China', coords: [31.23, 121.47], stage: 'operations', company: 'Xinergy / CNMC / international wire mills', process: 'Copper cathode rolled into wire rod, drawn into wire, and processed into downstream products.', days: [7, 21] },
+              { id: 'global-copper-sale', code: 'SALE', name: 'Global Copper Product Markets', place: 'Global', coords: [25.00, 60.00], stage: 'sales', company: 'Global OEMs and electronics manufacturers', process: 'Wire and products sold for construction, electronics, EV wiring, and grid infrastructure.', days: [5, 30] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'iron-ore-steel',
+        title: 'Iron Ore and Steel Chain',
+        category: 'Metals / Industrial',
+        summary: 'Pilbara iron ore moves from Australian mines through Pacific shipping to Chinese blast furnaces and global steel product distribution.',
+        aliases: ['steel', 'iron ore', 'blast furnace', 'rebar', 'structural steel', 'australia mining', 'rio tinto', 'bhp iron ore', 'china steel', 'construction steel'],
+        taxonomy: {
+          inputs: ['Iron ore fines (>62% Fe)', 'coking coal', 'sinter agglomeration', 'blast furnace oxygen'],
+          middleputs: ['Sintered ore / pellets', 'pig iron', 'crude steel', 'hot-rolled coil'],
+          outputs: ['Rebar and structural steel', 'flat steel products', 'construction beams', 'automotive sheet']
+        },
+        routes: [
+          {
+            id: 'pilbara-tangshan',
+            name: 'Pilbara Iron Ore to Chinese Steel',
+            badge: 'global',
+            description: 'Rio Tinto and BHP iron ore loaded at Port Hedland crosses the Indian Ocean to Chinese steelmaking hubs.',
+            confidence: 85,
+            baseRisk: 28,
+            traffic: { truck: 'Private Pilbara haul rail', rail: 'BHP / Rio Tinto dedicated rail', port: 'Port Hedland — world\'s largest bulk export', bottleneck: 'Chinese blast furnace utilization rate' },
+            nodes: [
+              { id: 'pilbara-mines', code: 'ORE', name: 'Pilbara Iron Ore Mines', place: 'Western Australia', coords: [-22.00, 118.50], stage: 'mining', company: 'BHP / Rio Tinto / FMG', process: 'Open-pit iron ore mining; Australia supplies ~50% of global seaborne iron ore.', days: [5, 14] },
+              { id: 'port-hedland', code: 'PORT', name: 'Port Hedland', place: 'Western Australia', coords: [-20.31, 118.58], stage: 'outbound', company: 'Port Hedland Port Authority', process: 'World\'s largest bulk export port by tonnage; >500 Mt of iron ore shipped annually.', days: [3, 10] },
+              { id: 'caofeidian-port', code: 'PORT', name: 'Caofeidian / Qinhuangdao Port', place: 'Hebei, China', coords: [39.78, 119.47], stage: 'inbound', company: 'Chinese port authorities', process: 'Bulk discharge and inland transfer to Tangshan steelmaking complex.', days: [5, 14] },
+              { id: 'tangshan-steel', code: 'STEEL', name: 'Tangshan Steelmaking Complex', place: 'Hebei, China', coords: [39.63, 118.18], stage: 'operations', company: 'Shougang / Jiuquan / HBIS Group', process: 'Integrated BF-BOF steelmaking; China produces ~55% of global steel output.', days: [7, 21] },
+              { id: 'tianjin-steel-export', code: 'PORT', name: 'Tianjin Steel Export Terminal', place: 'Tianjin, China', coords: [38.98, 117.72], stage: 'outbound', company: 'Chinese steel trading companies', process: 'Hot-rolled coil, rebar, and structural steel export to global markets.', days: [5, 14] },
+              { id: 'la-steel-import', code: 'PORT', name: 'Los Angeles / Houston Import', place: 'USA', coords: [33.75, -118.19], stage: 'inbound', company: 'US steel service centers', process: 'Import subject to Section 232 tariffs and antidumping measures.', days: [6, 18] },
+              { id: 'us-construction-sale', code: 'SALE', name: 'US Construction and Manufacturing', place: 'National, USA', coords: [39.50, -98.35], stage: 'sales', company: 'US steel service centers / construction contractors', process: 'Steel distributed to construction sites, automotive stamping plants, and fabricators.', days: [3, 14] }
+            ]
+          }
+        ]
       }
     ];
 
@@ -1284,6 +1747,20 @@
         demand: document.getElementById('demandValue'),
         policy: document.getElementById('policyValue'),
       },
+      mcRunBtn: document.getElementById('mcRunBtn'),
+      mcIterCount: document.getElementById('mcIterCount'),
+      mcResults: document.getElementById('mcResults'),
+      mcBands: document.getElementById('mcBands'),
+      mcCostBands: document.getElementById('mcCostBands'),
+      mcIterLabel: document.getElementById('mcIterLabel'),
+      recBtn: document.getElementById('recBtn'),
+      exportBtn: document.getElementById('exportBtn'),
+      recResults: document.getElementById('recResults'),
+      recCards: document.getElementById('recCards'),
+      frontierBtn: document.getElementById('frontierBtn'),
+      frontierResults: document.getElementById('frontierResults'),
+      frontierLabel: document.getElementById('frontierLabel'),
+      frontierSvg: document.getElementById('frontierSvg'),
     };
 
     function getChain() {
@@ -1394,6 +1871,319 @@
       const activeDisruptions = Object.keys(state.disruptions).filter((key) => state.disruptions[key]);
       const macro = [state.shocks.congestion, state.shocks.fuel, state.shocks.demand, state.shocks.policy].join('/');
       return 'macro:' + macro + '|events:' + (activeDisruptions.join(',') || 'none');
+    }
+
+    function runMonteCarlo(route, iterations) {
+      const hourSamples = [];
+      const costSamples = [];
+      for (let run = 0; run < iterations; run++) {
+        let totalDays = 0;
+        let totalCost = 0;
+        for (let index = 1; index < route.nodes.length; index++) {
+          const to = route.nodes[index];
+          const from = route.nodes[index - 1];
+          const mode = inferLegMode(from, to);
+          const baseDays = averageDays(to);
+          const variance = (to.days[1] - to.days[0]) / 6;
+          const sampledBase = Math.max(0.2, baseDays + (Math.random() + Math.random() + Math.random() - 1.5) * variance * 2);
+          const macroTime = 1
+            + state.shocks.congestion * (mode === 'sea' ? 0.0048 : 0.0038)
+            + state.shocks.demand * 0.0017
+            + state.shocks.policy * 0.0024;
+          const sev = severityForLeg(mode);
+          const disruptionDelay = sev * (mode === 'sea' ? 8.2 : mode === 'air' ? 2.3 : 1.4) * (0.5 + Math.random());
+          totalDays += sampledBase * macroTime + disruptionDelay;
+          const macroCost = 1
+            + state.shocks.fuel * (mode === 'air' ? 0.0060 : mode === 'sea' ? 0.0046 : 0.0031)
+            + state.shocks.congestion * 0.0018;
+          totalCost += 100 * macroCost * (1 + sev * 0.32) * (0.85 + Math.random() * 0.30);
+        }
+        hourSamples.push(totalDays);
+        costSamples.push(totalCost);
+      }
+      hourSamples.sort(function(a, b) { return a - b; });
+      costSamples.sort(function(a, b) { return a - b; });
+      const n = hourSamples.length;
+      return {
+        iterations,
+        days: {
+          p50: hourSamples[Math.floor(n * 0.50)],
+          p80: hourSamples[Math.floor(n * 0.80)],
+          p95: hourSamples[Math.floor(n * 0.95)],
+          min: hourSamples[0],
+          max: hourSamples[n - 1],
+        },
+        cost: {
+          p50: costSamples[Math.floor(n * 0.50)],
+          p80: costSamples[Math.floor(n * 0.80)],
+          p95: costSamples[Math.floor(n * 0.95)],
+        },
+      };
+    }
+
+    function renderMCResults(mc) {
+      el.mcIterLabel.textContent = mc.iterations + ' runs';
+      el.mcResults.classList.add('visible');
+      const maxDays = mc.days.max || mc.days.p95 * 1.1;
+      function bandRow(label, value, maxVal, color) {
+        const pct = Math.round(Math.min(100, (value / maxVal) * 100));
+        return '<div class="mc-band-row">' +
+          '<span class="mc-band-label">' + label + '</span>' +
+          '<div class="mc-band-bar"><div class="mc-band-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+          '<span class="mc-band-val">' + Math.round(value) + 'd</span>' +
+        '</div>';
+      }
+      el.mcBands.innerHTML =
+        bandRow('P50', mc.days.p50, maxDays, '#3f8e6e') +
+        bandRow('P80', mc.days.p80, maxDays, '#f59e0b') +
+        bandRow('P95', mc.days.p95, maxDays, '#c94b4b');
+      const maxCost = mc.cost.p95 * 1.1;
+      function costRow(label, value, maxVal, color) {
+        const pct = Math.round(Math.min(100, (value / maxVal) * 100));
+        return '<div class="mc-band-row">' +
+          '<span class="mc-band-label">' + label + '</span>' +
+          '<div class="mc-band-bar"><div class="mc-band-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+          '<span class="mc-band-val">' + Math.round(value) + '</span>' +
+        '</div>';
+      }
+      el.mcCostBands.innerHTML =
+        costRow('P50', mc.cost.p50, maxCost, '#3f8e6e') +
+        costRow('P80', mc.cost.p80, maxCost, '#f59e0b') +
+        costRow('P95', mc.cost.p95, maxCost, '#c94b4b');
+    }
+
+    // ── Phase 4: Decision Intelligence ──────────────────────────────────────
+
+    async function fetchRecommendations() {
+      const chain = getChain();
+      el.recBtn.disabled = true;
+      el.recBtn.textContent = 'Analyzing…';
+      try {
+        const res = await fetch('/api/recommend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chainId: chain.id, scenarioId: 'scenario_baseline' }),
+        });
+        if (!res.ok) throw new Error('api_unavailable');
+        renderRecommendations(await res.json());
+      } catch (_) {
+        renderRecommendations({ recommendations: generateLocalRecommendations() });
+      } finally {
+        el.recBtn.disabled = false;
+        el.recBtn.textContent = 'Get Recommendations';
+      }
+    }
+
+    function generateLocalRecommendations() {
+      const route = getRoute();
+      const recs = [];
+      const nodes = route.nodes;
+
+      // Find the slowest node as the bottleneck
+      let maxDays = 0, bnIdx = 1;
+      for (let i = 1; i < nodes.length; i++) {
+        const d = averageDays(nodes[i]);
+        if (d > maxDays) { maxDays = d; bnIdx = i; }
+      }
+      const bn = nodes[bnIdx];
+      const prev = nodes[bnIdx - 1] || nodes[0];
+      const mode = inferLegMode(prev, bn);
+      const sev = severityForLeg(mode);
+
+      recs.push({
+        priority: sev > 0.4 ? 'critical' : 'high',
+        type: 'bottleneck',
+        legId: 'leg-' + bnIdx,
+        mode,
+        from: prev.name,
+        to: bn.name,
+        issue: bn.name + ' is the slowest node (avg ' + averageDays(bn).toFixed(1) + 'd). This leg dominates chain lead time under current conditions.',
+        suggestion: 'Consider pre-positioning inventory at ' + bn.name + ' or negotiating a dedicated carrier allocation to buffer this delay.',
+        delta: { timeHours: 0, costUsd: 0, riskChange: 0 },
+      });
+
+      if (state.disruptions.suezClosure) {
+        recs.push({
+          priority: 'critical',
+          type: 'corridor_bypass',
+          legId: 'suez-impact',
+          mode: 'sea',
+          from: 'Origin port',
+          to: 'Destination port',
+          issue: 'Suez Canal closure adds 8–14 days to all affected sea legs. Congestion at alternative ports compounds the delay.',
+          suggestion: 'Route via Cape of Good Hope (+10d, +$15k) or use air cargo for time-critical units. Source regionally if possible.',
+          delta: { timeHours: 240, costUsd: 15000, riskChange: -18 },
+        });
+      }
+
+      if (state.shocks.congestion > 25) {
+        recs.push({
+          priority: 'medium',
+          type: 'mode_substitution',
+          legId: 'congestion-road',
+          mode: 'road',
+          from: 'Origin',
+          to: 'Destination',
+          issue: 'Congestion shock at ' + state.shocks.congestion + '% is extending road transit windows across all land legs.',
+          suggestion: 'Rail absorbs congestion shocks better and may save 20–30% cost on lanes over 500 km.',
+          delta: { timeHours: Math.round(state.shocks.congestion * 0.9), costUsd: -9000, riskChange: -4 },
+        });
+      }
+
+      if (state.shocks.fuel > 30) {
+        recs.push({
+          priority: 'medium',
+          type: 'cost_hedge',
+          legId: 'fuel-exposure',
+          mode: 'sea',
+          from: 'Origin',
+          to: 'Destination',
+          issue: 'Fuel shock at +' + state.shocks.fuel + '% is materially lifting sea and air freight costs on this chain.',
+          suggestion: 'Lock in forward freight contracts or negotiate fuel-neutral rates with carriers to contain cost volatility.',
+          delta: { timeHours: 0, costUsd: -Math.round(state.shocks.fuel * 400), riskChange: -2 },
+        });
+      }
+
+      return recs;
+    }
+
+    function renderRecommendations(data) {
+      const recs = data.recommendations || [];
+      el.recResults.classList.add('visible');
+      if (recs.length === 0) {
+        el.recCards.innerHTML = '<div class="empty-state" style="font-size:11px;padding:8px 10px">No critical recommendations for the current configuration.</div>';
+        return;
+      }
+      el.recCards.innerHTML = recs.map(function(rec) {
+        const dTime = rec.delta.timeHours;
+        const dCost = rec.delta.costUsd;
+        const dRisk = rec.delta.riskChange;
+        function deltaClass(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero'; }
+        function timeLabel(v) { return v === 0 ? '—h' : (v > 0 ? '+' : '') + v + 'h'; }
+        function costLabel(v) { return v === 0 ? '—' : (v > 0 ? '+$' : '-$') + Math.abs(v).toLocaleString(); }
+        function riskLabel(v) { return v === 0 ? '—' : (v > 0 ? '+' : '') + v + ' risk'; }
+        return '<div class="rec-card ' + rec.priority + '">' +
+          '<div class="rec-header">' +
+            '<span class="rec-priority ' + rec.priority + '">' + rec.priority + '</span>' +
+            '<span class="rec-leg" title="' + escapeHtml(rec.from + ' → ' + rec.to) + '">' + escapeHtml(rec.from) + ' → ' + escapeHtml(rec.to) + '</span>' +
+          '</div>' +
+          '<div class="rec-issue">' + escapeHtml(rec.issue) + '</div>' +
+          '<div class="rec-suggestion">' + escapeHtml(rec.suggestion) + '</div>' +
+          '<div class="rec-deltas">' +
+            '<span class="rec-delta ' + deltaClass(dTime) + '">' + timeLabel(dTime) + '</span>' +
+            '<span class="rec-delta ' + deltaClass(dCost) + '">' + costLabel(dCost) + '</span>' +
+            '<span class="rec-delta ' + deltaClass(dRisk) + '">' + riskLabel(dRisk) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function exportScenarioPack() {
+      const chain = getChain();
+      el.exportBtn.disabled = true;
+      el.exportBtn.textContent = 'Exporting…';
+      let blob;
+      try {
+        const res = await fetch('/api/export/scenario-pack?chain_id=' + encodeURIComponent(chain.id) + '&scenario_id=scenario_baseline&mc_iterations=200');
+        if (!res.ok) throw new Error('api_unavailable');
+        blob = new Blob([JSON.stringify(await res.json(), null, 2)], { type: 'application/json' });
+      } catch (_) {
+        const fallback = {
+          exportedAt: new Date().toISOString(),
+          generatedBy: 'Heimdall SPA (offline)',
+          chain: { id: chain.id, title: chain.title, category: chain.category },
+          route: getRoute(),
+          shocks: state.shocks,
+          disruptions: state.disruptions,
+        };
+        blob = new Blob([JSON.stringify(fallback, null, 2)], { type: 'application/json' });
+      } finally {
+        el.exportBtn.disabled = false;
+        el.exportBtn.textContent = 'Export Pack';
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'heimdall-' + chain.id + '.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function fetchFrontier() {
+      const chain = getChain();
+      el.frontierBtn.disabled = true;
+      el.frontierBtn.textContent = 'Computing…';
+      try {
+        const res = await fetch('/api/frontier?chain_id=' + encodeURIComponent(chain.id));
+        if (!res.ok) throw new Error('api_unavailable');
+        renderFrontier(await res.json());
+      } catch (_) {
+        renderFrontier(generateLocalFrontier());
+      } finally {
+        el.frontierBtn.disabled = false;
+        el.frontierBtn.textContent = 'Show Cost-Time Frontier';
+      }
+    }
+
+    function generateLocalFrontier() {
+      const route = getRoute();
+      const baseDays = routeBaseDays(route);
+      const oilLevels = [60, 75, 83, 95, 110, 130];
+      const ctnLevels = [0.75, 1.0, 1.25, 1.5, 2.0];
+      const geoLevels = [0.15, 0.30, 0.45, 0.60];
+      const pts = [];
+      oilLevels.forEach(function(oil) {
+        ctnLevels.forEach(function(ctn) {
+          geoLevels.forEach(function(geo) {
+            const tMult = 1 + Math.max(0, ctn - 1) * 0.55 + geo * 0.08;
+            const cMult = 1 + Math.max(-0.45, (oil - 83) / 83) * 0.30 + Math.max(0, ctn - 1) * 0.45;
+            pts.push({
+              totalHours: baseDays * 24 * tMult,
+              totalCostUsd: 85000 * cMult,
+              riskScore: geo * 55 + 0.30 * 35,
+              isPareto: false,
+            });
+          });
+        });
+      });
+      pts.forEach(function(pt) {
+        pt.isPareto = !pts.some(function(o) {
+          return o !== pt &&
+            o.totalHours <= pt.totalHours && o.totalCostUsd <= pt.totalCostUsd &&
+            (o.totalHours < pt.totalHours || o.totalCostUsd < pt.totalCostUsd);
+        });
+      });
+      return { pointCount: pts.length, paretoCount: pts.filter(function(p) { return p.isPareto; }).length, points: pts };
+    }
+
+    function renderFrontier(data) {
+      const pts = data.points || [];
+      el.frontierResults.classList.add('visible');
+      el.frontierLabel.textContent = data.paretoCount + ' Pareto-optimal / ' + data.pointCount + ' scenarios';
+      const W = 240, H = 130, PX = 26, PY = 14;
+      if (!pts.length) { el.frontierSvg.innerHTML = ''; return; }
+      const minH = Math.min.apply(null, pts.map(function(p) { return p.totalHours; }));
+      const maxH = Math.max.apply(null, pts.map(function(p) { return p.totalHours; }));
+      const minC = Math.min.apply(null, pts.map(function(p) { return p.totalCostUsd; }));
+      const maxC = Math.max.apply(null, pts.map(function(p) { return p.totalCostUsd; }));
+      function sx(p) { return PX + (p.totalHours - minH) / (maxH - minH || 1) * (W - PX - 8); }
+      function sy(p) { return H - PY - (p.totalCostUsd - minC) / (maxC - minC || 1) * (H - PY - 10); }
+      function riskHex(r) { return r < 25 ? '#3f8e6e' : r < 45 ? '#f59e0b' : '#c94b4b'; }
+      let inner = '<line x1="' + PX + '" y1="8" x2="' + PX + '" y2="' + (H - PY) + '" stroke="#d9dee5" stroke-width="1"/>';
+      inner += '<line x1="' + PX + '" y1="' + (H - PY) + '" x2="' + (W - 4) + '" y2="' + (H - PY) + '" stroke="#d9dee5" stroke-width="1"/>';
+      inner += '<text x="' + (PX - 3) + '" y="14" text-anchor="end" font-size="8" fill="#66717f">Cost</text>';
+      inner += '<text x="' + (W - 4) + '" y="' + (H - 2) + '" text-anchor="end" font-size="8" fill="#66717f">Time →</text>';
+      pts.filter(function(p) { return !p.isPareto; }).forEach(function(p) {
+        inner += '<circle cx="' + sx(p).toFixed(1) + '" cy="' + sy(p).toFixed(1) + '" r="2" fill="' + riskHex(p.riskScore) + '" opacity="0.28"/>';
+      });
+      const pareto = pts.filter(function(p) { return p.isPareto; }).sort(function(a, b) { return a.totalHours - b.totalHours; });
+      if (pareto.length > 1) {
+        const path = 'M' + pareto.map(function(p) { return sx(p).toFixed(1) + ',' + sy(p).toFixed(1); }).join(' L');
+        inner += '<path d="' + path + '" fill="none" stroke="#2374ab" stroke-width="1.2" stroke-dasharray="4,2" opacity="0.65"/>';
+      }
+      pareto.forEach(function(p) {
+        inner += '<circle cx="' + sx(p).toFixed(1) + '" cy="' + sy(p).toFixed(1) + '" r="3.5" fill="' + riskHex(p.riskScore) + '" stroke="#fff" stroke-width="1.5"/>';
+      });
+      el.frontierSvg.innerHTML = inner;
     }
 
     function adjustedMetrics(route) {
@@ -1872,6 +2662,24 @@
       });
 
       el.fitRoute.addEventListener('click', fitToRoute);
+
+      el.mcRunBtn.addEventListener('click', () => {
+        const route = getRoute();
+        const iterations = Number(el.mcIterCount.value) || 500;
+        el.mcRunBtn.disabled = true;
+        el.mcRunBtn.textContent = 'Running…';
+        setTimeout(() => {
+          const mc = runMonteCarlo(route, iterations);
+          renderMCResults(mc);
+          el.mcRunBtn.disabled = false;
+          el.mcRunBtn.textContent = 'Run Simulation';
+        }, 20);
+      });
+
+      el.recBtn.addEventListener('click', fetchRecommendations);
+      el.exportBtn.addEventListener('click', exportScenarioPack);
+      el.frontierBtn.addEventListener('click', fetchFrontier);
+
       el.mapModeToggle.addEventListener('click', () => {
         state.mapMode = state.mapMode === '2d' ? '3d' : '2d';
         renderMapMode();
