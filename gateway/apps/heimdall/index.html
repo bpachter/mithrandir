@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -13,8 +13,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js"></script>
-  <script type="module" crossorigin src="./assets/index-ByBul9VJ.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-7qNfuS3k.css">
+  <script type="module" crossorigin src="./assets/index-cfrvmw-m.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-t33pzOHO.css">
 </head>
 <body>
   <div id="map" aria-label="Interactive supply chain map"></div>
@@ -35,6 +35,7 @@
     <div style="display:flex;align-items:center;gap:6px">
       <button class="topbar-action" id="btnScenarios" data-open-drawer="drawerScenarios" title="Macro shocks &amp; disruption events"><i data-lucide="sliders-horizontal"></i><span>Scenarios</span></button>
       <button class="topbar-action" id="btnSimulate" data-open-drawer="drawerSimulate" title="Monte Carlo simulation"><i data-lucide="activity"></i><span>Simulate</span></button>
+      <button class="topbar-action" id="btnLiveDisruptions" data-open-drawer="drawerLiveDisruptions" title="Live disruption feed"><i data-lucide="radio-tower"></i><span>Live</span></button>
       <button class="topbar-action" id="btnIntel" data-open-drawer="drawerIntel" title="Decision Intelligence"><i data-lucide="brain-circuit"></i><span>Intel</span></button>
       <button class="topbar-action" id="btnLayers" data-open-drawer="drawerLayers" title="Value chain layer toggles"><i data-lucide="layers"></i><span>Layers</span></button>
       <button class="topbar-action" id="btnGlossary" data-open-drawer="drawerGlossary" title="Trade & logistics glossary"><i data-lucide="book-open"></i><span>Glossary</span></button>
@@ -51,6 +52,10 @@
         <p class="panel-subtitle">Raw materials, refined forms, finished goods, routes, companies, and facilities resolve into one mapped chain.</p>
       </div>
       <div class="panel-body">
+        <div class="section-label" style="margin-top:0"><span>Sector Portfolio</span><span id="sectorCount">Live</span></div>
+        <div class="sector-summary" id="sectorSummary"></div>
+        <div class="sector-grid" id="sectorFilters"></div>
+
         <div class="search-wrap">
           <i data-lucide="search"></i>
           <input id="searchBox" type="search" autocomplete="off" spellcheck="false" placeholder="raw uranium, refined uranium, nuclear reactor..." />
@@ -84,24 +89,30 @@
           <div class="metric"><span>Traffic Nowcast</span><strong id="metricTraffic">-</strong></div>
         </div>
 
-        <div class="section-label"><span>Chain Compare</span><span id="scenarioLabel">Baseline</span></div>
-        <div id="chainCompare"></div>
+        <details class="panel-accordion" open>
+          <summary><span>Scenario &amp; Bottleneck</span><b id="scenarioLabel">Baseline</b></summary>
+          <div id="chainCompare"></div>
+          <div class="section-label compact"><span>Bottleneck Highlight</span><span id="bottleneckPill" class="bottleneck-pill">No active bottleneck</span></div>
+        </details>
 
-        <div class="section-label"><span>Bottleneck Highlight</span><span id="bottleneckPill" class="bottleneck-pill">No active bottleneck</span></div>
+        <details class="panel-accordion" open>
+          <summary><span>Route Legs And Provenance</span><b>Lane data</b></summary>
+          <div class="leg-table-wrap" id="legTable"></div>
+        </details>
 
-        <div class="section-label"><span>Route Legs And Provenance</span></div>
-        <div class="leg-table-wrap" id="legTable"></div>
+        <details class="panel-accordion" open>
+          <summary><span>Value Chain Materials</span><b>Inputs</b></summary>
+          <div class="taxonomy" id="taxonomy"></div>
+          <div id="isotopeBlock"></div>
+        </details>
 
-        <div class="section-label"><span>Inputs / Middleputs / Outputs</span></div>
-        <div class="taxonomy" id="taxonomy"></div>
-
-        <div id="isotopeBlock"></div>
-
-        <div class="section-label"><span>Companies In The Chain</span></div>
-        <div class="chip-row" id="companyList"></div>
-
-        <div class="section-label"><span>Mapped Process Timeline</span></div>
-        <div class="node-list" id="nodeList"></div>
+        <details class="panel-accordion">
+          <summary><span>Companies And Timeline</span><b>Process map</b></summary>
+          <div class="section-label compact"><span>Companies In The Chain</span></div>
+          <div class="chip-row" id="companyList"></div>
+          <div class="section-label compact"><span>Mapped Process Timeline</span></div>
+          <div class="node-list" id="nodeList"></div>
+        </details>
       </div>
     </aside>
 
@@ -160,6 +171,23 @@
     </div>
   </div>
 
+  <!-- Live Disruptions Drawer -->
+  <div class="hd-drawer" id="drawerLiveDisruptions" role="dialog" aria-modal="true" aria-label="Live disruption feed">
+    <div class="hd-drawer-header">
+      <i data-lucide="radio-tower"></i>
+      <h3>Live Feed</h3>
+      <span class="phase-tag" id="liveDisruptionCount">0 active</span>
+      <button class="hd-drawer-close" data-close-drawer="drawerLiveDisruptions" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="hd-drawer-body">
+      <div class="live-feed-toolbar">
+        <div class="live-feed-status"><span class="live-feed-dot" id="liveFeedDot"></span><span id="liveFeedStatus">Waiting for backend feed</span></div>
+        <button class="p4-btn p4-secondary live-refresh-btn" id="liveRefreshBtn" type="button">Refresh</button>
+      </div>
+      <div class="live-feed-list" id="liveDisruptionList"></div>
+    </div>
+  </div>
+
   <!-- Intel Drawer -->
   <div class="hd-drawer" id="drawerIntel" role="dialog" aria-modal="true" aria-label="Decision Intelligence">
     <div class="hd-drawer-header">
@@ -169,9 +197,9 @@
       <button class="hd-drawer-close" data-close-drawer="drawerIntel" aria-label="Close"><i data-lucide="x"></i></button>
     </div>
     <div class="hd-drawer-body">
-      <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5">Analyze the active route for bottlenecks, mode-substitution opportunities, and cost-time tradeoffs. Export a full scenario pack for stakeholder review.</p>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.5">Analyze the active route for bottlenecks, regulatory flags, route alternatives, and cost-time tradeoffs. Export a full scenario pack for stakeholder review.</p>
       <div class="p4-btn-row">
-        <button class="p4-btn" id="recBtn" type="button">Get Recommendations</button>
+        <button class="p4-btn" id="recBtn" type="button">Analyze Route</button>
         <button class="p4-btn p4-secondary" id="exportBtn" type="button">Export Pack</button>
       </div>
       <div class="p4-results" id="recResults">
@@ -223,6 +251,6 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 </body>
 </html>
